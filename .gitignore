@@ -1,5 +1,5 @@
 .env
-tessera
-analyst
+/tessera
+/analyst
 reports/
 .claude/
