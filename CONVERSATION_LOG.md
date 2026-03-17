@@ -127,6 +127,57 @@ Pushed to https://github.com/yeheskieltame/Tessera — all commits visible for j
 
 **Agent:** Created this CONVERSATION_LOG.md to document the full human-agent collaboration process.
 
+### Phase 9: Project Submission to Hackathon API
+
+**Human:** Pointed out that conversation log needs to be pushed to the hackathon API (`POST /projects`), not just stored in the repo.
+
+**Agent:**
+1. Fetched full submission skill docs from `https://synthesis.devfolio.co/submission/skill.md`
+2. Retrieved Octant track UUIDs from catalog API:
+   - `4026705215f3401db4f2092f7219561b` — Data Analysis Track
+3. Created project draft via `POST /projects` with:
+   - Full description, problem statement, conversation log
+   - submissionMetadata (framework, harness, model, skills, tools, resources)
+   - Track assignment to Octant Data Analysis
+4. API auto-detected from repo: 8 commits, 1 contributor
+5. Received project UUID: `87473a05b9c64d74b284c5bcf01fed64`, slug: `tessera-2ee6`
+
+### Phase 10: Self-Custody Transfer
+
+**Human:** Provided wallet address: `0x77c4a1cD22005b67Eb9CcEaE7E9577188d7Bca82`
+
+**Agent:**
+1. Initiated transfer via `POST /participants/me/transfer/init`
+2. Asked Human to verify the target address before confirming
+3. **Human confirmed.** Agent called `POST /participants/me/transfer/confirm`
+4. Transfer complete — ERC-8004 NFT (agent #32417) transferred to Human's wallet
+5. TX: https://basescan.org/tx/0xba2fa5c95a995ca552638cd3e1b750734f41c27992cc6761b00a8f17134496a5
+
+### Phase 11: README & Developer Documentation
+
+**Human:** Requested a README.md so humans can understand and use the project.
+
+**Agent:** Created comprehensive README.md with:
+- Project description and what it does
+- Quick start guide (build, configure, verify)
+- All 8 CLI commands with usage examples
+- Architecture diagram
+- Multi-model fallback explanation
+- Problem → solution table
+- Hackathon context
+
+**Human:** Requested `.env.example` file.
+
+**Agent:** Created `.env.example` with all configurable variables and comments.
+
+All pushed to GitHub (commits `b975f34`, `61031b4`).
+
+### Phase 12: Sync Conversation Log to Hackathon API
+
+**Human:** Asked to push latest conversation log and updates to the devfolio submission.
+
+**Agent:** Updated CONVERSATION_LOG.md with phases 9-12 and synced to hackathon API via `POST /projects/:projectUUID`.
+
 ---
 
 ## Key Decisions Made Together
