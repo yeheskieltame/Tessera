@@ -1,0 +1,332 @@
+# CLAUDE.md — Tessera (The Synthesis Hackathon)
+
+## Project Overview
+
+**Tessera** adalah AI agent CLI tool untuk evaluasi proyek public goods di ekosistem Ethereum. Dibangun untuk **The Synthesis Hackathon** — hackathon 14 hari dimana AI agent dan manusia membangun bersama.
+
+- **Agent Name:** Synthesis Agent
+- **Hackathon:** The Synthesis (synthesis.devfolio.co)
+- **Track:** Agents for Public Goods Data Analysis for Project Evaluation (Octant partner, $1000)
+- **Model:** Claude Opus 4.6 via Claude Code
+- **Human:** Yeheskiel Yunus Rame (@YeheskielTame)
+
+---
+
+## Hackathon Registration & IDs
+
+- **Participant ID:** `11c3550860c8400885327b29b074da81`
+- **Team ID:** `39611a09e000455abce8a81b57a58540`
+- **On-chain TX:** https://basescan.org/tx/0x2ef2402a1528f7841e880fd90b2246fbee688e0ab2e922f4163c7b291891451b
+- **API Key:** Stored in `.env` as `SYNTHESIS_API_KEY`
+- **Base URL:** `https://synthesis.devfolio.co`
+
+---
+
+## Hackathon API Reference (Registration → Submission)
+
+### Step 1: Registration (DONE)
+
+```bash
+POST https://synthesis.devfolio.co/register
+Content-Type: application/json
+
+{
+  "name": "Synthesis Agent",
+  "description": "AI agent for public goods data analysis...",
+  "agentHarness": "claude-code",
+  "model": "claude-opus-4-6",
+  "humanInfo": { ... }
+}
+```
+
+Response memberikan `participantId`, `teamId`, `apiKey`, `registrationTxn`.
+
+### Step 2: Self-Custody Transfer (REQUIRED sebelum publish)
+
+```bash
+# Initiate
+POST /participants/me/transfer/init
+Authorization: Bearer sk-synth-...
+{ "targetOwnerAddress": "0xWALLET_ADDRESS" }
+
+# Confirm (dalam 15 menit)
+POST /participants/me/transfer/confirm
+Authorization: Bearer sk-synth-...
+{ "transferToken": "tok_...", "targetOwnerAddress": "0xWALLET_ADDRESS" }
+```
+
+Butuh wallet address (Base Mainnet). Lihat: https://synthesis.devfolio.co/wallet-setup/skill.md
+
+### Step 3: Create Project (Draft)
+
+```bash
+POST /projects
+Authorization: Bearer sk-synth-...
+Content-Type: application/json
+
+{
+  "teamUUID": "39611a09e000455abce8a81b57a58540",
+  "name": "Tessera",
+  "description": "...",
+  "problemStatement": "...",
+  "repoURL": "https://github.com/yeheskieltame/Tessera",
+  "trackUUIDs": ["<track-uuid>"],
+  "conversationLog": "...",
+  "submissionMetadata": {
+    "agentFramework": "other",
+    "agentFrameworkOther": "Custom Go CLI with multi-model AI fallback",
+    "agentHarness": "claude-code",
+    "model": "claude-opus-4-6",
+    "skills": ["public-goods-analyst"],
+    "tools": ["go", "net/http", "encoding/json", "math/big"],
+    "helpfulResources": [
+      "https://synthesis.devfolio.co/skill.md",
+      "https://docs.oso.xyz/blog/octant-2024-grant-analytics/",
+      "https://docs.octant.app/en-EN/how-it-works.html"
+    ],
+    "intention": "continuing"
+  }
+}
+```
+
+### Step 4: Update Project (Optional)
+
+```bash
+POST /projects/:projectUUID
+Authorization: Bearer sk-synth-...
+{ "description": "Updated...", "trackUUIDs": ["..."] }
+```
+
+### Step 5: Post on Moltbook
+
+Baca skill: https://www.moltbook.com/skill.md
+Post berisi: apa yang dibangun, track, link repo.
+Simpan URL post ke `submissionMetadata.moltbookPostURL`.
+
+### Step 6: Publish
+
+```bash
+POST /projects/:projectUUID/publish
+Authorization: Bearer sk-synth-...
+```
+
+Requirements sebelum publish:
+- Self-custody transfer selesai
+- Nama project ada
+- Minimal 1 track assigned
+- repoURL public
+
+### Track UUIDs (Octant)
+
+Fetch dari catalog:
+```bash
+GET /catalog?search=octant&per_page=100&page=2
+```
+
+| Track | Slug | Prize |
+|-------|------|-------|
+| Agents for Public Goods Data Analysis for Project Evaluation | `data-analysis-track-j5lvk8` | $1,000 |
+| Agents for Public Goods Data Collection for Project Evaluation | `data-collection-track-w3wbn7` | $1,000 |
+| Mechanism Design for Public Goods Evaluation | `subjectivity-and-context-track-8vtj5l` | $1,000 |
+
+### Team Management
+
+```bash
+GET /teams/:teamUUID              # View team
+POST /teams/:teamUUID/invite      # Get invite code
+POST /teams/:teamUUID/join        # Join team { "inviteCode": "..." }
+POST /teams/:teamUUID/leave       # Leave team
+```
+
+---
+
+## Apa yang Dibangun
+
+### Tech Stack
+
+**Go** — dipilih karena:
+- Single binary ~9MB, zero runtime dependencies
+- Startup <5ms (vs Python ~300ms)
+- Native concurrency (goroutines) untuk multi-agent future
+- Mudah didistribusi sebagai skill ke OpenClaw, Claude Code, Gemini CLI
+
+### Arsitektur
+
+```
+synthesis/
+├── .env                          # API keys (gitignored)
+├── .gitignore
+├── go.mod / go.sum               # Go module
+├── CLAUDE.md                     # File ini
+├── analyst                       # Compiled binary (~9MB)
+├── cmd/
+│   └── analyst/
+│       └── main.go               # CLI entry point + flag parsing
+├── internal/
+│   ├── provider/
+│   │   └── provider.go           # Multi-model AI fallback chain
+│   ├── data/
+│   │   ├── octant.go             # Octant REST API client
+│   │   ├── gitcoin.go            # Gitcoin GraphQL client
+│   │   └── oso.go                # Open Source Observer client
+│   ├── analysis/
+│   │   ├── quantitative.go       # K-means clustering, composite scoring, anomaly detection
+│   │   └── qualitative.go        # LLM evaluation, comparison, sentiment analysis
+│   └── report/
+│       └── report.go             # Markdown report generation
+└── skills/
+    └── public-goods-analyst/
+        └── SKILL.md              # OpenClaw skill definition
+```
+
+### Multi-Model Fallback Chain
+
+Provider dicoba berurutan. Jika gagal, otomatis pindah ke berikutnya:
+
+1. **Claude API** (`ANTHROPIC_API_KEY`) — primary
+2. **Google Gemini** (`GEMINI_API_KEY`) — fallback 1
+3. **OpenAI** (`OPENAI_API_KEY`) — fallback 2
+4. **Antigravity Proxy** (`ANTIGRAVITY_URL`) — fallback 3 (Claude via Google Antigravity)
+
+### Build & Run
+
+```bash
+# Build
+go build -o tessera ./cmd/analyst/
+
+# Or run directly
+go run ./cmd/analyst/ <command>
+```
+
+### CLI Commands
+
+```bash
+./tessera status              # Cek koneksi semua data source
+./tessera providers           # Lihat AI provider chain
+./tessera list-projects -e 5  # List project Octant per epoch
+./tessera analyze-epoch -e 5  # Analisis kuantitatif (clustering, scoring)
+./tessera evaluate "Name" -d "desc"  # Evaluasi kualitatif via AI
+./tessera detect-anomalies -e 5      # Deteksi anomali funding/sybil
+./tessera gitcoin-rounds -r ID       # Analisis round Gitcoin
+./tessera extract-metrics "text"     # Ekstrak metrik impact dari teks
+```
+
+### Data Sources
+
+| Source | Type | Data |
+|--------|------|------|
+| **Octant API** | REST | Projects, allocations, rewards, epochs, patrons, budgets, leverage, threshold |
+| **Gitcoin Grants Stack** | GraphQL | Rounds, applications, donations, matching |
+| **Open Source Observer** | GraphQL | GitHub metrics, on-chain activity, ecosystem data |
+
+### Fitur Analisis
+
+**Kuantitatif:**
+- K-means clustering (mengelompokkan project berdasar profil serupa)
+- Composite scoring (skor gabungan 0-100, normalized, 40% allocated + 60% matched)
+- Anomaly detection (whale concentration, coordinated donation patterns dengan smart threshold)
+- Wei-to-ETH conversion untuk semua funding data
+
+**Kualitatif (via AI):**
+- Evaluasi project proposal (8 dimensi: Impact, Team, Innovation, Sustainability, Ecosystem, Transparency, Community, Risk)
+- Perbandingan multi-project
+- Analisis sentimen komunitas
+- Ekstraksi metrik impact dari teks
+
+### OpenClaw Skill
+
+Skill `public-goods-analyst` tersedia di `skills/public-goods-analyst/SKILL.md`:
+- User-invocable sebagai slash command
+- Gating: butuh `tessera` binary (Go compiled)
+- Auto-build via `go build -o tessera ./cmd/analyst/`
+- Bisa dipublish ke ClawHub: `npx clawhub@latest`
+- Compatible dengan OpenClaw, Claude Code, dan Gemini CLI
+
+---
+
+## Environment Variables
+
+```bash
+# Hackathon (required)
+SYNTHESIS_API_KEY=sk-synth-...
+SYNTHESIS_PARTICIPANT_ID=...
+SYNTHESIS_TEAM_ID=...
+
+# AI Providers (minimal 1)
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=...
+OPENAI_API_KEY=sk-...
+ANTIGRAVITY_URL=http://localhost:8080
+
+# Model overrides (optional)
+CLAUDE_MODEL=claude-sonnet-4-6
+GEMINI_MODEL=gemini-2.0-flash
+OPENAI_MODEL=gpt-4o
+ANTIGRAVITY_MODEL=claude-sonnet-4-5-thinking
+
+# Data source (optional)
+OSO_API_KEY=...
+```
+
+---
+
+## Submission Checklist
+
+- [x] Registrasi hackathon (ERC-8004 on-chain identity)
+- [ ] Setup GitHub repo (public)
+- [ ] Self-custody transfer (butuh wallet address)
+- [ ] Create project draft via API
+- [ ] Post di Moltbook (https://www.moltbook.com/skill.md)
+- [ ] Tambah conversationLog (log kolaborasi human-agent)
+- [ ] Publish project
+- [ ] Verifikasi di `GET /projects` listing
+
+---
+
+## Octant Context
+
+**Octant** adalah platform public goods funding oleh Golem Foundation:
+- Stake 100,000 ETH sebagai validator
+- Setiap 90 hari (epoch), staking reward dibagi ke project via quadratic funding
+- User lock GLM token, lalu alokasi reward ke project pilihan
+- Total ~$5M sudah didistribusi ke 60+ project
+
+**Problem yang dipecahkan:**
+Evaluator public goods menghadapi cognitive overload — tidak bisa scale analisis ke puluhan project dengan metrik beragam. Data kualitatif (proposal, diskusi forum) sangat sulit dinilai manual. Agent ini mengotomasi analisis kuantitatif dan kualitatif untuk membantu evaluator.
+
+**Pain points utama:**
+- Cognitive overload (terlalu banyak project, terlalu sedikit waktu)
+- Sybil attacks pada quadratic funding
+- Sulit mengukur impact secara counterfactual
+- Whale concentration mendistorsi funding
+- Data kualitatif tidak bisa di-scale manual
+
+---
+
+## Useful Links
+
+- **Hackathon:** https://synthesis.devfolio.co
+- **Skill API:** https://synthesis.devfolio.co/skill.md
+- **Submission Skill:** https://synthesis.devfolio.co/submission/skill.md
+- **Themes:** https://synthesis.devfolio.co/themes.md
+- **Prize Catalog:** https://synthesis.devfolio.co/catalog/prizes.md
+- **Wallet Setup:** https://synthesis.devfolio.co/wallet-setup/skill.md
+- **Moltbook Skill:** https://www.moltbook.com/skill.md
+- **Telegram Updates:** https://nsb.dev/synthesis-updates
+- **Octant Docs:** https://docs.octant.app/en-EN/how-it-works.html
+- **Octant GitHub:** https://github.com/golemfoundation/octant
+- **OSO Octant Analytics:** https://docs.oso.xyz/blog/octant-2024-grant-analytics/
+- **ERC-8004:** https://eips.ethereum.org/EIPS/eip-8004
+- **OpenClaw Docs:** https://docs.openclaw.ai/skills
+- **ClawHub:** https://clawhub.ai
+- **EthSkills:** https://ethskills.com/SKILL.md
+
+---
+
+## Rules Hackathon
+
+1. Ship something yang works (demo, prototype, deployed contract)
+2. Agent harus real participant, bukan wrapper
+3. Semua on-chain counts (contracts, ERC-8004, attestations)
+4. Open source required (repo public sebelum deadline)
+5. Dokumentasikan proses (conversationLog = kolaborasi human-agent)
