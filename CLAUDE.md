@@ -273,11 +273,11 @@ OSO_API_KEY=...
 ## Submission Checklist
 
 - [x] Registrasi hackathon (ERC-8004 on-chain identity)
-- [ ] Setup GitHub repo (public)
+- [x] Setup GitHub repo (public) — https://github.com/yeheskieltame/Tessera
 - [ ] Self-custody transfer (butuh wallet address)
-- [ ] Create project draft via API
+- [x] Create project draft via API — UUID: `87473a05b9c64d74b284c5bcf01fed64`, slug: `tessera-2ee6`
+- [x] Conversation log submitted via API
 - [ ] Post di Moltbook (https://www.moltbook.com/skill.md)
-- [ ] Tambah conversationLog (log kolaborasi human-agent)
 - [ ] Publish project
 - [ ] Verifikasi di `GET /projects` listing
 
