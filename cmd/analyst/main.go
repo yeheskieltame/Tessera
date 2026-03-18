@@ -56,6 +56,8 @@ func main() {
 		cmdScanProposal(ctx)
 	case "report-epoch":
 		cmdReportEpoch(ctx)
+	case "collect-signals":
+		cmdCollectSignals(ctx)
 	case "moltbook":
 		cmdMoltbook(ctx)
 	case "heartbeat":
@@ -104,6 +106,8 @@ COMMANDS:
     -d <description>    Proposal text (required)
   report-epoch        Generate full epoch intelligence report
     -e <epoch>          Epoch number (required)
+  collect-signals     Collect OSO signals for a project (code, on-chain, funding)
+    <project-name>      OSO project name (required)
   moltbook            Interact with Moltbook (social network for AI agents)
     post <title>        Create a post (-d <content> required)
     reply <post-id>     Reply to a post (-d <content> required)
@@ -601,8 +605,20 @@ func cmdDeepEval(ctx context.Context) {
 		return
 	}
 
+	// Optionally collect OSO signals
+	osoMetrics := ""
+	osoName := flagString("-n", 0)
+	if osoName != "" {
+		oso := data.NewOSOClient()
+		signals := oso.CollectProjectSignals(ctx, osoName)
+		osoMetrics = signals.FormatSignals()
+		if osoMetrics != "" && osoMetrics != "No OSO data available for this project." {
+			fmt.Printf("OSO signals collected for %s\n", osoName)
+		}
+	}
+
 	fmt.Printf("Found data in %d epochs. Running deep evaluation...\n", len(history))
-	result, err := analysis.DeepEvaluateProject(ctx, ai, address, history, "")
+	result, err := analysis.DeepEvaluateProject(ctx, ai, address, history, osoMetrics)
 	exitOnErr(err)
 
 	fmt.Printf("\n══════ Deep Evaluation: %s ══════\n\n", address)
@@ -846,6 +862,46 @@ Be concise and data-driven.`, epoch, context.String())
 	}
 
 	fmt.Println()
+}
+
+// --- collect-signals ---
+
+func cmdCollectSignals(ctx context.Context) {
+	projectName := flagString("", 0)
+	if projectName == "" {
+		fmt.Fprintln(os.Stderr, "Usage: tessera collect-signals <project-name>")
+		os.Exit(1)
+	}
+
+	oso := data.NewOSOClient()
+	fmt.Printf("Collecting OSO signals for: %s\n\n", projectName)
+
+	signals := oso.CollectProjectSignals(ctx, projectName)
+	formatted := signals.FormatSignals()
+	fmt.Println(formatted)
+
+	// AI analysis if available
+	ai := provider.New()
+	if ai.HasProviders() && (signals.Code != nil || signals.Onchain != nil || signals.Funding != nil) {
+		fmt.Println("Generating signal analysis...")
+		prompt := fmt.Sprintf(`Analyze these Open Source Observer (OSO) signals for the project "%s":
+
+%s
+
+Provide:
+1. **Development Health**: Is the project actively maintained? How does contributor activity compare to similar projects?
+2. **On-Chain Traction**: Is there real usage? Are users returning or one-time?
+3. **Funding Efficiency**: How does funding received compare to development output?
+4. **Legitimacy Signals**: What signals suggest this is a legitimate public good vs. potential gaming?
+5. **Red Flags**: Any concerning patterns in the data?
+
+Be specific and reference the numbers.`, projectName, formatted)
+
+		result, err := ai.Complete(ctx, prompt, "You are a public goods data analyst specializing in cross-referencing GitHub activity, on-chain metrics, and funding data to assess project legitimacy.")
+		if err == nil {
+			fmt.Printf("\n%s\n\n[via %s/%s]\n", result.Text, result.Provider, result.Model)
+		}
+	}
 }
 
 // --- moltbook ---
