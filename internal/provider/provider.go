@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -39,7 +41,11 @@ func New() *Chain {
 func (c *Chain) buildChain() {
 	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
 		model := envOr("CLAUDE_MODEL", "claude-sonnet-4-6")
-		c.backends = append(c.backends, backend{Name: "claude", Model: model, Call: c.callClaude})
+		c.backends = append(c.backends, backend{Name: "claude-api", Model: model, Call: c.callClaude})
+	}
+	if claudeCLIAvailable() {
+		model := envOr("CLAUDE_CLI_MODEL", "sonnet")
+		c.backends = append(c.backends, backend{Name: "claude-cli", Model: model, Call: callClaudeCLI})
 	}
 	if key := os.Getenv("GEMINI_API_KEY"); key != "" {
 		model := envOr("GEMINI_MODEL", "gemini-2.0-flash")
@@ -113,6 +119,49 @@ func (c *Chain) callClaude(ctx context.Context, prompt, system, model string) (s
 		return "", fmt.Errorf("empty response from Claude")
 	}
 	return result.Content[0].Text, nil
+}
+
+// --- Claude CLI (Max plan via `claude --print`) ---
+
+func claudeCLIAvailable() bool {
+	// Check if claude binary exists and is not disabled
+	if os.Getenv("CLAUDE_CLI_DISABLED") == "true" {
+		return false
+	}
+	_, err := exec.LookPath("claude")
+	return err == nil
+}
+
+func callClaudeCLI(ctx context.Context, prompt, system, model string) (string, error) {
+	args := []string{
+		"--print",
+		"--model", model,
+		"--output-format", "text",
+	}
+	if system != "" {
+		args = append(args, "--append-system-prompt", system)
+	}
+
+	cmd := exec.CommandContext(ctx, "claude", args...)
+	cmd.Stdin = strings.NewReader(prompt)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		errMsg := stderr.String()
+		if errMsg == "" {
+			errMsg = err.Error()
+		}
+		return "", fmt.Errorf("claude-cli: %s", errMsg)
+	}
+
+	text := strings.TrimSpace(stdout.String())
+	if text == "" {
+		return "", fmt.Errorf("empty response from claude-cli")
+	}
+	return text, nil
 }
 
 // --- Gemini ---

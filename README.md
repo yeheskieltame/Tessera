@@ -76,10 +76,12 @@ flowchart LR
     A[Project Description] --> B[Build Evaluation Prompt]
     B --> C{AI Provider Chain}
     C -->|Try 1| D[Claude API]
+    C -->|Try 2| D2[Claude CLI / Max Plan]
     C -->|Fallback| E[Gemini API]
     C -->|Fallback| F[OpenAI API]
     C -->|Fallback| G[Antigravity Proxy]
     D --> H[8-Dimension Scored Evaluation]
+    D2 --> H
     E --> H
     F --> H
     G --> H
@@ -154,11 +156,16 @@ Edit `.env`:
 
 ```bash
 # AI Providers — at least one required for qualitative features
-# Tried in order: Claude -> Gemini -> OpenAI -> Antigravity
+# Tried in order: Claude API -> Claude CLI -> Gemini -> OpenAI -> Antigravity
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 OPENAI_API_KEY=sk-...
 ANTIGRAVITY_URL=http://localhost:8080
+
+# Claude CLI is auto-detected if `claude` binary exists (Max plan)
+# No API key needed. Disable with:
+# CLAUDE_CLI_DISABLED=true
+# CLAUDE_CLI_MODEL=sonnet
 
 # Optional: override default models
 # CLAUDE_MODEL=claude-sonnet-4-6
@@ -340,14 +347,15 @@ graph TD
 
 Tessera tries AI providers in sequence. If a provider fails (rate limit, network error, invalid key), it automatically falls back to the next available provider.
 
-| Priority | Provider | API | Default Model |
-|----------|----------|-----|---------------|
-| 1 | Claude | Anthropic Messages API | claude-sonnet-4-6 |
-| 2 | Gemini | Google Generative AI | gemini-2.0-flash |
-| 3 | OpenAI | Chat Completions API | gpt-4o |
-| 4 | Antigravity | Claude-compatible proxy | claude-sonnet-4-5-thinking |
+| Priority | Provider | Method | Default Model | Activation |
+|----------|----------|--------|---------------|------------|
+| 1 | Claude API | Anthropic Messages API | claude-sonnet-4-6 | `ANTHROPIC_API_KEY` set |
+| 2 | Claude CLI | `claude --print` subprocess | sonnet | `claude` binary found on PATH |
+| 3 | Gemini | Google Generative AI | gemini-2.0-flash | `GEMINI_API_KEY` set |
+| 4 | OpenAI | Chat Completions API | gpt-4o | `OPENAI_API_KEY` set |
+| 5 | Antigravity | Claude-compatible proxy | claude-sonnet-4-5-thinking | `ANTIGRAVITY_URL` set |
 
-Each provider is only added to the chain if its corresponding environment variable is set.
+Claude CLI is auto-detected: if the `claude` binary exists (Claude Code / Max plan), it is added to the chain without any API key. Set `CLAUDE_CLI_DISABLED=true` to skip it. Override the model with `CLAUDE_CLI_MODEL` (default: `sonnet`, options: `opus`, `sonnet`, `haiku`).
 
 ### OpenClaw Skill
 

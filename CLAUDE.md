@@ -183,10 +183,11 @@ synthesis/
 
 Provider dicoba berurutan. Jika gagal, otomatis pindah ke berikutnya:
 
-1. **Claude API** (`ANTHROPIC_API_KEY`) — primary
-2. **Google Gemini** (`GEMINI_API_KEY`) — fallback 1
-3. **OpenAI** (`OPENAI_API_KEY`) — fallback 2
-4. **Antigravity Proxy** (`ANTIGRAVITY_URL`) — fallback 3 (Claude via Google Antigravity)
+1. **Claude API** (`ANTHROPIC_API_KEY`) — primary, direct API
+2. **Claude CLI** (auto-detected) — uses `claude --print`, Max plan subscription, no API key needed
+3. **Google Gemini** (`GEMINI_API_KEY`) — fallback
+4. **OpenAI** (`OPENAI_API_KEY`) — fallback
+5. **Antigravity Proxy** (`ANTIGRAVITY_URL`) — fallback (Claude via Google Antigravity)
 
 ### Build & Run
 
@@ -257,6 +258,10 @@ ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 OPENAI_API_KEY=sk-...
 ANTIGRAVITY_URL=http://localhost:8080
+
+# Claude CLI (auto-detected if `claude` binary exists)
+# CLAUDE_CLI_DISABLED=true
+# CLAUDE_CLI_MODEL=sonnet
 
 # Model overrides (optional)
 CLAUDE_MODEL=claude-sonnet-4-6
