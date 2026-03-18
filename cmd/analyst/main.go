@@ -56,6 +56,8 @@ func main() {
 		cmdScanProposal(ctx)
 	case "report-epoch":
 		cmdReportEpoch(ctx)
+	case "analyze-project":
+		cmdAnalyzeProject(ctx)
 	case "collect-signals":
 		cmdCollectSignals(ctx)
 	case "moltbook":
@@ -106,6 +108,10 @@ COMMANDS:
     -d <description>    Proposal text (required)
   report-epoch        Generate full epoch intelligence report
     -e <epoch>          Epoch number (required)
+  analyze-project     Full intelligence report for a single project (one command, all data)
+    <address>           Octant project address (required)
+    -e <epoch>          Epoch to analyze (default: latest with data)
+    -n <oso-name>       OSO project name for cross-referencing (optional)
   collect-signals     Collect OSO signals for a project (code, on-chain, funding)
     <project-name>      OSO project name (required)
   moltbook            Interact with Moltbook (social network for AI agents)
@@ -660,20 +666,36 @@ func cmdSimulate(ctx context.Context) {
 
 	fmt.Printf("Simulating funding mechanisms for Epoch %d (%d allocations)...\n\n", epoch, len(inputs))
 
+	// Build trust scores from allocation data for trust-weighted QF
+	projects := make([]string, len(allocations))
+	donors := make([]string, len(allocations))
+	amounts := make([]float64, len(inputs))
+	for i, a := range allocations {
+		projects[i] = a.Project
+		donors[i] = a.Donor
+		amounts[i] = inputs[i].Amount
+	}
+	trustProfiles := analysis.BuildTrustProfiles(projects, amounts, donors, nil)
+	trustScores := map[string]float64{}
+	for _, tp := range trustProfiles {
+		trustScores[tp.Address] = tp.DonorDiversity
+	}
+
 	original := analysis.SimulateStandardQF(inputs)
 	original.Name = "Original (Standard QF)"
 	capped := analysis.SimulateCappedQF(inputs, 0.10)
 	equal := analysis.SimulateEqualWeight(inputs)
+	trustWeighted := analysis.SimulateTrustWeightedQF(inputs, trustScores)
 
 	// Print comparison
-	table := analysis.CompareDistributions(original, []analysis.MechanismResult{capped, equal})
+	table := analysis.CompareDistributions(original, []analysis.MechanismResult{capped, equal, trustWeighted})
 	fmt.Println(table)
 
 	// AI analysis
 	ai := provider.New()
 	if ai.HasProviders() {
 		fmt.Println("Generating mechanism analysis...")
-		result, err := analysis.AnalyzeMechanisms(ctx, ai, original, []analysis.MechanismResult{capped, equal}, epoch)
+		result, err := analysis.AnalyzeMechanisms(ctx, ai, original, []analysis.MechanismResult{capped, equal, trustWeighted}, epoch)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "AI analysis failed: %v\n", err)
 			return
@@ -862,6 +884,224 @@ Be concise and data-driven.`, epoch, context.String())
 	}
 
 	fmt.Println()
+}
+
+// --- analyze-project (killer demo: one command, full intelligence) ---
+
+func cmdAnalyzeProject(ctx context.Context) {
+	address := flagString("", 0)
+	if address == "" {
+		fmt.Fprintln(os.Stderr, "Usage: tessera analyze-project <address> [-e <epoch>] [-n <oso-name>]")
+		os.Exit(1)
+	}
+
+	ai := provider.New()
+	if !ai.HasProviders() {
+		fmt.Fprintln(os.Stderr, "No AI providers configured.")
+		os.Exit(1)
+	}
+
+	octant := data.NewOctantClient()
+	osoName := flagString("-n", 0)
+
+	fmt.Printf("══════ Full Intelligence Report: %s ══════\n\n", address)
+
+	// Step 1: Find which epochs this project appears in
+	fmt.Println("[1/6] Fetching cross-epoch funding history...")
+	ep, err := octant.GetCurrentEpoch(ctx)
+	exitOnErr(err)
+
+	history, err := octant.GetProjectHistory(ctx, address, 1, ep.CurrentEpoch)
+	exitOnErr(err)
+
+	if len(history) == 0 {
+		fmt.Println("Project not found in any Octant epoch.")
+		return
+	}
+
+	fmt.Printf("  Found in %d epochs\n", len(history))
+	for _, h := range history {
+		fmt.Printf("  Epoch %d: %.4f allocated + %.4f matched, %d donors\n",
+			h.Epoch, h.Allocated, h.Matched, h.Donors)
+	}
+
+	// Use latest epoch with data, or user-specified
+	epoch := flagInt("-e", 0)
+	if epoch == 0 {
+		epoch = history[len(history)-1].Epoch
+	}
+
+	// Step 2: Quantitative scoring in that epoch
+	fmt.Printf("\n[2/6] Quantitative analysis (Epoch %d)...\n", epoch)
+	rewards, err := octant.GetProjectRewards(ctx, epoch)
+	exitOnErr(err)
+
+	metrics := make([]analysis.ProjectMetrics, len(rewards))
+	for i, r := range rewards {
+		alloc := analysis.WeiToEth(r.Allocated)
+		matched := analysis.WeiToEth(r.Matched)
+		metrics[i] = analysis.ProjectMetrics{
+			Address:      r.Address,
+			Allocated:    alloc,
+			Matched:      matched,
+			TotalFunding: alloc + matched,
+		}
+	}
+	metrics = analysis.ComputeCompositeScores(metrics)
+	sort.Slice(metrics, func(i, j int) bool { return metrics[i].CompositeScore > metrics[j].CompositeScore })
+
+	// Find this project's rank
+	var projectMetric analysis.ProjectMetrics
+	projectRank := 0
+	for i, m := range metrics {
+		if strings.EqualFold(m.Address, address) {
+			projectMetric = m
+			projectRank = i + 1
+			break
+		}
+	}
+	if projectRank > 0 {
+		fmt.Printf("  Rank: %d/%d | Score: %.1f | Allocated: %.4f ETH | Matched: %.4f ETH\n",
+			projectRank, len(metrics), projectMetric.CompositeScore, projectMetric.Allocated, projectMetric.Matched)
+	}
+
+	// Step 3: Trust profile
+	fmt.Printf("\n[3/6] Trust graph analysis...\n")
+	allocations, err := octant.GetAllocations(ctx, epoch)
+	exitOnErr(err)
+
+	allProjects := make([]string, len(allocations))
+	allDonors := make([]string, len(allocations))
+	allAmounts := make([]float64, len(allocations))
+	for i, a := range allocations {
+		allProjects[i] = a.Project
+		allDonors[i] = a.Donor
+		n := new(big.Int)
+		n.SetString(a.Amount, 10)
+		f := new(big.Float).SetInt(n)
+		eth, _ := new(big.Float).Quo(f, big.NewFloat(1e18)).Float64()
+		allAmounts[i] = eth
+	}
+
+	var prevDonors map[string]bool
+	if epoch > 1 {
+		prevAllocs, _ := octant.GetAllocations(ctx, epoch-1)
+		if prevAllocs != nil {
+			prevDonors = map[string]bool{}
+			for _, a := range prevAllocs {
+				prevDonors[a.Donor] = true
+			}
+		}
+	}
+
+	trustProfiles := analysis.BuildTrustProfiles(allProjects, allAmounts, allDonors, prevDonors)
+	var projectTrust *analysis.TrustProfile
+	for i, tp := range trustProfiles {
+		if strings.EqualFold(tp.Address, address) {
+			projectTrust = &trustProfiles[i]
+			break
+		}
+	}
+
+	if projectTrust != nil {
+		fmt.Printf("  Donors: %d | Diversity: %.3f | Whale dep: %.1f%% | Coord risk: %.3f | Repeat: %d\n",
+			projectTrust.UniqueDonors, projectTrust.DonorDiversity, projectTrust.WhaleDepRatio*100,
+			projectTrust.CoordinationRisk, projectTrust.RepeatDonors)
+		for _, f := range projectTrust.Flags {
+			fmt.Printf("  Flag: %s\n", f)
+		}
+	}
+
+	// Step 4: Mechanism impact
+	fmt.Printf("\n[4/6] Mechanism simulation impact...\n")
+	inputs := make([]analysis.AllocationInput, len(allocations))
+	for i := range allocations {
+		inputs[i] = analysis.AllocationInput{Donor: allDonors[i], Project: allProjects[i], Amount: allAmounts[i]}
+	}
+	trustScores := map[string]float64{}
+	for _, tp := range trustProfiles {
+		trustScores[tp.Address] = tp.DonorDiversity
+	}
+
+	original := analysis.SimulateStandardQF(inputs)
+	capped := analysis.SimulateCappedQF(inputs, 0.10)
+	equal := analysis.SimulateEqualWeight(inputs)
+	trustWeighted := analysis.SimulateTrustWeightedQF(inputs, trustScores)
+
+	// Find this project in each mechanism
+	findProject := func(mech analysis.MechanismResult) *analysis.SimulatedProject {
+		for _, p := range mech.Projects {
+			if strings.EqualFold(p.Address, address) {
+				return &p
+			}
+		}
+		return nil
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "  MECHANISM\tALLOCATED\tCHANGE")
+	fmt.Fprintln(w, "  ---------\t---------\t------")
+	for _, mech := range []analysis.MechanismResult{original, capped, equal, trustWeighted} {
+		p := findProject(mech)
+		if p != nil {
+			fmt.Fprintf(w, "  %s\t%.4f ETH\t%+.1f%%\n", mech.Name, p.Allocated, p.Change)
+		}
+	}
+	w.Flush()
+
+	// Step 5: OSO signals (optional)
+	osoMetrics := ""
+	if osoName != "" {
+		fmt.Printf("\n[5/6] Collecting OSO signals (%s)...\n", osoName)
+		oso := data.NewOSOClient()
+		signals := oso.CollectProjectSignals(ctx, osoName)
+		osoMetrics = signals.FormatSignals()
+		if osoMetrics != "No OSO data available for this project." {
+			fmt.Println(osoMetrics)
+		} else {
+			fmt.Println("  OSO API unavailable or no data found.")
+			osoMetrics = ""
+		}
+	} else {
+		fmt.Printf("\n[5/6] OSO signals skipped (use -n <oso-name> to enable)\n")
+	}
+
+	// Step 6: AI synthesis
+	fmt.Printf("\n[6/6] Generating AI deep evaluation...\n")
+
+	var contextData strings.Builder
+	contextData.WriteString(fmt.Sprintf("Project: %s\n", address))
+	contextData.WriteString(fmt.Sprintf("Rank: %d/%d (Epoch %d) | Score: %.1f\n", projectRank, len(metrics), epoch, projectMetric.CompositeScore))
+	if projectTrust != nil {
+		contextData.WriteString(fmt.Sprintf("Trust: diversity=%.3f, whale_dep=%.1f%%, coord_risk=%.3f, repeat_donors=%d/%d\n",
+			projectTrust.DonorDiversity, projectTrust.WhaleDepRatio*100, projectTrust.CoordinationRisk, projectTrust.RepeatDonors, projectTrust.UniqueDonors))
+		for _, f := range projectTrust.Flags {
+			contextData.WriteString(fmt.Sprintf("Trust flag: %s\n", f))
+		}
+	}
+	contextData.WriteString(fmt.Sprintf("Mechanism impact: Standard QF → Capped QF %+.1f%%, Equal Weight %+.1f%%, Trust-Weighted %+.1f%%\n",
+		findProject(capped).Change, findProject(equal).Change, findProject(trustWeighted).Change))
+
+	// Combine with deep eval
+	result, err := analysis.DeepEvaluateProject(ctx, ai, address, history, osoMetrics+"\n\n"+contextData.String())
+	exitOnErr(err)
+
+	fmt.Printf("\n── AI Deep Evaluation ──\n\n%s\n\n[via %s/%s]\n\n", result.Evaluation, result.Provider, result.Model)
+
+	// Save report
+	report.Generate(address, map[string]string{
+		"rank":            fmt.Sprintf("%d/%d", projectRank, len(metrics)),
+		"composite_score": fmt.Sprintf("%.1f", projectMetric.CompositeScore),
+		"allocated_eth":   fmt.Sprintf("%.4f", projectMetric.Allocated),
+		"matched_eth":     fmt.Sprintf("%.4f", projectMetric.Matched),
+		"donor_diversity": fmt.Sprintf("%.3f", projectTrust.DonorDiversity),
+		"whale_dependency": fmt.Sprintf("%.1f%%", projectTrust.WhaleDepRatio*100),
+	}, map[string]string{
+		"evaluation": result.Evaluation,
+		"model":      result.Model,
+		"provider":   result.Provider,
+	}, nil)
+	fmt.Println("Report saved to reports/")
 }
 
 // --- collect-signals ---

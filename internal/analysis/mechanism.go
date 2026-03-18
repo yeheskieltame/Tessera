@@ -153,6 +153,53 @@ func SimulateEqualWeight(allocations []AllocationInput) MechanismResult {
 	return result
 }
 
+// SimulateTrustWeightedQF applies quadratic funding with trust scores as multipliers.
+// Projects with higher trust (diverse, organic donor bases) receive a boost;
+// projects with low trust (whale-dominated, coordinated) get penalized.
+// This is a novel mechanism that combines QF's preference aggregation with
+// graph-theoretic trust signals to resist both whale domination and sybil attacks.
+func SimulateTrustWeightedQF(allocations []AllocationInput, trustScores map[string]float64) MechanismResult {
+	projectDonors := groupByProject(allocations)
+
+	// Standard QF scores first
+	qfScores := make(map[string]float64)
+	for proj, donors := range projectDonors {
+		var sqrtSum float64
+		for _, amount := range donors {
+			sqrtSum += math.Sqrt(amount)
+		}
+		qfScores[proj] = sqrtSum * sqrtSum
+	}
+
+	// Apply trust multiplier: score = qf_score * (0.5 + 0.5 * trust)
+	// Trust of 1.0 (perfect) → multiplier 1.0 (no change)
+	// Trust of 0.0 (worst) → multiplier 0.5 (halved)
+	// This ensures no project is zeroed out, but low-trust projects lose up to 50%
+	scores := make(map[string]float64)
+	var totalScore float64
+	for proj, qf := range qfScores {
+		trust := 0.5 // default if no trust score available
+		if t, ok := trustScores[proj]; ok {
+			trust = t
+		}
+		multiplier := 0.5 + 0.5*trust
+		score := qf * multiplier
+		scores[proj] = score
+		totalScore += score
+	}
+
+	totalPool := totalFundingPool(allocations)
+	projects := buildSimulatedProjects(scores, totalScore, totalPool, projectDonors)
+
+	result := MechanismResult{
+		Name:        "Trust-Weighted QF",
+		Description: "Quadratic funding modulated by trust scores from donor graph analysis. Projects with diverse, organic donor bases receive full matching; whale-dominated or coordinated projects are penalized up to 50%. Combines QF preference aggregation with sybil resistance.",
+		Projects:    projects,
+	}
+	fillStats(&result)
+	return result
+}
+
 // ---------- Gini Coefficient ----------
 
 // ComputeGini calculates the Gini coefficient for a set of values.

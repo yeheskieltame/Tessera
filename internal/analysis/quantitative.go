@@ -209,6 +209,81 @@ func DetectAnomalies(donors []string, amounts []float64) *AnomalyReport {
 	return r
 }
 
+// --- Cross-Reference Scoring ---
+
+// CrossRefSignal represents a cross-referenced signal between funding and activity data.
+type CrossRefSignal struct {
+	Address        string
+	FundingETH     float64
+	DonorCount     int
+	GitHubActive   bool    // has recent commits/PRs
+	CommitCount    float64 // 6 months
+	Contributors   float64
+	OnchainTxCount float64 // 6 months
+	OnchainUsers   float64 // 90 days
+	Signal         string  // "healthy", "overfunded", "underfunded", "inactive", "suspicious"
+	Explanation    string
+}
+
+// CrossReferenceSignals compares Octant funding data with OSO development/on-chain metrics
+// to identify projects that are overfunded relative to activity, underfunded despite high
+// activity, or showing suspicious patterns.
+func CrossReferenceSignals(
+	fundingMetrics []ProjectMetrics,
+	codeActivity map[string][2]float64, // address -> [commitCount6m, contributorCount]
+	onchainActivity map[string][2]float64, // address -> [txCount6m, userCount90d]
+) []CrossRefSignal {
+	var signals []CrossRefSignal
+
+	for _, fm := range fundingMetrics {
+		sig := CrossRefSignal{
+			Address:    fm.Address,
+			FundingETH: fm.TotalFunding,
+			DonorCount: fm.DonorCount,
+		}
+
+		code, hasCode := codeActivity[fm.Address]
+		if hasCode {
+			sig.CommitCount = code[0]
+			sig.Contributors = code[1]
+			sig.GitHubActive = code[0] > 10 // at least 10 commits in 6 months
+		}
+
+		chain, hasChain := onchainActivity[fm.Address]
+		if hasChain {
+			sig.OnchainTxCount = chain[0]
+			sig.OnchainUsers = chain[1]
+		}
+
+		// Classify signal
+		highFunding := fm.CompositeScore > 50 // top half by score
+		hasActivity := (hasCode && sig.CommitCount > 10) || (hasChain && sig.OnchainTxCount > 100)
+		lowActivity := (hasCode && sig.CommitCount < 5) && (!hasChain || sig.OnchainTxCount < 10)
+
+		switch {
+		case highFunding && hasActivity:
+			sig.Signal = "healthy"
+			sig.Explanation = "High funding matched by active development/on-chain usage"
+		case highFunding && lowActivity:
+			sig.Signal = "overfunded"
+			sig.Explanation = "Receives significant funding but shows minimal development or on-chain activity — investigate"
+		case !highFunding && hasActivity:
+			sig.Signal = "underfunded"
+			sig.Explanation = "Active development/usage but receives below-average funding — potential undervalued public good"
+		case highFunding && !hasCode && !hasChain:
+			sig.Signal = "unverified"
+			sig.Explanation = "Significant funding but no OSO data available to verify activity"
+		default:
+			sig.Signal = "neutral"
+			sig.Explanation = "Moderate funding with limited activity data"
+		}
+
+		signals = append(signals, sig)
+	}
+
+	return signals
+}
+
 // --- helpers ---
 
 func normalize(val, minV, maxV float64) float64 {
