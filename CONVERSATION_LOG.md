@@ -178,6 +178,27 @@ All pushed to GitHub (commits `b975f34`, `61031b4`).
 
 **Agent:** Updated CONVERSATION_LOG.md with phases 9-12 and synced to hackathon API via `POST /projects/:projectUUID`.
 
+### Phase 13: README Rewrite with System Diagrams
+
+**Human:** Requested README rewrite: must explain how the system works (flow, input, processing, output), with tables and Mermaid diagrams. No ASCII art, no emoji.
+
+**Agent:** Rewrote README.md with:
+- 3 Mermaid diagrams: system flow, quantitative pipeline, qualitative pipeline, module architecture
+- Data flow table per command (input -> processing -> output)
+- Evaluation dimensions table (8 dimensions)
+- Anomaly detection logic table (thresholds, flag conditions)
+- Data sources table (protocol, base URL, available data)
+- Module responsibilities table
+- Multi-model fallback chain table with priorities
+- Real example outputs for analyze-epoch and detect-anomalies
+- Problem/solution mapping table
+
+### Phase 14: .env.example Fix
+
+**Human:** Pointed out .env.example was missing hackathon variables (SYNTHESIS_API_KEY, PARTICIPANT_ID, TEAM_ID, PROJECT_UUID) which are required for the project.
+
+**Agent:** Updated .env.example with hackathon section. Also reviewed full submission skill docs from synthesis.devfolio.co/submission/skill.md to verify all requirements.
+
 ---
 
 ## Key Decisions Made Together
