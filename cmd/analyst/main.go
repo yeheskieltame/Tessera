@@ -43,6 +43,16 @@ func main() {
 		cmdGitcoinRounds(ctx)
 	case "extract-metrics":
 		cmdExtractMetrics(ctx)
+	case "trust-graph":
+		cmdTrustGraph(ctx)
+	case "deep-eval":
+		cmdDeepEval(ctx)
+	case "simulate":
+		cmdSimulate(ctx)
+	case "scan-proposal":
+		cmdScanProposal(ctx)
+	case "report-epoch":
+		cmdReportEpoch(ctx)
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -75,7 +85,18 @@ COMMANDS:
     -r <round-id>       Round ID (required)
     --chain <id>        Chain ID (default: 1)
   extract-metrics     Extract impact metrics from text using AI
-    <text>              Text to analyze (required)`)
+    <text>              Text to analyze (required)
+  trust-graph         Analyze donor trust graph for an epoch
+    -e <epoch>          Epoch number (required)
+  deep-eval           Deep multi-epoch evaluation of a project
+    <address>           Project address (required)
+  simulate            Simulate alternative funding mechanisms
+    -e <epoch>          Epoch number (required)
+  scan-proposal       Scan and verify a project proposal
+    <name>              Project name (required)
+    -d <description>    Proposal text (required)
+  report-epoch        Generate full epoch intelligence report
+    -e <epoch>          Epoch number (required)`)
 }
 
 // --- status ---
@@ -379,7 +400,7 @@ func cmdExtractMetrics(ctx context.Context) {
 	result, err := analysis.ExtractImpactMetrics(ctx, ai, text)
 	exitOnErr(err)
 
-	fmt.Println("\n══════ Extracted Impact Metrics ══════\n")
+	fmt.Println("\n══════ Extracted Impact Metrics ══════")
 	fmt.Println(result.Evaluation)
 	fmt.Printf("\n[via %s/%s]\n", result.Provider, result.Model)
 }
@@ -443,4 +464,372 @@ func exitOnErr(err error) {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// --- trust-graph ---
+
+func cmdTrustGraph(ctx context.Context) {
+	epoch := flagInt("-e", 0)
+	if epoch == 0 {
+		fmt.Fprintln(os.Stderr, "Error: -e <epoch> is required")
+		os.Exit(1)
+	}
+
+	octant := data.NewOctantClient()
+	allocations, err := octant.GetAllocations(ctx, epoch)
+	exitOnErr(err)
+
+	if len(allocations) == 0 {
+		fmt.Println("No allocation data found.")
+		return
+	}
+
+	// Extract parallel slices for BuildTrustProfiles
+	projects := make([]string, len(allocations))
+	donors := make([]string, len(allocations))
+	amounts := make([]float64, len(allocations))
+	for i, a := range allocations {
+		projects[i] = a.Project
+		donors[i] = a.Donor
+		n := new(big.Int)
+		n.SetString(a.Amount, 10)
+		f := new(big.Float).SetInt(n)
+		eth, _ := new(big.Float).Quo(f, big.NewFloat(1e18)).Float64()
+		amounts[i] = eth
+	}
+
+	// Get previous epoch donors for repeat detection
+	var prevDonors map[string]bool
+	if epoch > 1 {
+		prevAllocs, err := octant.GetAllocations(ctx, epoch-1)
+		if err == nil {
+			prevDonors = map[string]bool{}
+			for _, a := range prevAllocs {
+				prevDonors[a.Donor] = true
+			}
+		}
+	}
+
+	fmt.Printf("Building trust graph for Epoch %d...\n", epoch)
+	profiles := analysis.BuildTrustProfiles(projects, amounts, donors, prevDonors)
+
+	// Print summary table
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(w, "\nTrust Graph — Epoch %d (%d projects)\n\n", epoch, len(profiles))
+	fmt.Fprintln(w, "  ADDRESS\tDONORS\tDIVERSITY\tWHALE DEP\tCOORD RISK\tFLAGS")
+	fmt.Fprintln(w, "  -------\t------\t---------\t---------\t----------\t-----")
+	for _, p := range profiles {
+		addr := p.Address
+		if len(addr) > 14 {
+			addr = addr[:8] + "..." + addr[len(addr)-4:]
+		}
+		flagCount := len(p.Flags)
+		fmt.Fprintf(w, "  %s\t%d\t%.3f\t%.1f%%\t%.3f\t%d\n",
+			addr, p.UniqueDonors, p.DonorDiversity, p.WhaleDepRatio*100, p.CoordinationRisk, flagCount)
+	}
+	w.Flush()
+
+	// Detect donor clusters
+	donorProjects := map[string][]string{}
+	for i, d := range donors {
+		donorProjects[d] = append(donorProjects[d], projects[i])
+	}
+	clusters := analysis.DetectDonorClusters(donorProjects)
+	if len(clusters) > 0 {
+		fmt.Printf("\n  Donor clusters detected: %d (groups with >70%% project overlap)\n", len(clusters))
+		for i, c := range clusters {
+			if i >= 5 {
+				break
+			}
+			fmt.Printf("    Cluster %d: %d donors\n", i+1, len(c))
+		}
+	}
+
+	// AI narrative
+	ai := provider.New()
+	if ai.HasProviders() {
+		fmt.Println("\nGenerating trust narrative...")
+		result, err := analysis.NarrateTrustProfile(ctx, ai, profiles, epoch)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "AI analysis failed: %v\n", err)
+			return
+		}
+		fmt.Printf("\n%s\n\n[via %s/%s]\n", result.Evaluation, result.Provider, result.Model)
+	}
+	fmt.Println()
+}
+
+// --- deep-eval ---
+
+func cmdDeepEval(ctx context.Context) {
+	address := flagString("", 0)
+	if address == "" {
+		fmt.Fprintln(os.Stderr, "Usage: tessera deep-eval <project-address>")
+		os.Exit(1)
+	}
+
+	ai := provider.New()
+	if !ai.HasProviders() {
+		fmt.Fprintln(os.Stderr, "No AI providers configured.")
+		os.Exit(1)
+	}
+
+	octant := data.NewOctantClient()
+	ep, err := octant.GetCurrentEpoch(ctx)
+	exitOnErr(err)
+
+	fmt.Printf("Fetching history for %s across epochs 1-%d...\n", address, ep.CurrentEpoch)
+	history, err := octant.GetProjectHistory(ctx, address, 1, ep.CurrentEpoch)
+	exitOnErr(err)
+
+	if len(history) == 0 {
+		fmt.Println("No data found for this address in any epoch.")
+		return
+	}
+
+	fmt.Printf("Found data in %d epochs. Running deep evaluation...\n", len(history))
+	result, err := analysis.DeepEvaluateProject(ctx, ai, address, history, "")
+	exitOnErr(err)
+
+	fmt.Printf("\n══════ Deep Evaluation: %s ══════\n\n", address)
+	fmt.Println(result.Evaluation)
+	fmt.Printf("\n[via %s/%s]\n", result.Provider, result.Model)
+}
+
+// --- simulate ---
+
+func cmdSimulate(ctx context.Context) {
+	epoch := flagInt("-e", 0)
+	if epoch == 0 {
+		fmt.Fprintln(os.Stderr, "Error: -e <epoch> is required")
+		os.Exit(1)
+	}
+
+	octant := data.NewOctantClient()
+	allocations, err := octant.GetAllocations(ctx, epoch)
+	exitOnErr(err)
+
+	if len(allocations) == 0 {
+		fmt.Println("No allocation data found.")
+		return
+	}
+
+	// Convert to AllocationInput
+	inputs := make([]analysis.AllocationInput, len(allocations))
+	for i, a := range allocations {
+		n := new(big.Int)
+		n.SetString(a.Amount, 10)
+		f := new(big.Float).SetInt(n)
+		eth, _ := new(big.Float).Quo(f, big.NewFloat(1e18)).Float64()
+		inputs[i] = analysis.AllocationInput{
+			Donor:   a.Donor,
+			Project: a.Project,
+			Amount:  eth,
+		}
+	}
+
+	fmt.Printf("Simulating funding mechanisms for Epoch %d (%d allocations)...\n\n", epoch, len(inputs))
+
+	original := analysis.SimulateStandardQF(inputs)
+	original.Name = "Original (Standard QF)"
+	capped := analysis.SimulateCappedQF(inputs, 0.10)
+	equal := analysis.SimulateEqualWeight(inputs)
+
+	// Print comparison
+	table := analysis.CompareDistributions(original, []analysis.MechanismResult{capped, equal})
+	fmt.Println(table)
+
+	// AI analysis
+	ai := provider.New()
+	if ai.HasProviders() {
+		fmt.Println("Generating mechanism analysis...")
+		result, err := analysis.AnalyzeMechanisms(ctx, ai, original, []analysis.MechanismResult{capped, equal}, epoch)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "AI analysis failed: %v\n", err)
+			return
+		}
+		fmt.Printf("\n%s\n\n[via %s/%s]\n", result.Evaluation, result.Provider, result.Model)
+	}
+}
+
+// --- scan-proposal ---
+
+func cmdScanProposal(ctx context.Context) {
+	name := flagString("", 0)
+	desc := flagString("-d", 0)
+
+	if name == "" || desc == "" {
+		fmt.Fprintln(os.Stderr, "Usage: tessera scan-proposal <name> -d <description>")
+		os.Exit(1)
+	}
+
+	ai := provider.New()
+	if !ai.HasProviders() {
+		fmt.Fprintln(os.Stderr, "No AI providers configured.")
+		os.Exit(1)
+	}
+
+	fmt.Printf("Scanning proposal: %s...\n", name)
+	result, err := analysis.ScanProposal(ctx, ai, name, desc, nil)
+	exitOnErr(err)
+
+	fmt.Printf("\n══════ Proposal Scan: %s ══════\n\n", name)
+	fmt.Println(result.Evaluation)
+	fmt.Printf("\n[via %s/%s]\n", result.Provider, result.Model)
+}
+
+// --- report-epoch ---
+
+func cmdReportEpoch(ctx context.Context) {
+	epoch := flagInt("-e", 0)
+	if epoch == 0 {
+		fmt.Fprintln(os.Stderr, "Error: -e <epoch> is required")
+		os.Exit(1)
+	}
+
+	octant := data.NewOctantClient()
+
+	// Step 1: Quantitative analysis
+	fmt.Printf("=== Epoch %d Intelligence Report ===\n\n", epoch)
+	fmt.Println("[1/4] Running quantitative analysis...")
+	rewards, err := octant.GetProjectRewards(ctx, epoch)
+	exitOnErr(err)
+
+	metrics := make([]analysis.ProjectMetrics, len(rewards))
+	for i, r := range rewards {
+		alloc := analysis.WeiToEth(r.Allocated)
+		matched := analysis.WeiToEth(r.Matched)
+		metrics[i] = analysis.ProjectMetrics{
+			Address:      r.Address,
+			Allocated:    alloc,
+			Matched:      matched,
+			TotalFunding: alloc + matched,
+		}
+	}
+	metrics = analysis.ComputeCompositeScores(metrics)
+	k := 4
+	if len(metrics) < 4 {
+		k = len(metrics)
+	}
+	metrics = analysis.SimpleKMeans(metrics, k)
+	sort.Slice(metrics, func(i, j int) bool { return metrics[i].CompositeScore > metrics[j].CompositeScore })
+
+	// Step 2: Anomaly detection
+	fmt.Println("[2/4] Detecting anomalies...")
+	allocations, err := octant.GetAllocations(ctx, epoch)
+	exitOnErr(err)
+
+	allDonors := make([]string, len(allocations))
+	allAmounts := make([]float64, len(allocations))
+	allProjects := make([]string, len(allocations))
+	for i, a := range allocations {
+		allDonors[i] = a.Donor
+		allProjects[i] = a.Project
+		n := new(big.Int)
+		n.SetString(a.Amount, 10)
+		f := new(big.Float).SetInt(n)
+		eth, _ := new(big.Float).Quo(f, big.NewFloat(1e18)).Float64()
+		allAmounts[i] = eth
+	}
+	anomalyReport := analysis.DetectAnomalies(allDonors, allAmounts)
+
+	// Step 3: Trust graph
+	fmt.Println("[3/4] Building trust graph...")
+	var prevDonors map[string]bool
+	if epoch > 1 {
+		prevAllocs, err := octant.GetAllocations(ctx, epoch-1)
+		if err == nil {
+			prevDonors = map[string]bool{}
+			for _, a := range prevAllocs {
+				prevDonors[a.Donor] = true
+			}
+		}
+	}
+	trustProfiles := analysis.BuildTrustProfiles(allProjects, allAmounts, allDonors, prevDonors)
+
+	// Step 4: Mechanism simulation
+	fmt.Println("[4/4] Simulating mechanisms...")
+	inputs := make([]analysis.AllocationInput, len(allocations))
+	for i, a := range allocations {
+		inputs[i] = analysis.AllocationInput{Donor: a.Donor, Project: a.Project, Amount: allAmounts[i]}
+	}
+	originalMech := analysis.SimulateStandardQF(inputs)
+	originalMech.Name = "Original (Standard QF)"
+	cappedMech := analysis.SimulateCappedQF(inputs, 0.10)
+	equalMech := analysis.SimulateEqualWeight(inputs)
+
+	// Print quantitative results
+	fmt.Printf("\n── Quantitative Rankings (%d projects) ──\n\n", len(metrics))
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "  RANK\tADDRESS\tSCORE\tCLUSTER\tALLOCATED\tMATCHED")
+	fmt.Fprintln(w, "  ----\t-------\t-----\t-------\t---------\t-------")
+	for i, m := range metrics {
+		addr := m.Address
+		if len(addr) > 14 {
+			addr = addr[:8] + "..." + addr[len(addr)-4:]
+		}
+		fmt.Fprintf(w, "  %d\t%s\t%.1f\t%d\t%.4f\t%.4f\n",
+			i+1, addr, m.CompositeScore, m.Cluster, m.Allocated, m.Matched)
+	}
+	w.Flush()
+
+	// Print anomaly summary
+	fmt.Printf("\n── Anomaly Detection ──\n\n")
+	fmt.Printf("  Donations: %d | Donors: %d | Total: %.4f ETH | Whale: %.1f%%\n",
+		anomalyReport.TotalDonations, anomalyReport.UniqueDonors, anomalyReport.TotalAmount, anomalyReport.WhaleConcentration*100)
+	for _, f := range anomalyReport.Flags {
+		fmt.Printf("  Flag: %s\n", f)
+	}
+
+	// Print trust summary
+	fmt.Printf("\n── Trust Graph ──\n\n")
+	flaggedCount := 0
+	for _, p := range trustProfiles {
+		if len(p.Flags) > 0 {
+			flaggedCount++
+		}
+	}
+	fmt.Printf("  Projects: %d | Flagged: %d\n", len(trustProfiles), flaggedCount)
+
+	// Print mechanism comparison
+	fmt.Printf("\n── Mechanism Simulation ──\n\n")
+	fmt.Println(analysis.CompareDistributions(originalMech, []analysis.MechanismResult{cappedMech, equalMech}))
+
+	// AI synthesis
+	ai := provider.New()
+	if ai.HasProviders() {
+		fmt.Println("Generating AI intelligence synthesis...")
+		// Build context for LLM
+		var context strings.Builder
+		context.WriteString(fmt.Sprintf("Epoch %d has %d projects, %d donations from %d unique donors, totaling %.4f ETH.\n",
+			epoch, len(metrics), anomalyReport.TotalDonations, anomalyReport.UniqueDonors, anomalyReport.TotalAmount))
+		context.WriteString(fmt.Sprintf("Whale concentration: %.1f%%\n", anomalyReport.WhaleConcentration*100))
+		context.WriteString(fmt.Sprintf("Trust-flagged projects: %d/%d\n", flaggedCount, len(trustProfiles)))
+		context.WriteString(fmt.Sprintf("Mechanism Gini: Original=%.3f, Capped=%.3f, Equal=%.3f\n",
+			originalMech.GiniCoeff, cappedMech.GiniCoeff, equalMech.GiniCoeff))
+		context.WriteString("\nTop 5 projects by score:\n")
+		for i := 0; i < 5 && i < len(metrics); i++ {
+			m := metrics[i]
+			context.WriteString(fmt.Sprintf("  %d. %s — Score %.1f, %.4f ETH total\n", i+1, m.Address, m.CompositeScore, m.TotalFunding))
+		}
+
+		prompt := fmt.Sprintf(`Generate an executive intelligence summary for Octant Epoch %d based on this data:
+
+%s
+
+Provide:
+1. **Executive Summary** (2-3 sentences)
+2. **Key Findings** (top 3-5 insights an evaluator must know)
+3. **Risk Alerts** (funding health, sybil risk, concentration issues)
+4. **Recommendations** (actionable next steps for Octant governance)
+
+Be concise and data-driven.`, epoch, context.String())
+
+		result, err := ai.Complete(ctx, prompt, "You are a public goods funding intelligence analyst for Octant.")
+		if err == nil {
+			fmt.Printf("\n── AI Intelligence Summary ──\n\n%s\n\n[via %s/%s]\n", result.Text, result.Provider, result.Model)
+		}
+	}
+
+	fmt.Println()
 }

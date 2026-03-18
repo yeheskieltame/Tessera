@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -232,4 +234,79 @@ func (c *OctantClient) GetThreshold(ctx context.Context, epoch int) (string, err
 		return "", err
 	}
 	return result.Threshold, nil
+}
+
+// --- Cross-Epoch History ---
+
+// ProjectEpochData holds a project's funding data for a single epoch.
+type ProjectEpochData struct {
+	Epoch     int
+	Allocated float64
+	Matched   float64
+	Donors    int
+}
+
+// GetProjectHistory fetches a project's rewards across multiple epochs.
+// It iterates from fromEpoch to toEpoch, collecting allocated/matched funding
+// (converted from wei to ETH) and donor count per epoch. Epochs where the
+// project is not found are silently skipped.
+func (c *OctantClient) GetProjectHistory(ctx context.Context, address string, fromEpoch, toEpoch int) ([]ProjectEpochData, error) {
+	if fromEpoch > toEpoch {
+		return nil, fmt.Errorf("fromEpoch (%d) must be <= toEpoch (%d)", fromEpoch, toEpoch)
+	}
+
+	normalizedAddr := strings.ToLower(address)
+	var history []ProjectEpochData
+
+	for epoch := fromEpoch; epoch <= toEpoch; epoch++ {
+		rewards, err := c.GetProjectRewards(ctx, epoch)
+		if err != nil {
+			// Skip epochs that return errors (e.g., epoch doesn't exist yet)
+			continue
+		}
+
+		// Find the project in this epoch's rewards
+		var found bool
+		var epData ProjectEpochData
+		for _, r := range rewards {
+			if strings.ToLower(r.Address) == normalizedAddr {
+				epData = ProjectEpochData{
+					Epoch:     epoch,
+					Allocated: weiToEth(r.Allocated),
+					Matched:   weiToEth(r.Matched),
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			continue
+		}
+
+		// Count unique donors for this project in this epoch
+		allocations, err := c.GetAllocations(ctx, epoch)
+		if err == nil {
+			donors := map[string]bool{}
+			for _, a := range allocations {
+				if strings.ToLower(a.Project) == normalizedAddr {
+					donors[strings.ToLower(a.Donor)] = true
+				}
+			}
+			epData.Donors = len(donors)
+		}
+
+		history = append(history, epData)
+	}
+
+	return history, nil
+}
+
+// weiToEth converts a wei string to ETH float64.
+// This is a local copy to avoid circular imports with the analysis package.
+func weiToEth(wei string) float64 {
+	n := new(big.Int)
+	n.SetString(wei, 10)
+	f := new(big.Float).SetInt(n)
+	eth, _ := new(big.Float).Quo(f, big.NewFloat(1e18)).Float64()
+	return eth
 }
