@@ -127,14 +127,13 @@ All quantitative data sources are public and require no authentication. OSO API 
 
 ---
 
-## Installation
+## Getting Started
 
 ### Prerequisites
 
 - [Go 1.21+](https://go.dev/dl/)
-- At least one AI API key for qualitative features (optional for quantitative-only usage)
 
-### Build from Source
+### Build
 
 ```bash
 git clone https://github.com/yeheskieltame/Tessera.git
@@ -142,41 +141,48 @@ cd Tessera
 go build -o tessera ./cmd/analyst/
 ```
 
-This produces a single binary (~9MB) with zero runtime dependencies.
+Single binary (~9MB), zero runtime dependencies.
 
-### Configure Environment
+### Setup AI Provider
 
-Copy the example and fill in your keys:
+Tessera needs an AI provider for qualitative features (evaluate, extract-metrics). Quantitative commands (analyze-epoch, detect-anomalies, list-projects) work without any AI setup.
+
+**Option A: Claude CLI (recommended, no API key needed)**
+
+If you have a [Claude Max plan](https://claude.ai) (5x subscription), just install Claude Code:
+
+```bash
+npm i -g @anthropic-ai/claude-code
+claude login
+```
+
+That's it. Tessera auto-detects the `claude` binary and uses it as the primary AI provider. No `.env` configuration needed.
+
+Verify:
+
+```bash
+./tessera providers
+```
+
+```
+  #  PROVIDER    MODEL
+  -  --------    -----
+  1  claude-cli  sonnet
+```
+
+**Option B: API key (if you don't have Claude Code)**
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env`:
+Set at least one key in `.env`:
 
 ```bash
-# AI Providers — at least one required for qualitative features
-# Tried in order: Claude API -> Claude CLI -> Gemini -> OpenAI -> Antigravity
-ANTHROPIC_API_KEY=sk-ant-...
-GEMINI_API_KEY=...
-OPENAI_API_KEY=sk-...
-ANTIGRAVITY_URL=http://localhost:8080
-
-# Claude CLI is auto-detected if `claude` binary exists (Max plan)
-# No API key needed. Disable with:
-# CLAUDE_CLI_DISABLED=true
-# CLAUDE_CLI_MODEL=sonnet
-
-# Optional: override default models
-# CLAUDE_MODEL=claude-sonnet-4-6
-# GEMINI_MODEL=gemini-2.0-flash
-# OPENAI_MODEL=gpt-4o
-
-# Optional: Open Source Observer API key
-# OSO_API_KEY=...
+ANTHROPIC_API_KEY=sk-ant-...   # Claude API
+GEMINI_API_KEY=...             # Google Gemini
+OPENAI_API_KEY=sk-...          # OpenAI
 ```
-
-Quantitative commands (`list-projects`, `analyze-epoch`, `detect-anomalies`) work without any API keys.
 
 ### Verify Installation
 
@@ -184,16 +190,40 @@ Quantitative commands (`list-projects`, `analyze-epoch`, `detect-anomalies`) wor
 ./tessera status
 ```
 
-Expected output:
-
 ```
   SERVICE          STATUS
   -------          ------
   Octant API       ok epoch 12
-  Gitcoin GraphQL  ok 1 rounds
+  Gitcoin GraphQL  ok
   OSO API          ok connected
-  AI Providers     2 configured
+  AI Providers     1 configured
 ```
+
+### Quick Demo
+
+Run these commands to see Tessera in action:
+
+```bash
+# 1. Check all data sources and AI providers
+./tessera status
+
+# 2. List all projects in Octant Epoch 5
+./tessera list-projects -e 5
+
+# 3. Run full quantitative analysis (clustering + scoring)
+./tessera analyze-epoch -e 5
+
+# 4. Detect funding anomalies (whale concentration, sybil patterns)
+./tessera detect-anomalies -e 5
+
+# 5. Evaluate a project with AI (requires AI provider)
+./tessera evaluate "Gitcoin Grants" -d "Decentralized grants platform for Ethereum public goods funding using quadratic funding"
+
+# 6. Extract impact metrics from text (requires AI provider)
+./tessera extract-metrics "The project onboarded 10,000 developers and processed $5M in grants across 3 rounds"
+```
+
+Commands 1-4 work immediately (no AI needed). Commands 5-6 require Claude CLI or an API key.
 
 ---
 

@@ -41,7 +41,7 @@ func New() *Chain {
 func (c *Chain) buildChain() {
 	// Claude CLI first — works with Claude Code / Max plan subscription, no API key needed
 	if claudeCLIAvailable() {
-		model := envOr("CLAUDE_CLI_MODEL", "sonnet")
+		model := envOr("CLAUDE_CLI_MODEL", "claude-opus-4-6")
 		c.backends = append(c.backends, backend{Name: "claude-cli", Model: model, Call: callClaudeCLI})
 	}
 	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
