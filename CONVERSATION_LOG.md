@@ -201,40 +201,6 @@ All pushed to GitHub (commits `b975f34`, `61031b4`).
 
 ---
 
-## Key Decisions Made Together
-
-| Decision | Human | Agent | Outcome |
-|----------|-------|-------|---------|
-| Track selection | Chose Octant data analysis | Researched all tracks | Targeting $1000 prize |
-| CLI focus | Requested CLI tool | Proposed architecture | 8 CLI commands |
-| Multi-model | Required fallback chain | Implemented 4 providers | Claude → Gemini → OpenAI → Antigravity |
-| Go migration | Asked about Rust vs Go | Recommended Go | 9MB binary, <5ms startup |
-| Project name | Chose Tessera | Proposed 6 options | Premium, memorable brand |
-| OpenClaw skill | Requested compatibility | Built SKILL.md | Works with OpenClaw, Claude Code, Gemini CLI |
-
----
-
-## Contribution Breakdown
-
-**Human (Yeheskiel):**
-- Strategic direction and track selection
-- Go vs Rust decision (asked the right question)
-- Naming (chose Tessera from options)
-- GitHub repo creation
-- Quality gates (approved each phase before proceeding)
-
-**Agent (Claude Opus 4.6):**
-- Hackathon registration (API calls, on-chain identity)
-- Research (Octant ecosystem, data sources, pain points)
-- Full codebase architecture and implementation
-- Python MVP → Go rewrite (entire codebase)
-- K-means clustering implemented from scratch (no external ML libs)
-- OpenClaw skill creation
-- Documentation (CLAUDE.md, CONVERSATION_LOG.md)
-- Git history management (structured commits)
-
----
-
 ## Session 2 — Finalization & Submission (2026-03-18)
 
 ### Phase 15: Project Audit & Missing Pieces
@@ -280,43 +246,143 @@ All pushed to GitHub (commits `b975f34`, `61031b4`).
 
 **Blocker:** Moltbook requires human claim before posting. Human needs to visit claim URL.
 
+### Phase 20: Claude Opus 4.6 as Default Model
+
+**Human:** Wants the best model — claude-opus-4-6 explicitly, not sonnet or older versions.
+
+**Agent:** Changed default Claude CLI model from `sonnet` to `claude-opus-4-6` (full model ID, not alias). Tested with real evaluation — Opus 4.6 produces more nuanced, critical analysis than Sonnet. Scored Octant 78/100 vs Sonnet's 85/100 — more conservative and detailed risk assessment.
+
+### Phase 21: Project Published
+
+**Human:** Confirmed publish.
+
+**Agent:** Called `POST /projects/:uuid/publish`. Project now live on hackathon. Updated README with Quick Demo section and Claude CLI as recommended setup.
+
+### Phase 22: Moltbook Claimed & Post Published
+
+**Human:** Successfully claimed `tessera-agent` on Moltbook after multiple attempts (X auth issues resolved).
+
+**Agent:**
+1. Created Moltbook post: "Tessera: AI-Powered Public Goods Evaluation for Octant"
+2. Solved anti-spam math verification (32 * 14 = 448.00)
+3. Post published and verified
+4. Updated devfolio with `moltbookPostURL`
+
+### Phase 23: Moltbook Social Engagement
+
+**Human:** Asked agent to find hackathon judge agents and introduce Tessera.
+
+**Agent:**
+1. Searched Moltbook for hackathon-related agents — found no dedicated judge agents
+2. Found fellow Synthesis hackathon participants: AutoPilotAI (Agent Vault), Clawlinker (Molttail), maxiagent (Observer Protocol), godzilaaa (Swarm Agents)
+3. Followed all 5 agents + official Synthesis agent
+4. Posted substantive comments on 3 hackathon participants' posts:
+   - AutoPilotAI: Trust-graph + mechanism simulator complementing Agent Vault
+   - maxiagent: Shannon entropy and Jaccard metrics as trust signals for Observer Protocol
+   - Clawlinker: Receipt transparency + analytical intelligence combination
+5. Replied to comments on own post from xproof_agent_verify (technical defense of deterministic vs non-deterministic architecture) and sanctum_oracle (polite redirection to data-driven approach)
+
+## Session 3 — Feature Expansion & Bounty Strategy (2026-03-18/19)
+
+### Phase 24: 5 New Features for All 3 Bounties
+
+**Human:** Wants to win all 3 Octant bounties ($3,000 total). Asked to develop features aligned with hackathon themes.
+
+**Agent:** Planned and implemented 5 new features in parallel (3 background agents):
+
+1. **trust-graph** (`internal/analysis/graph.go`):
+   - Donor-project bipartite graph analysis
+   - Jaccard similarity for coordination detection
+   - Shannon entropy for donor diversity
+   - Union-find clustering for sybil pattern identification
+   - Auto-generated flags (whale dependency, coordination risk, low diversity)
+   - Real findings: 41 donor clusters in Epoch 5, 17/30 projects flagged
+
+2. **simulate** (`internal/analysis/mechanism.go`):
+   - Standard Quadratic Funding simulation
+   - Capped QF (configurable per-donor cap)
+   - Equal Weight (1-person-1-vote)
+   - Gini coefficient computation
+   - Distribution comparison tables
+   - Key finding: Equal Weight increases smallest project by 3105% but maximizes sybil vulnerability
+
+3. **deep-eval** (cross-epoch project evaluation):
+   - Fetches project rewards across all epochs (1 to current)
+   - Counts unique donors per epoch per project
+   - LLM produces trajectory narrative, inflection points, organic vs gaming assessment
+   - Counterfactual impact analysis
+
+4. **scan-proposal** (two-pass proposal verification):
+   - Pass 1: Extract all factual claims from proposal text
+   - Pass 2: Cross-reference claims against real API data
+   - Outputs: SUPPORTED/CONTRADICTED/UNVERIFIABLE verdicts, trust score
+
+5. **report-epoch** (full intelligence report):
+   - Orchestrates quantitative rankings + anomaly detection + trust graph + mechanism simulation
+   - AI executive summary combining all analyses
+
+All tested against live Octant API data. Total: 13 CLI commands.
+
+### Phase 25: Moltbook Integration (Autonomous Agent)
+
+**Human:** Asked if Moltbook interactions could be automated via the CLI.
+
+**Agent:** Built full Moltbook integration:
+1. Created `internal/social/moltbook.go` — complete API client (posts, comments, follow, notifications, search, math challenge solver)
+2. Added CLI commands: `moltbook post`, `moltbook reply`, `moltbook status`, `moltbook follow`
+3. Added `heartbeat` command — checks notifications and generates AI-powered auto-replies using Claude Opus 4.6
+4. `heartbeat --loop` runs continuously every 10 minutes (autonomous agent mode)
+
+Total: 15 CLI commands. Agent can now autonomously interact on Moltbook — aligned with hackathon theme "Agents that cooperate".
+
 ---
 
 ## Key Decisions Made Together
 
 | Decision | Human | Agent | Outcome |
 |----------|-------|-------|---------|
-| Track selection | Chose Octant data analysis | Researched all tracks | Targeting $1000 prize |
-| CLI focus | Requested CLI tool | Proposed architecture | 8 CLI commands |
-| Multi-model | Required fallback chain | Implemented 5 providers | Claude CLI > Claude API > Gemini > OpenAI > Antigravity |
+| Track selection | Chose Octant data analysis | Researched all tracks | Targeting all 3 bounties ($3,000) |
+| CLI focus | Requested CLI tool | Proposed architecture | 15 CLI commands |
+| Multi-model | Required fallback chain | Implemented 5 providers | Claude CLI (Opus 4.6) > Claude API > Gemini > OpenAI > Antigravity |
 | Go migration | Asked about Rust vs Go | Recommended Go | 9MB binary, <5ms startup |
 | Project name | Chose Tessera | Proposed 6 options | Premium, memorable brand |
 | OpenClaw skill | Requested compatibility | Built SKILL.md | Works with OpenClaw, Claude Code, Gemini CLI |
 | Claude CLI primary | Max plan user, no API keys | Reordered chain | Claude CLI is now priority 1 |
+| Default model | Requested best model | Set claude-opus-4-6 explicit | More critical, nuanced analysis |
+| Moltbook automation | Asked if interactions could be automated | Built heartbeat + social commands | Autonomous agent on social network |
+| Bounty strategy | Wants all 3 bounties | Planned 5 features per bounty | trust-graph, simulate, deep-eval, scan-proposal, report-epoch |
 
 ---
 
 ## Contribution Breakdown
 
 **Human (Yeheskiel):**
-- Strategic direction and track selection
-- Go vs Rust decision (asked the right question)
-- Naming (chose Tessera from options)
+- Strategic direction and track selection (all 3 bounties)
+- Go vs Rust decision
+- Naming (chose Tessera)
 - GitHub repo creation
-- Quality gates (approved each phase before proceeding)
-- Claude CLI priority decision (Max plan subscriber perspective)
+- Moltbook claim (X auth verification)
+- Quality gates (approved each phase)
+- Claude Opus 4.6 as default model decision
+- Autonomous agent direction (heartbeat/social integration)
 
 **Agent (Claude Opus 4.6):**
 - Hackathon registration (API calls, on-chain identity)
 - Research (Octant ecosystem, data sources, pain points)
-- Full codebase architecture and implementation
-- Python MVP → Go rewrite (entire codebase)
-- K-means clustering implemented from scratch (no external ML libs)
+- Full codebase (15 CLI commands, ~3,000 lines Go)
+- Python MVP → Go rewrite
+- K-means clustering from scratch (no external ML libs)
+- Trust-graph analysis (Jaccard, Shannon entropy, union-find)
+- Mechanism simulator (QF variants, Gini coefficients)
+- Deep evaluation (cross-epoch longitudinal analysis)
+- Proposal scanner (two-pass claim verification)
+- Moltbook integration (social API client, heartbeat)
 - Unit test suite (13 tests)
 - OpenClaw skill creation
-- Moltbook registration
+- Moltbook social engagement (posts, comments, follows)
 - Documentation (CLAUDE.md, README.md, CONVERSATION_LOG.md)
-- Git history management (structured commits)
+- Git history management (21 structured commits)
+- Hackathon API submission and updates
 
 ---
 
