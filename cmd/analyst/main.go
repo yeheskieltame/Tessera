@@ -1088,7 +1088,7 @@ func cmdAnalyzeProject(ctx context.Context) {
 
 	fmt.Printf("\n── AI Deep Evaluation ──\n\n%s\n\n[via %s/%s]\n\n", result.Evaluation, result.Provider, result.Model)
 
-	// Save report
+	// Save markdown report
 	report.Generate(address, map[string]string{
 		"rank":            fmt.Sprintf("%d/%d", projectRank, len(metrics)),
 		"composite_score": fmt.Sprintf("%.1f", projectMetric.CompositeScore),
@@ -1101,7 +1101,80 @@ func cmdAnalyzeProject(ctx context.Context) {
 		"model":      result.Model,
 		"provider":   result.Provider,
 	}, nil)
-	fmt.Println("Report saved to reports/")
+	fmt.Println("Markdown report saved to reports/")
+
+	// Generate PDF report
+	shortAddr := address
+	if len(shortAddr) > 14 {
+		shortAddr = shortAddr[:8] + "..." + shortAddr[len(shortAddr)-4:]
+	}
+
+	mechRows := [][]string{}
+	for _, mech := range []analysis.MechanismResult{original, capped, equal, trustWeighted} {
+		p := findProject(mech)
+		if p != nil {
+			mechRows = append(mechRows, []string{mech.Name, fmt.Sprintf("%.4f ETH", p.Allocated), fmt.Sprintf("%+.1f%%", p.Change)})
+		}
+	}
+
+	histRows := [][]string{}
+	for _, h := range history {
+		histRows = append(histRows, []string{
+			fmt.Sprintf("%d", h.Epoch),
+			fmt.Sprintf("%.4f", h.Allocated),
+			fmt.Sprintf("%.4f", h.Matched),
+			fmt.Sprintf("%d", h.Donors),
+		})
+	}
+
+	pdfReport := &report.PDFReport{
+		Title:    fmt.Sprintf("Intelligence Report: %s", shortAddr),
+		Subtitle: fmt.Sprintf("Octant Public Goods Evaluation | Epoch %d", epoch),
+		Model:    result.Model,
+		Provider: result.Provider,
+		Metadata: map[string]string{
+			"Address":          address,
+			"Rank":             fmt.Sprintf("%d / %d projects", projectRank, len(metrics)),
+			"Composite Score":  fmt.Sprintf("%.1f / 100", projectMetric.CompositeScore),
+			"Donor Diversity":  fmt.Sprintf("%.3f (Shannon entropy)", projectTrust.DonorDiversity),
+			"Whale Dependency": fmt.Sprintf("%.1f%%", projectTrust.WhaleDepRatio*100),
+			"AI Model":         result.Model,
+		},
+		Sections: []report.PDFSection{
+			{
+				Heading: "Funding History",
+				Table: &report.PDFTable{
+					Headers: []string{"Epoch", "Allocated (ETH)", "Matched (ETH)", "Donors"},
+					Rows:    histRows,
+					ColW:    []float64{25, 45, 45, 30},
+				},
+			},
+			{
+				Heading: "Trust Profile",
+				Body: fmt.Sprintf("Unique Donors: %d\nDonor Diversity (Shannon): %.3f\nWhale Dependency: %.1f%%\nCoordination Risk (Jaccard): %.3f\nRepeat Donors: %d",
+					projectTrust.UniqueDonors, projectTrust.DonorDiversity, projectTrust.WhaleDepRatio*100, projectTrust.CoordinationRisk, projectTrust.RepeatDonors),
+			},
+			{
+				Heading: "Mechanism Simulation Impact",
+				Table: &report.PDFTable{
+					Headers: []string{"Mechanism", "Allocated", "Change"},
+					Rows:    mechRows,
+					ColW:    []float64{70, 50, 40},
+				},
+			},
+			{
+				Heading: "AI Deep Evaluation",
+				Body:    result.Evaluation,
+			},
+		},
+	}
+
+	pdfPath, err := report.GeneratePDF(pdfReport)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "PDF generation failed: %v\n", err)
+	} else {
+		fmt.Printf("PDF report saved to %s\n", pdfPath)
+	}
 }
 
 // --- collect-signals ---
