@@ -9,10 +9,13 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"time"
+
 	"github.com/yeheskieltame/tessera/internal/analysis"
 	"github.com/yeheskieltame/tessera/internal/data"
 	"github.com/yeheskieltame/tessera/internal/provider"
 	"github.com/yeheskieltame/tessera/internal/report"
+	"github.com/yeheskieltame/tessera/internal/social"
 )
 
 func main() {
@@ -53,6 +56,10 @@ func main() {
 		cmdScanProposal(ctx)
 	case "report-epoch":
 		cmdReportEpoch(ctx)
+	case "moltbook":
+		cmdMoltbook(ctx)
+	case "heartbeat":
+		cmdHeartbeat(ctx)
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -96,7 +103,14 @@ COMMANDS:
     <name>              Project name (required)
     -d <description>    Proposal text (required)
   report-epoch        Generate full epoch intelligence report
-    -e <epoch>          Epoch number (required)`)
+    -e <epoch>          Epoch number (required)
+  moltbook            Interact with Moltbook (social network for AI agents)
+    post <title>        Create a post (-d <content> required)
+    reply <post-id>     Reply to a post (-d <content> required)
+    status              Show agent status and notifications
+    follow <username>   Follow another agent
+  heartbeat           Run Moltbook heartbeat (check notifications, auto-reply)
+    --loop              Keep running every 10 minutes`)
 }
 
 // --- status ---
@@ -832,4 +846,154 @@ Be concise and data-driven.`, epoch, context.String())
 	}
 
 	fmt.Println()
+}
+
+// --- moltbook ---
+
+func cmdMoltbook(ctx context.Context) {
+	mb := social.NewMoltbookClient()
+	if !mb.Available() {
+		fmt.Fprintln(os.Stderr, "MOLTBOOK_API_KEY not set in .env")
+		os.Exit(1)
+	}
+
+	if len(os.Args) < 3 {
+		fmt.Fprintln(os.Stderr, "Usage: tessera moltbook <post|reply|status|follow> [args]")
+		os.Exit(1)
+	}
+
+	sub := os.Args[2]
+	switch sub {
+	case "status":
+		home, err := mb.GetHome(ctx)
+		exitOnErr(err)
+		fmt.Printf("\n  Karma: %d\n  Unread notifications: %d\n  Unread DMs: %d\n\n", home.Karma, home.UnreadNotifications, home.UnreadDMs)
+
+	case "post":
+		if len(os.Args) < 4 {
+			fmt.Fprintln(os.Stderr, "Usage: tessera moltbook post <title> -d <content>")
+			os.Exit(1)
+		}
+		title := os.Args[3]
+		content := flagString("-d", 0)
+		if content == "" {
+			fmt.Fprintln(os.Stderr, "Error: -d <content> is required")
+			os.Exit(1)
+		}
+		fmt.Printf("Posting: %s\n", title)
+		post, err := mb.CreatePost(ctx, "general", title, content)
+		exitOnErr(err)
+		fmt.Printf("Posted: %s\n", post.ID)
+
+	case "reply":
+		if len(os.Args) < 4 {
+			fmt.Fprintln(os.Stderr, "Usage: tessera moltbook reply <post-id> -d <content>")
+			os.Exit(1)
+		}
+		postID := os.Args[3]
+		content := flagString("-d", 0)
+		if content == "" {
+			fmt.Fprintln(os.Stderr, "Error: -d <content> is required")
+			os.Exit(1)
+		}
+		err := mb.ReplyToPost(ctx, postID, content)
+		exitOnErr(err)
+		fmt.Println("Reply posted.")
+
+	case "follow":
+		if len(os.Args) < 4 {
+			fmt.Fprintln(os.Stderr, "Usage: tessera moltbook follow <username>")
+			os.Exit(1)
+		}
+		username := os.Args[3]
+		err := mb.FollowAgent(ctx, username)
+		exitOnErr(err)
+		fmt.Printf("Now following %s\n", username)
+
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown moltbook command: %s\n", sub)
+		os.Exit(1)
+	}
+}
+
+// --- heartbeat ---
+
+func cmdHeartbeat(ctx context.Context) {
+	mb := social.NewMoltbookClient()
+	if !mb.Available() {
+		fmt.Fprintln(os.Stderr, "MOLTBOOK_API_KEY not set in .env")
+		os.Exit(1)
+	}
+
+	ai := provider.New()
+	loop := false
+	for _, a := range os.Args[2:] {
+		if a == "--loop" {
+			loop = true
+		}
+	}
+
+	for {
+		runHeartbeat(ctx, mb, ai)
+		if !loop {
+			break
+		}
+		fmt.Println("\nNext heartbeat in 10 minutes... (Ctrl+C to stop)")
+		time.Sleep(10 * time.Minute)
+	}
+}
+
+func runHeartbeat(ctx context.Context, mb *social.MoltbookClient, ai *provider.Chain) {
+	fmt.Printf("[%s] Heartbeat running...\n", time.Now().Format("15:04:05"))
+
+	// Check home
+	home, err := mb.GetHome(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  Failed to fetch home: %v\n", err)
+		return
+	}
+	fmt.Printf("  Karma: %d | Notifications: %d | DMs: %d\n", home.Karma, home.UnreadNotifications, home.UnreadDMs)
+
+	if home.UnreadNotifications == 0 {
+		fmt.Println("  No new notifications.")
+		return
+	}
+
+	// Fetch notifications
+	notifications, err := mb.GetNotifications(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  Failed to fetch notifications: %v\n", err)
+		return
+	}
+
+	// Process unread notifications
+	for _, n := range notifications {
+		if n.Read {
+			continue
+		}
+		fmt.Printf("  [%s] %s\n", n.Type, n.Message)
+
+		// Auto-reply to comment notifications if AI is available
+		if ai.HasProviders() && (n.Type == "comment_reply" || n.Type == "post_reply") {
+			generateAutoReply(ctx, mb, ai, n)
+		}
+	}
+}
+
+func generateAutoReply(ctx context.Context, mb *social.MoltbookClient, ai *provider.Chain, n social.Notification) {
+	prompt := fmt.Sprintf(`You are tessera-agent, an AI agent for public goods data analysis built for The Synthesis Hackathon. You analyze Octant quadratic funding data using trust-graph analysis (Jaccard similarity, Shannon entropy), mechanism simulation (QF variants, Gini coefficients), and AI-powered project evaluation.
+
+Someone on Moltbook sent you this notification:
+Type: %s
+Message: %s
+
+Write a concise, substantive reply (2-4 sentences). Be technical and data-driven. Reference Tessera's real capabilities and findings when relevant. Do not be generic — show you understand what they said. Do not use emojis.`, n.Type, n.Message)
+
+	resp, err := ai.Complete(ctx, prompt, "You are a public goods data analyst agent on Moltbook.")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  AI reply generation failed: %v\n", err)
+		return
+	}
+
+	fmt.Printf("  Auto-reply generated (%s/%s): %s\n", resp.Provider, resp.Model, resp.Text[:min(100, len(resp.Text))])
 }
