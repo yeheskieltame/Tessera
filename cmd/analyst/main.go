@@ -123,8 +123,9 @@ func cmdProviders() {
 	ai := provider.New()
 	providers := ai.Providers()
 	if len(providers) == 0 {
-		fmt.Println("No providers configured. Set API keys in .env:")
-		fmt.Println("  ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, ANTIGRAVITY_URL")
+		fmt.Println("No providers configured. Options:")
+		fmt.Println("  1. Install Claude Code (claude CLI) — works with Max plan, no API key needed")
+		fmt.Println("  2. Set API keys in .env: ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY")
 		return
 	}
 

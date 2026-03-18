@@ -39,13 +39,14 @@ func New() *Chain {
 }
 
 func (c *Chain) buildChain() {
-	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
-		model := envOr("CLAUDE_MODEL", "claude-sonnet-4-6")
-		c.backends = append(c.backends, backend{Name: "claude-api", Model: model, Call: c.callClaude})
-	}
+	// Claude CLI first — works with Claude Code / Max plan subscription, no API key needed
 	if claudeCLIAvailable() {
 		model := envOr("CLAUDE_CLI_MODEL", "sonnet")
 		c.backends = append(c.backends, backend{Name: "claude-cli", Model: model, Call: callClaudeCLI})
+	}
+	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
+		model := envOr("CLAUDE_MODEL", "claude-sonnet-4-6")
+		c.backends = append(c.backends, backend{Name: "claude-api", Model: model, Call: c.callClaude})
 	}
 	if key := os.Getenv("GEMINI_API_KEY"); key != "" {
 		model := envOr("GEMINI_MODEL", "gemini-2.0-flash")

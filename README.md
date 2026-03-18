@@ -75,8 +75,8 @@ flowchart LR
 flowchart LR
     A[Project Description] --> B[Build Evaluation Prompt]
     B --> C{AI Provider Chain}
-    C -->|Try 1| D[Claude API]
-    C -->|Try 2| D2[Claude CLI / Max Plan]
+    C -->|Try 1| D[Claude CLI / Max Plan]
+    C -->|Try 2| D2[Claude API]
     C -->|Fallback| E[Gemini API]
     C -->|Fallback| F[OpenAI API]
     C -->|Fallback| G[Antigravity Proxy]
@@ -349,13 +349,15 @@ Tessera tries AI providers in sequence. If a provider fails (rate limit, network
 
 | Priority | Provider | Method | Default Model | Activation |
 |----------|----------|--------|---------------|------------|
-| 1 | Claude API | Anthropic Messages API | claude-sonnet-4-6 | `ANTHROPIC_API_KEY` set |
-| 2 | Claude CLI | `claude --print` subprocess | sonnet | `claude` binary found on PATH |
+| 1 | Claude CLI | `claude --print` subprocess | sonnet | `claude` binary on PATH (Claude Code / Max plan) |
+| 2 | Claude API | Anthropic Messages API | claude-sonnet-4-6 | `ANTHROPIC_API_KEY` set |
 | 3 | Gemini | Google Generative AI | gemini-2.0-flash | `GEMINI_API_KEY` set |
 | 4 | OpenAI | Chat Completions API | gpt-4o | `OPENAI_API_KEY` set |
 | 5 | Antigravity | Claude-compatible proxy | claude-sonnet-4-5-thinking | `ANTIGRAVITY_URL` set |
 
-Claude CLI is auto-detected: if the `claude` binary exists (Claude Code / Max plan), it is added to the chain without any API key. Set `CLAUDE_CLI_DISABLED=true` to skip it. Override the model with `CLAUDE_CLI_MODEL` (default: `sonnet`, options: `opus`, `sonnet`, `haiku`).
+**Recommended setup for Claude Max plan subscribers:** Install Claude Code (`npm i -g @anthropic-ai/claude-code`), login, and Tessera automatically uses it as the primary AI provider. No API key needed.
+
+Claude CLI is auto-detected: if the `claude` binary exists, it becomes priority 1 in the fallback chain. Set `CLAUDE_CLI_DISABLED=true` to skip it. Override the model with `CLAUDE_CLI_MODEL` (default: `sonnet`, options: `opus`, `sonnet`, `haiku`).
 
 ### OpenClaw Skill
 

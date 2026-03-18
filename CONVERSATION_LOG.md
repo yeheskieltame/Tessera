@@ -235,4 +235,89 @@ All pushed to GitHub (commits `b975f34`, `61031b4`).
 
 ---
 
+## Session 2 — Finalization & Submission (2026-03-18)
+
+### Phase 15: Project Audit & Missing Pieces
+
+**Human:** Requested full project audit — what's missing, what needs fixing, and submission status.
+
+**Agent:** Analyzed codebase and identified gaps:
+1. No unit tests (critical gap)
+2. No sample output in repo
+3. Claude CLI should be primary provider (user is Max plan subscriber)
+4. Moltbook post not yet created
+5. Project not yet published
+
+### Phase 16: Unit Tests
+
+**Agent:** Created comprehensive test suite:
+- `internal/analysis/quantitative_test.go` — 13 test cases
+- Tests for: WeiToEth conversion, normalize, minMax, CompositeScores (normal/empty/single), K-means (normal/edge cases), DetectAnomalies (basic/empty/even median/whale flag/coordinated flag)
+- All 13 tests passing
+
+### Phase 17: Claude CLI as Primary Provider
+
+**Human:** Wants Claude CLI as primary provider for Max plan subscribers — no API key setup needed.
+
+**Agent:**
+1. Reordered provider chain: Claude CLI now priority 1 (was 2)
+2. Updated CLAUDE.md, README.md (mermaid diagrams, fallback table, setup instructions)
+3. Updated CLI help message to recommend Claude CLI first
+4. Rebuilt binary with new chain order
+
+### Phase 18: Sample Output & Examples
+
+**Agent:** Generated real sample output from live Octant API:
+- `examples/sample-output.md` — Epoch 5 analysis (30 projects), anomaly detection, provider chain, test results
+- Key finding: 97.9% whale concentration in Epoch 5
+
+### Phase 19: Moltbook Registration
+
+**Agent:** Registered on Moltbook as `synthesis-agent`:
+- API key: received
+- Claim URL: provided to human for verification
+- Status: pending_claim (human must verify via email + tweet)
+
+**Blocker:** Moltbook requires human claim before posting. Human needs to visit claim URL.
+
+---
+
+## Key Decisions Made Together
+
+| Decision | Human | Agent | Outcome |
+|----------|-------|-------|---------|
+| Track selection | Chose Octant data analysis | Researched all tracks | Targeting $1000 prize |
+| CLI focus | Requested CLI tool | Proposed architecture | 8 CLI commands |
+| Multi-model | Required fallback chain | Implemented 5 providers | Claude CLI > Claude API > Gemini > OpenAI > Antigravity |
+| Go migration | Asked about Rust vs Go | Recommended Go | 9MB binary, <5ms startup |
+| Project name | Chose Tessera | Proposed 6 options | Premium, memorable brand |
+| OpenClaw skill | Requested compatibility | Built SKILL.md | Works with OpenClaw, Claude Code, Gemini CLI |
+| Claude CLI primary | Max plan user, no API keys | Reordered chain | Claude CLI is now priority 1 |
+
+---
+
+## Contribution Breakdown
+
+**Human (Yeheskiel):**
+- Strategic direction and track selection
+- Go vs Rust decision (asked the right question)
+- Naming (chose Tessera from options)
+- GitHub repo creation
+- Quality gates (approved each phase before proceeding)
+- Claude CLI priority decision (Max plan subscriber perspective)
+
+**Agent (Claude Opus 4.6):**
+- Hackathon registration (API calls, on-chain identity)
+- Research (Octant ecosystem, data sources, pain points)
+- Full codebase architecture and implementation
+- Python MVP → Go rewrite (entire codebase)
+- K-means clustering implemented from scratch (no external ML libs)
+- Unit test suite (13 tests)
+- OpenClaw skill creation
+- Moltbook registration
+- Documentation (CLAUDE.md, README.md, CONVERSATION_LOG.md)
+- Git history management (structured commits)
+
+---
+
 *This log will be updated as development continues.*

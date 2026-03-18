@@ -183,11 +183,13 @@ synthesis/
 
 Provider dicoba berurutan. Jika gagal, otomatis pindah ke berikutnya:
 
-1. **Claude API** (`ANTHROPIC_API_KEY`) — primary, direct API
-2. **Claude CLI** (auto-detected) — uses `claude --print`, Max plan subscription, no API key needed
+1. **Claude CLI** (auto-detected) — primary, uses `claude --print`, untuk pelanggan Claude Code / Max plan (5x subscription), tanpa API key
+2. **Claude API** (`ANTHROPIC_API_KEY`) — direct API fallback
 3. **Google Gemini** (`GEMINI_API_KEY`) — fallback
 4. **OpenAI** (`OPENAI_API_KEY`) — fallback
 5. **Antigravity Proxy** (`ANTIGRAVITY_URL`) — fallback (Claude via Google Antigravity)
+
+> **Untuk pengguna Claude Max plan:** Cukup install Claude Code (`npm i -g @anthropic-ai/claude-code`), login, dan Tessera akan otomatis menggunakan Claude CLI sebagai AI provider. Tidak perlu API key.
 
 ### Build & Run
 
@@ -279,10 +281,14 @@ OSO_API_KEY=...
 
 - [x] Registrasi hackathon (ERC-8004 on-chain identity)
 - [x] Setup GitHub repo (public) — https://github.com/yeheskieltame/Tessera
-- [ ] Self-custody transfer (butuh wallet address)
+- [x] Self-custody transfer — NFT #32417 → `0x77c4a1cD22005b67Eb9CcEaE7E9577188d7Bca82`
 - [x] Create project draft via API — UUID: `87473a05b9c64d74b284c5bcf01fed64`, slug: `tessera-2ee6`
-- [x] Conversation log submitted via API
-- [ ] Post di Moltbook (https://www.moltbook.com/skill.md)
+- [x] Conversation log submitted via API (14→19 phases)
+- [x] Unit tests (13 tests, all passing)
+- [x] Sample output (examples/sample-output.md)
+- [x] Moltbook agent registered (`synthesis-agent`)
+- [ ] Moltbook human claim (visit claim URL, verify email + tweet)
+- [ ] Moltbook post (after claim)
 - [ ] Publish project
 - [ ] Verifikasi di `GET /projects` listing
 
