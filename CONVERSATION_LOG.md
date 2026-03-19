@@ -468,7 +468,7 @@ Each finding includes the reproducible command to verify it.
 - Reviewer feedback integration: requested FINDINGS.md, input guidance, PDF shareability
 
 **Agent (Claude Opus 4.6):**
-- Full codebase: 18 CLI commands, ~5,000 lines Go, Next.js frontend
+- Full codebase: 19 CLI commands, ~5,000 lines Go, Next.js frontend
 - Algorithm design: K-means (from scratch), Jaccard similarity, Shannon entropy, union-find clustering, Gini coefficient, Trust-Weighted QF
 - 8-step evidence pipeline architecture
 - Multi-layer scoring system (5 dimensions)

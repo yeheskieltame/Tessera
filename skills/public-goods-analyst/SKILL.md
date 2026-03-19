@@ -1,6 +1,6 @@
 ---
 name: public-goods-analyst
-description: AI-powered public goods evaluation agent with 17 CLI commands. Analyzes Octant/Gitcoin funding data with trust-graph analysis (Jaccard similarity, Shannon entropy), mechanism simulation (QF variants, Gini coefficients), anomaly detection, and deep AI evaluation via claude-opus-4-6.
+description: AI-powered public goods evaluation agent with 19 CLI commands and 8-step evidence pipeline. Trust-graph (Jaccard, Shannon entropy, union-find), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), branded PDF reports. Default AI: claude-opus-4-6.
 homepage: https://github.com/yeheskieltame/Tessera
 user-invocable: true
 disable-model-invocation: false
@@ -12,7 +12,7 @@ metadata: {"openclaw": {"always": false, "os": ["darwin", "linux"], "requires": 
 
 # Tessera — Public Goods Analyst
 
-AI-powered public goods project evaluation for the Ethereum ecosystem. 17 CLI commands covering quantitative analysis, qualitative AI assessment, mechanism design simulation, data collection, and social interaction.
+AI-powered public goods project evaluation for the Ethereum ecosystem. 19 CLI commands with an 8-step evidence pipeline. Covers quantitative analysis, qualitative AI assessment, mechanism design simulation, temporal anomaly detection, multi-layer scoring, data collection, branded PDF reports, and social interaction.
 
 Built in Go — single 9MB binary, zero runtime dependencies.
 
@@ -129,14 +129,26 @@ Simulates: Standard QF, Capped QF (10% per-donor cap), Equal Weight (1-person-1-
 ./tessera report-epoch -e 5
 ```
 
-### Data Collection (OSO)
+### Track Project (Cross-Epoch + Temporal Anomaly)
 
 ```bash
-# Collect GitHub code, on-chain, and funding signals
-./tessera collect-signals <project-name>
+# Track project across all epochs with temporal anomaly detection
+./tessera track-project <address>
 ```
 
-Fetches from Open Source Observer: stars, forks, commits, contributors, PRs, issues, transactions, gas fees, active contracts, addresses, grant count, total funding USD.
+Outputs: cross-epoch timeline, temporal anomalies (donor surge, exodus, funding spike, new whale, coordination shift), and multi-layer scores (Funding, Efficiency, Diversity, Consistency, Overall).
+
+### Data Collection (OSO + GitHub)
+
+```bash
+# Collect signals from OSO and GitHub API
+./tessera collect-signals <project-name-or-owner/repo>
+# Examples:
+./tessera collect-signals golemfoundation/octant
+./tessera collect-signals rotki/rotki
+```
+
+Tries OSO first (code metrics, on-chain, funding), falls back to GitHub API (stars, forks, commits, contributors). Accepts both project names and owner/repo format.
 
 ### Social (Moltbook)
 
@@ -159,6 +171,16 @@ Fetches from Open Source Observer: stars, forks, commits, contributors, PRs, iss
 # Continuous monitoring every 10 minutes
 ./tessera heartbeat --loop
 ```
+
+### Web Dashboard
+
+```bash
+# Start web server with dashboard UI
+./tessera serve
+# Open http://localhost:8080
+```
+
+Serves a Next.js dashboard with all analysis features, SSE real-time streaming for long operations, and inline PDF report viewer.
 
 ## AI Provider Chain
 
@@ -185,14 +207,19 @@ Default model: `claude-opus-4-6`. Override with `CLAUDE_CLI_MODEL`.
 
 ## Key Findings (Real Data)
 
-From Octant Epoch 5 analysis:
-- 30 projects, 1,902 donations, 422 unique donors, 17.63 ETH total
-- Top 10% of donors control **97.9%** of total funding
-- **41 donor coordination clusters** detected (Jaccard > 0.7)
-- **17/30 projects** flagged for whale dependency > 50%
-- Median donor diversity (Shannon entropy): **0.33** (structurally concentrated)
-- Equal Weight mechanism would increase smallest project funding by **3105%**
-- Trust-Weighted QF reduces Gini from 0.399 to ~0.37 while preserving preference signal
+From real Octant data analysis:
+- 97.9% whale concentration across epochs (92-98% systemic)
+- **41 donor coordination clusters** (Jaccard > 0.7), increasing: 25 (E4) to 44 (E6)
+- Rank #1 project (composite 89.5) drops to **36.6 Overall** under multi-layer scoring (Diversity: 10.9, Efficiency: 5.9)
+- Single whale **0x2585** controls 90-99% of 5 projects simultaneously
+- 11 temporal anomalies in one epoch transition including 931% funding spike
+- Healthiest project (Shannon 0.892, whale 13.4%) ranks only 27/30 by funding
+- Equal Weight mechanism: **+3105%** for smallest project, **-73%** for rank #1
+- Donor coordination clusters **increasing over time** (25 to 44 across 3 epochs)
+
+See [FINDINGS.md](FINDINGS.md) for detailed analysis with reproducible commands.
+
+**Known limitation:** OSO GraphQL API is currently experiencing infrastructure outage. GitHub API fallback provides code metrics independently.
 
 ## How to Interpret Results
 

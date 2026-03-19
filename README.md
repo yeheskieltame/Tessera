@@ -8,7 +8,7 @@ AI-powered public goods project evaluation for the Ethereum ecosystem.
 
 ## What It Does
 
-Tessera is a CLI tool (18 commands) and web dashboard that evaluates projects funded through Octant, Gitcoin, and other Ethereum public goods platforms. Its core command (`analyze-project`) runs an 8-step evidence pipeline: cross-epoch funding history, quantitative scoring, trust-graph analysis (Jaccard similarity, Shannon entropy), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), OSO data collection, and AI deep evaluation via Claude Opus 4.6. The AI evaluation is evidence-grounded -- it receives all quantitative and trust data before generating its assessment, not just project descriptions. Output includes branded PDF reports with Tessera Agent watermark.
+Tessera is a CLI tool (19 commands) and web dashboard that evaluates projects funded through Octant, Gitcoin, and other Ethereum public goods platforms. Its core command (`analyze-project`) runs an 8-step evidence pipeline: cross-epoch funding history, quantitative scoring, trust-graph analysis (Jaccard similarity, Shannon entropy), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), OSO data collection, and AI deep evaluation via Claude Opus 4.6. The AI evaluation is evidence-grounded -- it receives all quantitative and trust data before generating its assessment, not just project descriptions. Output includes branded PDF reports with Tessera Agent watermark.
 
 ---
 
@@ -53,7 +53,7 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 
 ---
 
-## All 18 Commands
+## All 19 Commands
 
 ### Quantitative Analysis (no AI needed)
 
