@@ -413,6 +413,57 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
+                {/* Multi-Layer Scores */}
+                {projectResult.scores && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-2">Multi-Layer Scores</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {[
+                        { key: "fundingScore", label: "Funding", weight: "25%" },
+                        { key: "efficiencyScore", label: "Efficiency", weight: "25%" },
+                        { key: "diversityScore", label: "Diversity", weight: "30%" },
+                        { key: "consistencyScore", label: "Consistency", weight: "20%" },
+                        { key: "overallScore", label: "Overall", weight: "" },
+                      ].map((dim) => {
+                        const val = Math.min(100, Math.max(0, Number(projectResult.scores[dim.key] ?? 0)));
+                        const isOverall = dim.key === "overallScore";
+                        return (
+                          <div key={dim.key} className={`p-2.5 rounded-xl border ${isOverall ? "bg-blue-50 border-blue-200" : "bg-slate-50 border-slate-100"}`}>
+                            <p className="text-xs text-slate-500">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
+                            <p className={`text-lg font-bold ${isOverall ? "text-blue-700" : "text-slate-800"}`}>{val.toFixed(1)}</p>
+                            <div className="w-full h-1.5 rounded-full bg-slate-200 mt-1">
+                              <div className={`h-full rounded-full ${isOverall ? "bg-blue-500" : "bg-slate-400"}`} style={{width: `${val}%`}} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Temporal Anomalies */}
+                {projectResult.anomalies?.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-2">Temporal Anomalies ({projectResult.anomalies.length})</h3>
+                    <div className="space-y-2">
+                      {projectResult.anomalies.map((a: {type: string; severity: string; description: string; epoch: number}, i: number) => (
+                        <div key={i} className={`p-2.5 rounded-xl border text-sm ${
+                          a.severity === "high" ? "bg-red-50 border-red-200 text-red-700" :
+                          a.severity === "medium" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
+                          "bg-blue-50 border-blue-200 text-blue-700"
+                        }`}>
+                          <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
+                          <span className="text-xs opacity-70 ml-2">Epoch {a.epoch}</span>
+                          <span className={`ml-2 text-xs font-medium uppercase px-1.5 py-0.5 rounded-full ${
+                            a.severity === "high" ? "bg-red-100" : a.severity === "medium" ? "bg-yellow-100" : "bg-blue-100"
+                          }`}>{a.severity}</span>
+                          <p className="text-xs mt-1 opacity-80">{a.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Mechanism Impact */}
                 {projectResult.mechanismImpacts?.length > 0 && (
                   <div className="overflow-x-auto">

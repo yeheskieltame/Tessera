@@ -825,7 +825,8 @@ func collectAllocData(ctx context.Context, octant *data.OctantClient, epoch int)
 	return d, nil
 }
 
-// handleAnalyzeProjectStream streams a full 6-step project analysis via SSE.
+// handleAnalyzeProjectStream streams a full 8-step project analysis via SSE.
+// Steps: 1-History, 2-Quantitative, 3-Trust, 4-Mechanism, 5-Temporal Anomaly, 6-Multi-Layer Score, 7-OSO, 8-AI Eval
 // GET /api/analyze-project/stream?address=0x...&epoch=5&oso_name=optional
 func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	sse := newSSEWriter(w)
@@ -845,8 +846,9 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	octant := data.NewOctantClient()
 	ai := provider.New()
 
+	totalSteps := 8
 	// Step 1: Cross-epoch history
-	sse.sendStep(1, 6, "Fetching cross-epoch funding history...", nil)
+	sse.sendStep(1, totalSteps, "Fetching cross-epoch funding history...", nil)
 	ep, err := octant.GetCurrentEpoch(ctx)
 	if err != nil {
 		sse.sendError(fmt.Sprintf("failed to get current epoch: %v", err))
@@ -872,7 +874,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	for i, h := range history {
 		histOut[i] = histEntry{h.Epoch, h.Allocated, h.Matched, h.Donors}
 	}
-	sse.sendStep(1, 6, fmt.Sprintf("Found in %d epochs", len(history)), map[string]any{"history": histOut})
+	sse.sendStep(1, totalSteps, fmt.Sprintf("Found in %d epochs", len(history)), map[string]any{"history": histOut})
 
 	epoch := epochParam
 	if epoch == 0 {
@@ -880,7 +882,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Step 2: Quantitative scoring
-	sse.sendStep(2, 6, fmt.Sprintf("Quantitative analysis (Epoch %d)...", epoch), nil)
+	sse.sendStep(2, totalSteps, fmt.Sprintf("Quantitative analysis (Epoch %d)...", epoch), nil)
 	rewards, err := octant.GetProjectRewards(ctx, epoch)
 	if err != nil {
 		sse.sendError(fmt.Sprintf("failed to get rewards: %v", err))
@@ -910,7 +912,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	sse.sendStep(2, 6, fmt.Sprintf("Rank %d/%d, Score %.1f", projectRank, len(metrics), projectMetric.CompositeScore), map[string]any{
+	sse.sendStep(2, totalSteps, fmt.Sprintf("Rank %d/%d, Score %.1f", projectRank, len(metrics), projectMetric.CompositeScore), map[string]any{
 		"rank":           projectRank,
 		"totalProjects":  len(metrics),
 		"compositeScore": projectMetric.CompositeScore,
@@ -919,7 +921,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Step 3: Trust graph analysis
-	sse.sendStep(3, 6, "Trust graph analysis...", nil)
+	sse.sendStep(3, totalSteps, "Trust graph analysis...", nil)
 	ad, err := collectAllocData(ctx, octant, epoch)
 	if err != nil {
 		sse.sendError(fmt.Sprintf("failed to get allocations: %v", err))
@@ -950,10 +952,10 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 			"flags":            flags,
 		}
 	}
-	sse.sendStep(3, 6, "Trust profile computed", trustData)
+	sse.sendStep(3, totalSteps, "Trust profile computed", trustData)
 
 	// Step 4: Mechanism simulation
-	sse.sendStep(4, 6, "Mechanism simulation impact...", nil)
+	sse.sendStep(4, totalSteps, "Mechanism simulation impact...", nil)
 	inputs := make([]analysis.AllocationInput, len(ad.allocations))
 	for i := range ad.allocations {
 		inputs[i] = analysis.AllocationInput{Donor: ad.donors[i], Project: ad.projects[i], Amount: ad.amounts[i]}
@@ -990,28 +992,81 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 			mechImpacts = append(mechImpacts, mechImpact{mech.Name, p.Allocated, p.Change})
 		}
 	}
-	sse.sendStep(4, 6, "Mechanism simulations complete", map[string]any{"mechanisms": mechImpacts})
+	sse.sendStep(4, totalSteps, "Mechanism simulations complete", map[string]any{"mechanisms": mechImpacts})
 
-	// Step 5: OSO signals
+	// Step 5: Temporal anomaly detection
+	sse.sendStep(5, totalSteps, "Detecting temporal anomalies...", nil)
+	type anomalyOut struct {
+		Type        string  `json:"type"`
+		Severity    string  `json:"severity"`
+		Description string  `json:"description"`
+		Epoch       int     `json:"epoch"`
+		Metric      float64 `json:"metric"`
+	}
+	anomalyList := []anomalyOut{}
+
+	if len(history) >= 2 {
+		prevEpoch := history[len(history)-2].Epoch
+		prevAllocs, err1 := octant.GetAllocations(ctx, prevEpoch)
+		if err1 == nil {
+			prevDonors := make([]string, len(prevAllocs))
+			prevAmounts := make([]float64, len(prevAllocs))
+			prevProjects := make([]string, len(prevAllocs))
+			for i, a := range prevAllocs {
+				prevDonors[i] = a.Donor
+				prevProjects[i] = a.Project
+				prevAmounts[i] = weiToEth(a.Amount)
+			}
+			anomalies := analysis.DetectTemporalAnomalies(ad.donors, ad.amounts, ad.projects, prevDonors, prevAmounts, prevProjects, prevEpoch, epoch)
+			for _, a := range anomalies {
+				anomalyList = append(anomalyList, anomalyOut{a.Type, a.Severity, a.Description, a.EpochTo, a.Metric})
+			}
+		}
+	}
+	sse.sendStep(5, totalSteps, fmt.Sprintf("%d temporal anomalies detected", len(anomalyList)), map[string]any{"anomalies": anomalyList})
+
+	// Step 6: Multi-layer scoring
+	sse.sendStep(6, totalSteps, "Computing multi-layer scores...", nil)
+	multiScores := analysis.ComputeMultiScores(metrics, trustProfiles)
+	var projectScore *analysis.MultiScore
+	for i, ms := range multiScores {
+		if strings.EqualFold(ms.Address, address) {
+			projectScore = &multiScores[i]
+			break
+		}
+	}
+	var scoresData map[string]any
+	if projectScore != nil {
+		scoresData = map[string]any{
+			"fundingScore":     projectScore.FundingScore,
+			"efficiencyScore":  projectScore.EfficiencyScore,
+			"diversityScore":   projectScore.DiversityScore,
+			"consistencyScore": projectScore.ConsistencyScore,
+			"overallScore":     projectScore.OverallScore,
+		}
+	}
+	sse.sendStep(6, totalSteps, fmt.Sprintf("Overall score: %.1f/100", func() float64 { if projectScore != nil { return projectScore.OverallScore }; return 0 }()), scoresData)
+
+	// Step 7: OSO signals
 	osoMetrics := ""
 	if osoName != "" {
-		sse.sendStep(5, 6, fmt.Sprintf("Collecting OSO signals (%s)...", osoName), nil)
+		sse.sendStep(7, totalSteps, fmt.Sprintf("Collecting OSO signals (%s)...", osoName), nil)
 		oso := data.NewOSOClient()
 		signals := oso.CollectProjectSignals(ctx, osoName)
 		osoMetrics = signals.FormatSignals()
 		if osoMetrics == "No OSO data available for this project." {
 			osoMetrics = ""
 		}
-		sse.sendStep(5, 6, "OSO signals collected", map[string]any{"osoMetrics": osoMetrics})
+		sse.sendStep(7, totalSteps, "OSO signals collected", map[string]any{"osoMetrics": osoMetrics})
 	} else {
-		sse.sendStep(5, 6, "OSO signals skipped (no oso_name provided)", nil)
+		sse.sendStep(7, totalSteps, "OSO signals skipped (no oso_name provided)", nil)
 	}
 
-	// Step 6: AI deep evaluation
+	// Step 8: AI deep evaluation (evidence-grounded with ALL collected data)
 	if !ai.HasProviders() {
-		sse.sendStep(6, 6, "AI evaluation skipped (no providers configured)", nil)
+		sse.sendStep(8, totalSteps, "AI evaluation skipped (no providers configured)", nil)
 	} else {
-		sse.sendStep(6, 6, "Generating AI deep evaluation...", nil)
+		sse.sendStep(8, totalSteps, "Generating AI deep evaluation...", nil)
 
 		var contextData strings.Builder
 		contextData.WriteString(fmt.Sprintf("Project: %s\n", address))
@@ -1030,12 +1085,24 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 			contextData.WriteString(fmt.Sprintf("Mechanism impact: Standard QF -> Capped QF %+.1f%%, Equal Weight %+.1f%%, Trust-Weighted %+.1f%%\n",
 				cappedP.Change, equalP.Change, trustP.Change))
 		}
+		// Include temporal anomalies in AI context
+		if len(anomalyList) > 0 {
+			contextData.WriteString(fmt.Sprintf("\nTemporal anomalies detected (%d):\n", len(anomalyList)))
+			for _, a := range anomalyList {
+				contextData.WriteString(fmt.Sprintf("  [%s] %s: %s\n", a.Severity, a.Type, a.Description))
+			}
+		}
+		// Include multi-layer scores in AI context
+		if projectScore != nil {
+			contextData.WriteString(fmt.Sprintf("\nMulti-layer scores: Funding=%.1f, Efficiency=%.1f, Diversity=%.1f, Consistency=%.1f, Overall=%.1f\n",
+				projectScore.FundingScore, projectScore.EfficiencyScore, projectScore.DiversityScore, projectScore.ConsistencyScore, projectScore.OverallScore))
+		}
 
 		evalResult, err := analysis.DeepEvaluateProject(ctx, ai, address, history, osoMetrics+"\n\n"+contextData.String())
 		if err != nil {
-			sse.sendStep(6, 6, fmt.Sprintf("AI evaluation failed: %v", err), nil)
+			sse.sendStep(8, totalSteps, fmt.Sprintf("AI evaluation failed: %v", err), nil)
 		} else {
-			sse.sendStep(6, 6, "AI deep evaluation complete", map[string]any{
+			sse.sendStep(8, totalSteps, "AI deep evaluation complete", map[string]any{
 				"evaluation": evalResult.Evaluation,
 				"model":      evalResult.Model,
 				"provider":   evalResult.Provider,
@@ -1106,6 +1173,8 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		"trust":            trustData,
 		"history":          histOut,
 		"mechanismImpacts": mechImpacts,
+		"anomalies":        anomalyList,
+		"scores":           scoresData,
 		"reportPath":       reportPath,
 	}
 	sse.sendDone(finalResult)
