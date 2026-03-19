@@ -72,7 +72,7 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 
 | Command | Description | Data Source | AI Required |
 |---------|-------------|-------------|-------------|
-| `evaluate "Name" -d "Desc"` | 8-dimension LLM evaluation with scored rubric | User input | Yes |
+| `evaluate "Name" -d "Desc" [-g url]` | 8-dimension evaluation with GitHub enrichment + PDF report | User input + GitHub API | Yes |
 | `deep-eval <addr> -e N` | Deep evaluation combining on-chain data with AI analysis | Octant + AI | Yes |
 | `scan-proposal <url>` | Scan and evaluate a project proposal from URL | Web + AI | Yes |
 | `extract-metrics "text"` | Extract structured impact metrics from unstructured text | User input | Yes |
@@ -172,6 +172,7 @@ The `simulate` command compares four mechanisms side-by-side:
 | OSO | `internal/data/oso.go` | GraphQL client for project registry and timeseries metrics |
 | Quantitative | `internal/analysis/quantitative.go` | K-means clustering, composite scoring, anomaly detection, trust graph |
 | Qualitative | `internal/analysis/qualitative.go` | LLM evaluation, comparison, sentiment, metric extraction |
+| GitHub | `internal/data/github.go` | GitHub API client for repo metrics, contributors, README content |
 | Report | `internal/report/report.go` | Markdown and PDF report generation with branded watermark |
 | Server | `internal/server/server.go` | HTTP server + SSE streaming for web dashboard |
 | Frontend | `frontend/` | Next.js dashboard with real-time streaming |
@@ -193,13 +194,19 @@ All quantitative data sources are public and require no authentication. OSO opti
 
 ## PDF Reports
 
-The `analyze-project` command generates branded PDF intelligence reports containing:
+Both `analyze-project` and `evaluate` generate branded PDF intelligence reports.
 
+**analyze-project** PDF contains:
 - Quantitative scoring and epoch rank
 - Trust profile with donor diversity metrics
 - Mechanism simulation showing impact of alternative funding models
 - AI deep evaluation across 8 dimensions
 - Temporal anomaly flags
+
+**evaluate** PDF contains:
+- Project description
+- GitHub repository data (if `-g` flag provided: README content, stars, forks, contributors)
+- AI evaluation across 8 dimensions with scored rubric
 
 Reports are saved to `reports/` and served through the web dashboard. Each PDF carries a "Tessera Agent" watermark.
 

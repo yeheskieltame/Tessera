@@ -1,6 +1,6 @@
 ---
 name: public-goods-analyst
-description: AI-powered public goods evaluation agent with 19 CLI commands and 8-step evidence pipeline. Trust-graph (Jaccard, Shannon entropy, union-find), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), branded PDF reports. Default AI: claude-opus-4-6.
+description: AI-powered public goods evaluation agent with 19 CLI commands and 8-step evidence pipeline. Trust-graph (Jaccard, Shannon entropy, union-find), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), branded PDF reports for both analyze-project and evaluate commands, GitHub README enrichment for evaluate. Default AI: claude-opus-4-6.
 homepage: https://github.com/yeheskieltame/Tessera
 user-invocable: true
 disable-model-invocation: false
@@ -113,8 +113,8 @@ Simulates: Standard QF, Capped QF (10% per-donor cap), Equal Weight (1-person-1-
 ### Qualitative AI Analysis (requires AI provider)
 
 ```bash
-# 8-dimension project evaluation
-./tessera evaluate "Project Name" -d "Description" [-c "Context"]
+# 8-dimension project evaluation with optional GitHub enrichment + PDF report
+./tessera evaluate "Project Name" -d "Description" [-c "Context"] [-g "github-url"]
 
 # Multi-epoch deep evaluation with trajectory analysis
 ./tessera deep-eval <address> [-n <oso-name>]

@@ -296,9 +296,10 @@ func cmdEvaluate(ctx context.Context) {
 	name := flagString("", 0) // positional after "evaluate"
 	desc := flagString("-d", 0)
 	extra := flagString("-c", 0)
+	githubURL := flagString("-g", 0)
 
 	if name == "" || desc == "" {
-		fmt.Fprintln(os.Stderr, "Usage: analyst evaluate <name> -d <description> [-c <context>]")
+		fmt.Fprintln(os.Stderr, "Usage: analyst evaluate <name> -d <description> [-c <context>] [-g <github-url>]")
 		os.Exit(1)
 	}
 
@@ -308,21 +309,80 @@ func cmdEvaluate(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Evaluating %s...\n", name)
-	result, err := analysis.EvaluateProject(ctx, ai, name, desc, extra)
+	if githubURL != "" {
+		fmt.Printf("Evaluating %s (enriching with GitHub data)...\n", name)
+	} else {
+		fmt.Printf("Evaluating %s...\n", name)
+	}
+	result, err := analysis.EvaluateProject(ctx, ai, name, desc, extra, githubURL)
 	exitOnErr(err)
 
 	fmt.Printf("\n══════ Evaluation: %s ══════\n\n", result.Project)
 	fmt.Println(result.Evaluation)
 	fmt.Printf("\n[via %s/%s]\n", result.Provider, result.Model)
 
-	// Save report
+	// Save markdown report
 	report.Generate(name, nil, map[string]string{
 		"evaluation": result.Evaluation,
 		"model":      result.Model,
 		"provider":   result.Provider,
 	}, nil)
-	fmt.Println("\nReport saved to reports/")
+
+	// Generate PDF report
+	metadata := map[string]string{
+		"Project":  name,
+		"AI Model": result.Model,
+	}
+	if githubURL != "" {
+		metadata["GitHub"] = githubURL
+	}
+
+	sections := []report.PDFSection{
+		{
+			Heading: "Project Description",
+			Body:    desc,
+		},
+	}
+	if extra != "" {
+		sections = append(sections, report.PDFSection{
+			Heading: "Additional Context",
+			Body:    extra,
+		})
+	}
+	if githubURL != "" {
+		// Fetch GitHub signals for the PDF
+		owner, repo, ghErr := data.ParseGitHubURL(githubURL)
+		if ghErr == nil {
+			gh := data.NewGitHubClient()
+			signals := gh.CollectEvalSignals(ctx, owner, repo)
+			if formatted := signals.FormatForEval(); formatted != "" {
+				sections = append(sections, report.PDFSection{
+					Heading: "GitHub Repository Data",
+					Body:    formatted,
+				})
+			}
+		}
+	}
+	sections = append(sections, report.PDFSection{
+		Heading: "AI Evaluation",
+		Body:    result.Evaluation,
+	})
+
+	pdfReport := &report.PDFReport{
+		Title:    fmt.Sprintf("Project Evaluation: %s", name),
+		Subtitle: "AI-Powered Qualitative Assessment",
+		Model:    result.Model,
+		Provider: result.Provider,
+		Metadata: metadata,
+		Sections: sections,
+	}
+
+	pdfPath, err := report.GeneratePDF(pdfReport)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "PDF generation failed: %v\n", err)
+	} else {
+		fmt.Printf("PDF report saved to %s\n", pdfPath)
+	}
 }
 
 // --- detect-anomalies ---

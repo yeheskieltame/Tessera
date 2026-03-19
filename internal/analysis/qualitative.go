@@ -30,13 +30,28 @@ type EvaluationResult struct {
 	Provider   string
 }
 
-func EvaluateProject(ctx context.Context, ai *provider.Chain, name, description, extra string) (*EvaluationResult, error) {
+func EvaluateProject(ctx context.Context, ai *provider.Chain, name, description, extra string, githubURL string) (*EvaluationResult, error) {
+	// If GitHub URL provided, fetch README + repo signals as enrichment
+	var githubContext string
+	if githubURL != "" {
+		owner, repo, err := data.ParseGitHubURL(githubURL)
+		if err == nil {
+			gh := data.NewGitHubClient()
+			signals := gh.CollectEvalSignals(ctx, owner, repo)
+			githubContext = signals.FormatForEval()
+		}
+	}
+
 	prompt := fmt.Sprintf(`Evaluate this public goods project proposal:
 
 **Project:** %s
 
 **Description:**
 %s`, name, description)
+
+	if githubContext != "" {
+		prompt += fmt.Sprintf("\n\n**Data from GitHub Repository:**\n%s", githubContext)
+	}
 
 	if extra != "" {
 		prompt += fmt.Sprintf("\n\n**Additional Context:**\n%s", extra)

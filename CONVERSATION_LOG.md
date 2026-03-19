@@ -471,6 +471,31 @@ Each finding includes the reproducible command to verify it.
 - "seharusnya expand seperti ini" (showed PDF viewer reference) → matched exact dimensions
 - "done i love this one" → approved final result
 
+### Phase 34: Dashboard Color-Coded Cards & Evaluate PDF Generation
+**Date:** 2026-03-19
+**Initiated by:** Human (Yeheskiel)
+
+**Dashboard UI refinement:**
+- Each card now has a unique color identity with matching buttons:
+  - Full Project Intelligence: indigo
+  - AI Project Evaluation: violet
+  - Epoch Analysis: teal
+  - Anomaly Detection: rose
+  - Trust Graph: sky blue
+  - Mechanism Simulation: amber
+  - Track Project: fuchsia
+  - PDF Reports: slate
+- Quick-select tags color-coded to match parent card
+- Row 3 asymmetric layout (3:2 ratio)
+
+**Evaluate command enhanced:**
+1. **GitHub URL enrichment** (`-g` flag) — fetches README content + repo metrics (stars, forks, contributors) as additional context for AI evaluation
+2. **PDF report generation** — evaluate now produces branded PDF reports like analyze-project, with sections for: Project Description, GitHub Repository Data (if provided), and AI Evaluation
+3. **Frontend updates** — GitHub URL input field, View/Download PDF buttons after evaluation
+4. **Backend** — `GetReadme()` and `ParseGitHubURL()` added to GitHub client, `CollectEvalSignals()` aggregates all enrichment data
+
+**Human insight:** "seharusnya memberikan beberapa inputan opsional data sumber tambahan untuk evaluate project seperti link github, untuk mempermudah kita mengambil data Readme nya dari github"
+
 ---
 
 ## Key Decisions Made Together
@@ -508,7 +533,8 @@ Each finding includes the reproducible command to verify it.
 - Temporal anomaly detection (5 patterns)
 - PDF report generator with branded watermark
 - Web dashboard with SSE real-time streaming
-- Dashboard UI polish: solid gradient cards, portal-based expand modals
+- Dashboard UI: color-coded cards with matching buttons, portal-based expand modals
+- Evaluate command: GitHub enrichment + PDF report generation
 - Moltbook social integration (autonomous heartbeat)
 - FINDINGS.md: 7 concrete insights from real Octant data
 - All documentation, unit tests (13), 45+ git commits
@@ -516,4 +542,4 @@ Each finding includes the reproducible command to verify it.
 
 ---
 
-*Final version — 33 phases across 5 sessions of human-agent collaboration.*
+*Final version — 34 phases across 5 sessions of human-agent collaboration.*

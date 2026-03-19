@@ -2,12 +2,18 @@ package data
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
+
+func base64StdDecode(s string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(s)
+}
 
 // GitHubClient fetches code metrics directly from the GitHub API.
 // Used as a fallback when OSO is unavailable.
@@ -108,6 +114,93 @@ func (s *GitHubSignals) FormatSignals() string {
 		}
 	}
 	return out
+}
+
+// GetReadme fetches the README content for a repository.
+// Returns decoded content (GitHub API returns base64-encoded).
+func (c *GitHubClient) GetReadme(ctx context.Context, owner, repo string) (string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/readme", owner, repo)
+	body, err := c.get(ctx, url)
+	if err != nil {
+		return "", err
+	}
+	var result struct {
+		Content  string `json:"content"`
+		Encoding string `json:"encoding"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+	if result.Encoding == "base64" {
+		decoded, err := base64Decode(result.Content)
+		if err != nil {
+			return "", err
+		}
+		return decoded, nil
+	}
+	return result.Content, nil
+}
+
+// ParseGitHubURL extracts owner and repo from a GitHub URL.
+// Accepts formats like:
+//   - https://github.com/owner/repo
+//   - https://github.com/owner/repo.git
+//   - github.com/owner/repo
+func ParseGitHubURL(url string) (owner, repo string, err error) {
+	// Strip protocol
+	u := strings.TrimPrefix(url, "https://")
+	u = strings.TrimPrefix(u, "http://")
+	u = strings.TrimPrefix(u, "github.com/")
+	u = strings.TrimSuffix(u, ".git")
+	u = strings.TrimSuffix(u, "/")
+
+	parts := strings.SplitN(u, "/", 3)
+	if len(parts) < 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid GitHub URL: expected github.com/owner/repo")
+	}
+	return parts[0], parts[1], nil
+}
+
+// CollectEvalSignals fetches all available data for evaluate enrichment:
+// repo metrics, contributors, and README content.
+func (c *GitHubClient) CollectEvalSignals(ctx context.Context, owner, repo string) *EvalSignals {
+	signals := &EvalSignals{}
+	signals.GitHub = c.CollectGitHubSignals(ctx, owner, repo)
+	signals.Readme, _ = c.GetReadme(ctx, owner, repo)
+	return signals
+}
+
+// EvalSignals holds enrichment data for project evaluation.
+type EvalSignals struct {
+	GitHub *GitHubSignals
+	Readme string
+}
+
+// FormatForEval returns a formatted string for LLM context.
+func (s *EvalSignals) FormatForEval() string {
+	var out string
+	if s.GitHub != nil {
+		out += s.GitHub.FormatSignals()
+	}
+	if s.Readme != "" {
+		// Truncate README if too long (keep first 4000 chars)
+		readme := s.Readme
+		if len(readme) > 4000 {
+			readme = readme[:4000] + "\n\n[... README truncated at 4000 chars ...]"
+		}
+		out += "\n### README.md Content\n```\n" + readme + "\n```\n"
+	}
+	return out
+}
+
+func base64Decode(s string) (string, error) {
+	// Remove newlines that GitHub adds
+	cleaned := strings.ReplaceAll(s, "\n", "")
+	decoded, err := base64StdDecode(cleaned)
+	if err != nil {
+		return "", err
+	}
+	return string(decoded), nil
 }
 
 func (c *GitHubClient) get(ctx context.Context, url string) ([]byte, error) {

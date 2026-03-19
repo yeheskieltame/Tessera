@@ -433,6 +433,7 @@ func handleEvaluate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
+		GitHubURL   string `json:"githubURL"`
 	}
 	if err := json.Unmarshal(body, &req); err != nil {
 		jsonError(w, "invalid JSON body", http.StatusBadRequest)
@@ -449,10 +450,54 @@ func handleEvaluate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := analysis.EvaluateProject(r.Context(), ai, req.Name, req.Description, "")
+	result, err := analysis.EvaluateProject(r.Context(), ai, req.Name, req.Description, "", req.GitHubURL)
 	if err != nil {
 		jsonError(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// Generate PDF report
+	metadata := map[string]string{
+		"Project":  req.Name,
+		"AI Model": result.Model,
+	}
+	if req.GitHubURL != "" {
+		metadata["GitHub"] = req.GitHubURL
+	}
+
+	sections := []report.PDFSection{
+		{Heading: "Project Description", Body: req.Description},
+	}
+	if req.GitHubURL != "" {
+		owner, repo, ghErr := data.ParseGitHubURL(req.GitHubURL)
+		if ghErr == nil {
+			gh := data.NewGitHubClient()
+			signals := gh.CollectEvalSignals(r.Context(), owner, repo)
+			if formatted := signals.FormatForEval(); formatted != "" {
+				sections = append(sections, report.PDFSection{
+					Heading: "GitHub Repository Data",
+					Body:    formatted,
+				})
+			}
+		}
+	}
+	sections = append(sections, report.PDFSection{
+		Heading: "AI Evaluation",
+		Body:    result.Evaluation,
+	})
+
+	pdfReport := &report.PDFReport{
+		Title:    fmt.Sprintf("Project Evaluation: %s", req.Name),
+		Subtitle: "AI-Powered Qualitative Assessment",
+		Model:    result.Model,
+		Provider: result.Provider,
+		Metadata: metadata,
+		Sections: sections,
+	}
+
+	var reportPath string
+	if pdfPath, pdfErr := report.GeneratePDF(pdfReport); pdfErr == nil {
+		reportPath = pdfPath
 	}
 
 	jsonOK(w, map[string]any{
@@ -460,6 +505,7 @@ func handleEvaluate(w http.ResponseWriter, r *http.Request) {
 		"evaluation": result.Evaluation,
 		"model":      result.Model,
 		"provider":   result.Provider,
+		"reportPath": reportPath,
 	})
 }
 
