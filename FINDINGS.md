@@ -78,6 +78,16 @@ Trust-graph analysis using Jaccard similarity (>0.7 overlap in funded project se
 - 17 of 30 projects (57%) flagged for whale dependency >50%
 - Median Shannon entropy: **0.33** (structurally concentrated)
 
+**Cross-epoch trend:**
+
+| Epoch | Donor Clusters (Jaccard > 0.7) | Trend |
+|-------|-------------------------------|-------|
+| 4 | 25 | Baseline |
+| 5 | 41 | +64% |
+| 6 | 44 | +7.3% |
+
+Coordination is *increasing* over time, not decreasing. This suggests either growing community DAO participation or escalating coordinated behavior.
+
 **What this means:** Donor behavior in Octant is not independent. Large groups of wallets fund the same projects with highly similar patterns. This could be:
 - Legitimate: community DAOs voting as blocs
 - Concerning: sybil clusters splitting allocations to maximize QF matching
