@@ -44,20 +44,11 @@ body {
 }
 
 /* Decorative orb */
-.hero-orb {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, rgba(124, 58, 237, 0.08) 40%, transparent 70%);
-  filter: blur(40px);
-  pointer-events: none;
-}
 
 /* Input placeholder on dark glass backgrounds */
 input::placeholder,
 textarea::placeholder {
-  color: rgba(186, 210, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 /* Scrollbar styling */

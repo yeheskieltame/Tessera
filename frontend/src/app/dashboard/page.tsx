@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   getStatus,
   getCurrentEpoch,
@@ -47,30 +48,37 @@ function ExpandableSection({ title, children, compact }: { title: string; childr
 
   return (
     <>
-      {/* Compact view inside card */}
-      <div className="relative group">
-        {compact || children}
+      {/* Compact view inside card + expand trigger */}
+      <div className="mt-3">
+        {compact || (
+          <div className="max-h-48 overflow-hidden relative">
+            {children}
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white/80 to-transparent" />
+          </div>
+        )}
         <button
           onClick={() => setExpanded(true)}
-          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition text-xs px-2 py-1 rounded-lg bg-white/25 text-white hover:bg-white/35 backdrop-blur-md"
+          className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200/50 rounded-xl px-3 py-2 transition-colors"
         >
-          Expand
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" /></svg>
+          Expand {title}
         </button>
       </div>
 
-      {/* Expanded modal overlay */}
-      {expanded && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center pt-16 px-4 pb-4 overflow-y-auto" onClick={() => setExpanded(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">{title}</h3>
-              <button onClick={() => setExpanded(false)} className="text-slate-400 hover:text-white/80 text-xl">&times;</button>
+      {/* Full-screen focused modal — portaled to body (same as PDF viewer) */}
+      {expanded && createPortal(
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setExpanded(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-semibold text-slate-800">{title}</h3>
+              <button onClick={() => setExpanded(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="flex-1 overflow-auto p-6 text-slate-700">
               {children}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
@@ -223,11 +231,11 @@ export default function DashboardPage() {
       <div className="relative z-10">
 
       {/* ─── Top Bar (sticky) ─── */}
-      <header className="sticky top-0 z-50 bg-white/15 backdrop-blur-2xl border-b border-white/20">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-slate-200/80 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent tracking-tight">Tessera</span>
-            <span className="text-xs font-medium text-white border-l border-slate-200 pl-3">Dashboard</span>
+            <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-violet-600 bg-clip-text text-transparent tracking-tight">Tessera</span>
+            <span className="text-xs font-medium text-slate-600 border-l border-slate-300 pl-3">Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             {loading ? (
@@ -236,13 +244,13 @@ export default function DashboardPage() {
               <>
                 <div className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${octant?.status === "ok" ? "bg-green-400" : "bg-red-400"}`} />
-                  <span className="text-xs text-white">Octant</span>
+                  <span className="text-xs font-medium text-slate-700">Octant</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${ai?.status === "ok" ? "bg-green-400" : "bg-red-400"}`} />
-                  <span className="text-xs text-white">AI</span>
+                  <span className="text-xs font-medium text-slate-700">AI</span>
                 </div>
-                <span className="text-xs font-mono text-white/75 bg-slate-50 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
+                <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
               </>
             )}
           </div>
@@ -250,20 +258,20 @@ export default function DashboardPage() {
       </header>
 
       {/* ─── Epoch Control Bar (sticky) ─── */}
-      <div className="sticky top-14 z-40 bg-white/12 backdrop-blur-2xl border-b border-white/15">
+      <div className="sticky top-14 z-40 bg-white/80 backdrop-blur-2xl border-b border-slate-200/60 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-4">
-          <label className="text-xs font-semibold text-white font-semibold uppercase tracking-wider whitespace-nowrap">Epoch</label>
+          <label className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Epoch</label>
           <input type="number" value={selectedEpoch} onChange={(e) => setSelectedEpoch(Number(e.target.value))}
-            className="w-20 rounded-lg border border-white/30 bg-white/30 backdrop-blur-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            className="w-20 rounded-lg border border-slate-200 bg-white/70 backdrop-blur-xl px-2.5 py-1.5 text-xs text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400" />
           <div className="flex gap-1">
             {[3, 4, 5, 6].map((e) => (
               <button key={e} onClick={() => setSelectedEpoch(e)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition ${selectedEpoch === e ? "bg-blue-500/80 backdrop-blur-md text-white shadow-lg shadow-blue-500/25" : "bg-white/15 border border-blue-300/25 text-cyan-200 hover:bg-blue-500/20 hover:text-white font-medium"}`}>
+                className={`px-3 py-1 rounded-md text-xs font-medium transition ${selectedEpoch === e ? "bg-blue-500 text-white shadow-md shadow-blue-500/25" : "bg-white/60 border border-slate-200 text-slate-600 hover:bg-blue-50 hover:text-blue-600"}`}>
                 {e}
               </button>
             ))}
           </div>
-          <span className="text-xs text-white/75 hidden sm:inline">90-day funding cycles. Epoch 5 has the most data.</span>
+          <span className="text-xs text-slate-500 hidden sm:inline">90-day funding cycles. Epoch 5 has the most data.</span>
         </div>
       </div>
 
@@ -274,24 +282,24 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
           {/* Full Project Intelligence — PRIMARY card */}
-          <div id="project" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <div className="h-1 w-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full -mt-5 mb-5 mx-0" style={{marginTop: "-20px", marginLeft: "-20px", marginRight: "-20px", width: "calc(100% + 40px)", borderRadius: "16px 16px 0 0"}} />
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">Full Project Intelligence</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera analyze-project &lt;address&gt;</p>
+          <div id="project" className="bg-gradient-to-br from-white/85 via-blue-50/75 to-indigo-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-indigo-500/10 hover:shadow-2xl hover:shadow-indigo-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <div className="h-0.5 w-full bg-gradient-to-r from-cyan-400/50 to-blue-400/50 rounded-full mb-4" />
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Full Project Intelligence</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera analyze-project &lt;address&gt;</p>
 
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-white font-semibold mb-1">Octant Project Address</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Octant Project Address</label>
               <input placeholder="0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" value={projectAddr} onChange={(e) => setProjectAddr(e.target.value)}
-                className="w-full rounded-lg border border-white/30 bg-white/30 backdrop-blur-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                className="w-full rounded-lg border border-slate-200 bg-white/60 backdrop-blur-xl text-slate-800 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400" />
               <div className="flex gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-white/80">Quick:</span>
+                <span className="text-xs text-slate-500">Quick:</span>
                 {[
                   { label: "#1, 7ep, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
                   { label: "#5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
                   { label: "#19, diverse", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
                 ].map((ex) => (
                   <button key={ex.addr} onClick={() => setProjectAddr(ex.addr)}
-                    className="text-xs px-2 py-0.5 rounded-md bg-white/15 border border-blue-300/25 text-cyan-200 hover:bg-blue-500/20 hover:text-white font-medium transition">
+                    className="text-xs px-2 py-0.5 rounded-md bg-white/50 border border-blue-200/50 text-blue-600 hover:bg-blue-50 hover:text-blue-700 font-medium transition">
                     {ex.label}
                   </button>
                 ))}
@@ -308,7 +316,7 @@ export default function DashboardPage() {
                 {projectSteps.map((s, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
                     <span className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xs">&#10003;</span>
-                    <span className="text-white/80">{s}</span>
+                    <span className="text-slate-600">{s}</span>
                   </div>
                 ))}
                 {projectLoading && (
@@ -324,28 +332,28 @@ export default function DashboardPage() {
               <div className="mt-4 space-y-3">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl">
-                    <p className="text-xs text-white/75">Rank</p>
-                    <p className="text-lg font-bold text-white">{String(projectResult.rank || "?")} / {String(projectResult.totalProjects || "?")}</p>
+                  <div className="p-2.5 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl">
+                    <p className="text-xs text-slate-500">Rank</p>
+                    <p className="text-lg font-bold text-slate-800">{String(projectResult.rank || "?")} / {String(projectResult.totalProjects || "?")}</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl">
-                    <p className="text-xs text-white/75">Score</p>
-                    <p className="text-lg font-bold text-white">{projectResult.quantitative?.compositeScore != null ? Number(projectResult.quantitative.compositeScore).toFixed(1) : "?"}</p>
+                  <div className="p-2.5 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl">
+                    <p className="text-xs text-slate-500">Score</p>
+                    <p className="text-lg font-bold text-slate-800">{projectResult.quantitative?.compositeScore != null ? Number(projectResult.quantitative.compositeScore).toFixed(1) : "?"}</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl">
-                    <p className="text-xs text-white/75">Donors</p>
-                    <p className="text-lg font-bold text-white">{projectResult.trust?.uniqueDonors ?? "?"}</p>
+                  <div className="p-2.5 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl">
+                    <p className="text-xs text-slate-500">Donors</p>
+                    <p className="text-lg font-bold text-slate-800">{projectResult.trust?.uniqueDonors ?? "?"}</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl">
-                    <p className="text-xs text-white/75">Whale Dep</p>
-                    <p className="text-lg font-bold text-white">{projectResult.trust?.whaleDepRatio != null ? (Number(projectResult.trust.whaleDepRatio) * 100).toFixed(1) + "%" : "?"}</p>
+                  <div className="p-2.5 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl">
+                    <p className="text-xs text-slate-500">Whale Dep</p>
+                    <p className="text-lg font-bold text-slate-800">{projectResult.trust?.whaleDepRatio != null ? (Number(projectResult.trust.whaleDepRatio) * 100).toFixed(1) + "%" : "?"}</p>
                   </div>
                 </div>
 
                 {/* Multi-Layer Scores */}
                 {projectResult.scores && (
                   <div>
-                    <h3 className="text-xs font-semibold text-white font-semibold mb-2">Multi-Layer Scores</h3>
+                    <h3 className="text-xs font-semibold text-slate-700 mb-2">Multi-Layer Scores</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {[
                         { key: "fundingScore", label: "Funding", weight: "25%" },
@@ -357,9 +365,9 @@ export default function DashboardPage() {
                         const val = Math.min(100, Math.max(0, Number(projectResult.scores[dim.key] ?? 0)));
                         const isOverall = dim.key === "overallScore";
                         return (
-                          <div key={dim.key} className={`p-2 rounded-xl border ${isOverall ? "bg-white/15 backdrop-blur-xl border-white/20" : "bg-white/20 backdrop-blur-md border-white/30"}`}>
-                            <p className="text-xs text-white/75">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
-                            <p className={`text-sm font-bold ${isOverall ? "text-cyan-300" : "text-white"}`}>{val.toFixed(1)}</p>
+                          <div key={dim.key} className={`p-2 rounded-xl border ${isOverall ? "bg-white/50 backdrop-blur-xl border-white/60" : "bg-white/50 backdrop-blur-md border-white/60"}`}>
+                            <p className="text-xs text-slate-500">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
+                            <p className={`text-sm font-bold ${isOverall ? "text-blue-600" : "text-slate-800"}`}>{val.toFixed(1)}</p>
                             <div className="w-full h-1 rounded-full bg-white/20 mt-1">
                               <div className={`h-full rounded-full ${isOverall ? "bg-blue-500" : "bg-white/50"}`} style={{width: `${val}%`}} />
                             </div>
@@ -374,13 +382,13 @@ export default function DashboardPage() {
                 {projectResult.anomalies?.length > 0 && (
                   <ExpandableSection title="Temporal Anomalies">
                     <div>
-                      <h3 className="text-xs font-semibold text-white font-semibold mb-2">Temporal Anomalies ({projectResult.anomalies.length})</h3>
+                      <h3 className="text-xs font-semibold text-slate-700 mb-2">Temporal Anomalies ({projectResult.anomalies.length})</h3>
                       <div className="space-y-1.5">
                         {projectResult.anomalies.map((a: {type: string; severity: string; description: string; epoch: number}, i: number) => (
                           <div key={i} className={`p-2 rounded-xl border text-xs ${
                             a.severity === "high" ? "bg-red-500/15 border-red-400/25 text-red-300" :
                             a.severity === "medium" ? "bg-amber-500/15 border-amber-400/25 text-amber-300" :
-                            "bg-white/15 backdrop-blur-xl border-white/20 text-cyan-300"
+                            "bg-white/50 backdrop-blur-xl border-white/60 text-blue-600"
                           }`}>
                             <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
                             <span className="text-xs opacity-70 ml-2">Epoch {a.epoch}</span>
@@ -400,7 +408,7 @@ export default function DashboardPage() {
                   <ExpandableSection title="Mechanism Impact">
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
-                        <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                        <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                           <th className="px-2 py-1.5 text-left">Mechanism</th>
                           <th className="px-2 py-1.5 text-right">Allocated</th>
                           <th className="px-2 py-1.5 text-right">Change</th>
@@ -426,7 +434,7 @@ export default function DashboardPage() {
                       View PDF Report
                     </button>
                     <a href={`/api/reports/${String(projectResult.reportPath).split("/").pop()}`} download
-                      className="bg-slate-100 hover:bg-white/20 text-white/75 text-xs font-medium rounded-lg px-4 py-2 transition">
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg px-4 py-2 transition">
                       Download PDF
                     </a>
                   </div>
@@ -438,23 +446,23 @@ export default function DashboardPage() {
           </div>
 
           {/* AI Project Evaluation */}
-          <div id="evaluate" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">AI Project Evaluation</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera evaluate &quot;Name&quot; -d &quot;Description&quot;</p>
+          <div id="evaluate" className="bg-gradient-to-br from-white/85 via-violet-50/75 to-purple-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">AI Project Evaluation</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera evaluate &quot;Name&quot; -d &quot;Description&quot;</p>
 
-            <div className="mb-3 p-2.5 rounded-lg bg-blue-500/10 backdrop-blur-md border border-blue-300/20 text-xs text-white/80">
+            <div className="mb-3 p-2.5 rounded-lg bg-blue-50/80 backdrop-blur-md border border-blue-200/50 text-xs text-slate-600">
               Enter any public goods project name and description. The AI evaluates across 8 dimensions: Impact, Team, Innovation, Sustainability, Ecosystem, Transparency, Community, Risk.
             </div>
             <div className="space-y-2.5 mb-3">
               <div>
-                <label className="block text-xs font-semibold text-white font-semibold mb-1">Project Name</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Project Name</label>
                 <input placeholder="e.g. Octant, Gitcoin Grants, Protocol Guild" value={evalName} onChange={(e) => setEvalName(e.target.value)}
-                  className="w-full rounded-lg border border-white/30 bg-white/30 backdrop-blur-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  className="w-full rounded-lg border border-slate-200 bg-white/60 backdrop-blur-xl text-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-white font-semibold mb-1">Project Description</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Project Description</label>
                 <textarea placeholder="e.g. Octant is a public goods funding platform by Golem Foundation..." value={evalDesc} onChange={(e) => setEvalDesc(e.target.value)} rows={3}
-                  className="w-full rounded-lg border border-white/30 bg-white/30 backdrop-blur-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  className="w-full rounded-lg border border-slate-200 bg-white/60 backdrop-blur-xl text-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400" />
               </div>
             </div>
             <button onClick={runEvaluate} disabled={evalLoading}
@@ -462,7 +470,7 @@ export default function DashboardPage() {
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{evalLoading ? "Running..." : "tessera evaluate"}</span>
             </button>
-            {evalResult && <pre className="mt-3 p-3 rounded-lg bg-white/18 backdrop-blur-xl border border-white/20 rounded-2xl text-xs whitespace-pre-wrap overflow-x-auto max-h-80">{evalResult}</pre>}
+            {evalResult && <pre className="mt-3 p-3 rounded-lg bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl text-xs whitespace-pre-wrap overflow-x-auto max-h-80">{evalResult}</pre>}
           </div>
         </div>
 
@@ -470,9 +478,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
 
           {/* Epoch Analysis */}
-          <div id="analyze" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">Epoch Analysis</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera analyze-epoch -e {selectedEpoch}</p>
+          <div id="analyze" className="bg-gradient-to-br from-white/85 via-cyan-50/75 to-sky-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-sky-500/10 hover:shadow-2xl hover:shadow-sky-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Epoch Analysis</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera analyze-epoch -e {selectedEpoch}</p>
             <button onClick={runAnalyze} disabled={epochLoading}
               className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
@@ -484,7 +492,7 @@ export default function DashboardPage() {
                 compact={
                   <div className="overflow-x-auto mt-3">
                     <table className="w-full text-xs">
-                      <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                      <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                         <th className="px-2 py-1.5 text-left">#</th>
                         <th className="px-2 py-1.5 text-left">Address</th>
                         <th className="px-2 py-1.5 text-right">Alloc</th>
@@ -494,26 +502,26 @@ export default function DashboardPage() {
                       </tr></thead>
                       <tbody>
                         {epochData.projects?.slice(0, 5).map((p, i) => (
-                          <tr key={p.address} className="border-t border-white/10 hover:bg-white/10 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                          <tr key={p.address} className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
                             <td className="px-2 py-1.5 font-medium">{i + 1}</td>
                             <td className="px-2 py-1.5 font-mono text-xs truncate max-w-[100px]" title={p.address}>{shortAddr(p.address)}</td>
                             <td className="px-2 py-1.5 text-right">{p.allocated?.toFixed(4)}</td>
                             <td className="px-2 py-1.5 text-right">{p.matched?.toFixed(4)}</td>
                             <td className="px-2 py-1.5 text-right font-semibold">{p.compositeScore?.toFixed(1)}</td>
-                            <td className="px-2 py-1.5 text-center"><span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-cyan-300 text-xs">{p.cluster}</span></td>
+                            <td className="px-2 py-1.5 text-center"><span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 text-xs">{p.cluster}</span></td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                     {(epochData.projects?.length ?? 0) > 5 && (
-                      <p className="text-xs text-white/80 mt-1 text-center">Showing 5 of {epochData.projects?.length}. Hover to expand.</p>
+                      <p className="text-xs text-slate-500 mt-1 text-center">Showing 5 of {epochData.projects?.length}. Hover to expand.</p>
                     )}
                   </div>
                 }
               >
                 {/* Expanded: full table with all rows and full addresses */}
                 <table className="w-full text-sm">
-                  <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                  <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                     <th className="px-3 py-2 text-left">#</th>
                     <th className="px-3 py-2 text-left">Address</th>
                     <th className="px-3 py-2 text-right">Allocated (ETH)</th>
@@ -523,26 +531,26 @@ export default function DashboardPage() {
                   </tr></thead>
                   <tbody>
                     {epochData.projects?.map((p, i) => (
-                      <tr key={p.address} className="border-t border-white/10 hover:bg-white/10 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                      <tr key={p.address} className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
                         <td className="px-3 py-2 font-medium">{i + 1}</td>
                         <td className="px-3 py-2"><CopyAddr addr={p.address} /></td>
                         <td className="px-3 py-2 text-right font-mono">{p.allocated?.toFixed(4)}</td>
                         <td className="px-3 py-2 text-right font-mono">{p.matched?.toFixed(4)}</td>
                         <td className="px-3 py-2 text-right font-semibold">{p.compositeScore?.toFixed(1)}</td>
-                        <td className="px-3 py-2 text-center"><span className="px-2 py-0.5 rounded-full bg-blue-100 text-cyan-300 text-xs font-medium">{p.cluster}</span></td>
+                        <td className="px-3 py-2 text-center"><span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium">{p.cluster}</span></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <p className="text-xs text-white/80 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
+                <p className="text-xs text-slate-500 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
               </ExpandableSection>
             )}
           </div>
 
           {/* Anomaly Detection */}
-          <div id="anomalies" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">Anomaly Detection</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera detect-anomalies -e {selectedEpoch}</p>
+          <div id="anomalies" className="bg-gradient-to-br from-white/85 via-rose-50/75 to-pink-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-rose-500/10 hover:shadow-2xl hover:shadow-rose-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Anomaly Detection</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera detect-anomalies -e {selectedEpoch}</p>
             <button onClick={runAnomalies} disabled={anomalyLoading}
               className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
@@ -554,13 +562,13 @@ export default function DashboardPage() {
                 compact={
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {Object.entries(anomalyData).filter(([k]) => k !== "flags").slice(0, 4).map(([k, v]) => (
-                      <div key={k} className="p-2.5 rounded-xl bg-white/18 backdrop-blur-xl border border-white/20 rounded-2xl">
-                        <p className="text-xs text-white/75 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
-                        <p className="text-sm font-bold text-white">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
+                      <div key={k} className="p-2.5 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl">
+                        <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                        <p className="text-sm font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
                       </div>
                     ))}
                     {Object.entries(anomalyData).filter(([k]) => k !== "flags").length > 4 && (
-                      <p className="col-span-full text-xs text-white/80 text-center">+{Object.entries(anomalyData).filter(([k]) => k !== "flags").length - 4} more stats. Hover to expand.</p>
+                      <p className="col-span-full text-xs text-slate-500 text-center">+{Object.entries(anomalyData).filter(([k]) => k !== "flags").length - 4} more stats. Hover to expand.</p>
                     )}
                     {Array.isArray((anomalyData as Record<string, unknown>).flags) && ((anomalyData as Record<string, unknown>).flags as string[]).slice(0, 2).map((f: string, i: number) => (
                       <div key={i} className="col-span-full p-2.5 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700">{f}</div>
@@ -571,9 +579,9 @@ export default function DashboardPage() {
                 {/* Expanded: all stats + all flags */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {Object.entries(anomalyData).filter(([k]) => k !== "flags").map(([k, v]) => (
-                    <div key={k} className="p-3 rounded-xl bg-white/18 backdrop-blur-xl border border-white/20 rounded-2xl">
-                      <p className="text-xs text-white/75 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
-                      <p className="text-base font-bold text-white">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
+                    <div key={k} className="p-3 rounded-xl bg-slate-50 border border-slate-100 rounded-2xl">
+                      <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                      <p className="text-base font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
                     </div>
                   ))}
                 </div>
@@ -590,9 +598,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Trust Graph */}
-          <div id="trust" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">Trust Graph</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera trust-graph -e {selectedEpoch}</p>
+          <div id="trust" className="bg-gradient-to-br from-white/85 via-emerald-50/75 to-teal-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-teal-500/10 hover:shadow-2xl hover:shadow-teal-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Trust Graph</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera trust-graph -e {selectedEpoch}</p>
             <button onClick={runTrust} disabled={trustLoading}
               className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
@@ -604,7 +612,7 @@ export default function DashboardPage() {
                 compact={
                   <div className="overflow-x-auto mt-3">
                     <table className="w-full text-xs">
-                      <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                      <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                         <th className="px-2 py-1.5 text-left">Address</th>
                         <th className="px-2 py-1.5 text-right">Don</th>
                         <th className="px-2 py-1.5 text-right">Div</th>
@@ -614,7 +622,7 @@ export default function DashboardPage() {
                       </tr></thead>
                       <tbody>
                         {trustData.profiles?.slice(0, 5).map((p) => (
-                          <tr key={p.address} className="border-t border-white/10 hover:bg-white/10 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                          <tr key={p.address} className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
                             <td className="px-2 py-1.5 font-mono text-xs" title={p.address}>{shortAddr(p.address)}</td>
                             <td className="px-2 py-1.5 text-right">{p.uniqueDonors}</td>
                             <td className="px-2 py-1.5 text-right">{p.donorDiversity?.toFixed(3)}</td>
@@ -630,14 +638,14 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                     {(trustData.profiles?.length ?? 0) > 5 && (
-                      <p className="text-xs text-white/80 mt-1 text-center">Showing 5 of {trustData.profiles?.length}. Hover to expand.</p>
+                      <p className="text-xs text-slate-500 mt-1 text-center">Showing 5 of {trustData.profiles?.length}. Hover to expand.</p>
                     )}
                   </div>
                 }
               >
                 {/* Expanded: full table with all rows and full addresses */}
                 <table className="w-full text-sm">
-                  <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                  <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                     <th className="px-3 py-2 text-left">Address</th>
                     <th className="px-3 py-2 text-right">Unique Donors</th>
                     <th className="px-3 py-2 text-right">Diversity</th>
@@ -647,7 +655,7 @@ export default function DashboardPage() {
                   </tr></thead>
                   <tbody>
                     {trustData.profiles?.map((p) => (
-                      <tr key={p.address} className="border-t border-white/10 hover:bg-white/10 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                      <tr key={p.address} className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
                         <td className="px-3 py-2"><CopyAddr addr={p.address} /></td>
                         <td className="px-3 py-2 text-right">{p.uniqueDonors}</td>
                         <td className="px-3 py-2 text-right font-mono">{p.donorDiversity?.toFixed(3)}</td>
@@ -662,7 +670,7 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="text-xs text-white/80 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
+                <p className="text-xs text-slate-500 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
               </ExpandableSection>
             )}
           </div>
@@ -672,9 +680,9 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
           {/* Mechanism Simulation */}
-          <div id="simulate" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">Mechanism Simulation</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera simulate -e {selectedEpoch}</p>
+          <div id="simulate" className="bg-gradient-to-br from-white/85 via-amber-50/75 to-orange-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-amber-500/10 hover:shadow-2xl hover:shadow-amber-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Mechanism Simulation</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera simulate -e {selectedEpoch}</p>
             <button onClick={runSimulate} disabled={simLoading}
               className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
@@ -684,7 +692,7 @@ export default function DashboardPage() {
               <ExpandableSection title={`Mechanism Simulation - Epoch ${selectedEpoch}`}>
                 <div className="overflow-x-auto mt-3">
                   <table className="w-full text-xs">
-                    <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                    <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                       <th className="px-2 py-1.5 text-left">Mechanism</th>
                       <th className="px-2 py-1.5 text-right">Gini</th>
                       <th className="px-2 py-1.5 text-right">Top Share</th>
@@ -693,7 +701,7 @@ export default function DashboardPage() {
                     </tr></thead>
                     <tbody>
                       {simData.mechanisms?.map((m) => (
-                        <tr key={m.name} className="border-t border-white/10 hover:bg-white/10">
+                        <tr key={m.name} className="border-t border-slate-100 hover:bg-slate-50">
                           <td className="px-2 py-1.5 font-medium">{m.name}</td>
                           <td className="px-2 py-1.5 text-right">{m.giniCoeff?.toFixed(3)}</td>
                           <td className="px-2 py-1.5 text-right">{(m.topShare * 100)?.toFixed(1)}%</td>
@@ -709,23 +717,23 @@ export default function DashboardPage() {
           </div>
 
           {/* Track Project */}
-          <div id="track" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">Track Project</h3>
-            <p className="text-xs text-white font-semibold/70 font-mono mb-4">./tessera track-project &lt;address&gt;</p>
+          <div id="track" className="bg-gradient-to-br from-white/85 via-fuchsia-50/75 to-pink-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-fuchsia-500/10 hover:shadow-2xl hover:shadow-fuchsia-500/15 transition-all duration-300 p-5 scroll-mt-32">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Track Project</h3>
+            <p className="text-xs text-slate-500 font-mono mb-4">./tessera track-project &lt;address&gt;</p>
 
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-white font-semibold mb-1">Project Address</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Project Address</label>
               <input placeholder="0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" value={trackAddr} onChange={(e) => setTrackAddr(e.target.value)}
-                className="w-full rounded-lg border border-white/30 bg-white/30 backdrop-blur-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                className="w-full rounded-lg border border-slate-200 bg-white/60 backdrop-blur-xl text-slate-800 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400" />
               <div className="flex gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-white/80">Quick:</span>
+                <span className="text-xs text-slate-500">Quick:</span>
                 {[
                   { label: "#1, 7ep, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
                   { label: "#5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
                   { label: "#19, diverse", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
                 ].map((ex) => (
                   <button key={ex.addr} onClick={() => setTrackAddr(ex.addr)}
-                    className="text-xs px-2 py-0.5 rounded-md bg-white/15 border border-blue-300/25 text-cyan-200 hover:bg-blue-500/20 hover:text-white font-medium transition">
+                    className="text-xs px-2 py-0.5 rounded-md bg-white/50 border border-blue-200/50 text-blue-600 hover:bg-blue-50 hover:text-blue-700 font-medium transition">
                     {ex.label}
                   </button>
                 ))}
@@ -743,10 +751,10 @@ export default function DashboardPage() {
                 {trackResult.timeline?.length > 0 && (
                   <ExpandableSection title="Cross-Epoch Timeline">
                     <div>
-                      <h3 className="text-xs font-semibold text-white font-semibold mb-2">Cross-Epoch Timeline</h3>
+                      <h3 className="text-xs font-semibold text-slate-700 mb-2">Cross-Epoch Timeline</h3>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
-                          <thead><tr className="bg-white/10 text-white/75 uppercase text-xs">
+                          <thead><tr className="bg-slate-100/60 text-slate-500 uppercase text-xs">
                             <th className="px-2 py-1.5 text-left">Epoch</th>
                             <th className="px-2 py-1.5 text-right">Alloc (ETH)</th>
                             <th className="px-2 py-1.5 text-right">Match (ETH)</th>
@@ -754,7 +762,7 @@ export default function DashboardPage() {
                           </tr></thead>
                           <tbody>
                             {trackResult.timeline.map((t: {epoch: number; allocated: number; matched: number; donors: number}) => (
-                              <tr key={t.epoch} className="border-t border-white/10 hover:bg-white/10">
+                              <tr key={t.epoch} className="border-t border-slate-100 hover:bg-slate-50">
                                 <td className="px-2 py-1.5 font-medium">Epoch {t.epoch}</td>
                                 <td className="px-2 py-1.5 text-right">{t.allocated?.toFixed(4)}</td>
                                 <td className="px-2 py-1.5 text-right">{t.matched?.toFixed(4)}</td>
@@ -772,13 +780,13 @@ export default function DashboardPage() {
                 {trackResult.anomalies?.length > 0 && (
                   <ExpandableSection title={`Temporal Anomalies (${trackResult.anomalies.length})`}>
                     <div>
-                      <h3 className="text-xs font-semibold text-white font-semibold mb-2">Temporal Anomalies</h3>
+                      <h3 className="text-xs font-semibold text-slate-700 mb-2">Temporal Anomalies</h3>
                       <div className="space-y-1.5">
                         {trackResult.anomalies.map((a: {type: string; severity: string; epoch: number; description: string}, i: number) => (
                           <div key={i} className={`p-2.5 rounded-xl border text-xs ${
                             a.severity === "high" ? "bg-red-500/15 border-red-400/25 text-red-300" :
                             a.severity === "medium" ? "bg-amber-500/15 border-amber-400/25 text-amber-300" :
-                            "bg-white/15 backdrop-blur-xl border-white/20 text-cyan-300"
+                            "bg-white/50 backdrop-blur-xl border-white/60 text-blue-600"
                           }`}>
                             <div className="flex items-center gap-2">
                               <span className={`inline-block w-1.5 h-1.5 rounded-full ${
@@ -805,7 +813,7 @@ export default function DashboardPage() {
                 {/* Multi-Layer Scores */}
                 {trackResult.scores && (
                   <div>
-                    <h3 className="text-xs font-semibold text-white font-semibold mb-2">Multi-Layer Scores</h3>
+                    <h3 className="text-xs font-semibold text-slate-700 mb-2">Multi-Layer Scores</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {[
                         { key: "fundingScore", label: "Funding", weight: "25%" },
@@ -818,9 +826,9 @@ export default function DashboardPage() {
                         const pct = Math.min(100, Math.max(0, Number(val)));
                         const isOverall = dim.key === "overallScore";
                         return (
-                          <div key={dim.key} className={`p-2.5 rounded-xl border ${isOverall ? "bg-white/15 backdrop-blur-xl border-white/20 col-span-2 sm:col-span-1" : "bg-white/20 backdrop-blur-md border-white/30"}`}>
-                            <p className="text-xs text-white/75">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
-                            <p className={`text-sm font-bold ${isOverall ? "text-cyan-300" : "text-white"}`}>{pct.toFixed(1)}</p>
+                          <div key={dim.key} className={`p-2.5 rounded-xl border ${isOverall ? "bg-white/50 backdrop-blur-xl border-white/60 col-span-2 sm:col-span-1" : "bg-white/50 backdrop-blur-md border-white/60"}`}>
+                            <p className="text-xs text-slate-500">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
+                            <p className={`text-sm font-bold ${isOverall ? "text-blue-600" : "text-slate-800"}`}>{pct.toFixed(1)}</p>
                             <div className="w-full h-1 rounded-full bg-white/20 mt-1">
                               <div className={`h-full rounded-full ${isOverall ? "bg-blue-500" : "bg-white/50"}`} style={{width: `${pct}%`}} />
                             </div>
@@ -833,7 +841,7 @@ export default function DashboardPage() {
 
                 {/* No data fallback */}
                 {!trackResult.timeline?.length && !trackResult.anomalies?.length && !trackResult.scores && (
-                  <div className="p-3 rounded-xl bg-white/18 backdrop-blur-xl border border-white/20 rounded-2xl text-xs text-white/75">
+                  <div className="p-3 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl text-xs text-slate-500">
                     {trackResult.error ? trackResult.error : "No tracking data available for this address."}
                   </div>
                 )}
@@ -843,11 +851,11 @@ export default function DashboardPage() {
         </div>
 
         {/* ─── Row 4: PDF Reports (full width) ─── */}
-        <div id="reports" className="bg-white/18 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-xl shadow-black/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+        <div id="reports" className="bg-gradient-to-br from-white/85 via-slate-50/75 to-blue-100/65 backdrop-blur-2xl rounded-3xl border border-white/40 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/15 transition-all duration-300 p-5 scroll-mt-32">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-white drop-shadow-sm mb-1">PDF Reports</h3>
-              <p className="text-xs text-white font-semibold/70 font-mono">Generated intelligence reports</p>
+              <h3 className="text-sm font-bold text-slate-800 mb-1">PDF Reports</h3>
+              <p className="text-xs text-slate-500 font-mono">Generated intelligence reports</p>
             </div>
             <button onClick={() => getReports().then(setReports).catch(() => {})}
               className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition flex items-center gap-2">
@@ -858,23 +866,23 @@ export default function DashboardPage() {
           {reports?.reports?.length ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {reports.reports.map((r) => (
-                <div key={r.name} className="flex items-center justify-between p-3 rounded-xl bg-white/18 backdrop-blur-xl border border-white/20 rounded-2xl">
+                <div key={r.name} className="flex items-center justify-between p-3 rounded-xl bg-white/50 backdrop-blur-xl border border-white/60 rounded-2xl">
                   <div className="min-w-0 mr-3">
-                    <p className="text-xs font-medium text-white/75 font-mono truncate">{r.name}</p>
-                    <p className="text-xs text-white/80">{r.modTime} -- {(r.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-xs font-medium text-slate-700 font-mono truncate">{r.name}</p>
+                    <p className="text-xs text-slate-500">{r.modTime} -- {(r.size / 1024).toFixed(1)} KB</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     {r.name.endsWith(".pdf") && (
                       <button onClick={() => setViewPdf(getReportUrl(r.name))}
-                        className="text-xs px-2.5 py-1 rounded-md bg-blue-100 text-cyan-300 hover:bg-blue-200 transition">View</button>
+                        className="text-xs px-2.5 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 transition">View</button>
                     )}
-                    <a href={getReportUrl(r.name)} download className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-white/80 hover:bg-white/20 transition">DL</a>
+                    <a href={getReportUrl(r.name)} download className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Download</a>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-white/80">No reports yet. Run analyze-project to generate PDF reports.</p>
+            <p className="text-xs text-slate-500">No reports yet. Run analyze-project to generate PDF reports.</p>
           )}
         </div>
 
@@ -885,15 +893,15 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setViewPdf(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-white/75">Report Viewer</h3>
-              <button onClick={() => setViewPdf(null)} className="text-slate-400 hover:text-white/80 text-2xl leading-none">&times;</button>
+              <h3 className="font-semibold text-slate-600">Report Viewer</h3>
+              <button onClick={() => setViewPdf(null)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
             </div>
             <iframe src={viewPdf} className="flex-1 w-full rounded-b-2xl" />
           </div>
         </div>
       )}
 
-      <footer className="text-center py-8 text-xs text-white/80 border-t border-white/10">
+      <footer className="text-center py-8 text-xs text-slate-500 border-t border-slate-200/50">
         Built by Yeheskiel Yunus Rame + Claude Opus 4.6 | The Synthesis Hackathon |{" "}
         <a href="https://github.com/yeheskieltame/Tessera" className="text-blue-500 hover:underline">GitHub</a>
       </footer>

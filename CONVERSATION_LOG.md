@@ -440,6 +440,39 @@ Each finding includes the reproducible command to verify it.
 
 ---
 
+### Phase 33: Dashboard UI Polish — Solid Gradient Cards & Expand Modal Redesign
+**Date:** 2026-03-19
+**Initiated by:** Human (Yeheskiel)
+**Reference image provided:** Pastel gradient card UI mockup
+
+**Changes:**
+1. **Card backgrounds** — Replaced transparent glass (`bg-white/18`) with solid pastel gradients per card section:
+   - Full Project Intelligence: blue-indigo gradient
+   - AI Evaluation: violet-purple gradient
+   - Epoch Analysis: cyan-sky gradient
+   - Anomaly Detection: rose-pink gradient
+   - Trust Graph: emerald-teal gradient
+   - Mechanism Simulation: amber-orange gradient
+   - Track Project: fuchsia-pink gradient
+   - PDF Reports: slate-blue gradient
+2. **Text visibility** — All card text updated from white to dark slate tones (`text-slate-800`, `text-slate-700`, `text-slate-500`) for readability on lighter backgrounds
+3. **Header & navigation bars** — Changed from transparent glass to solid white (`bg-white/90`, `bg-white/80`) with dark text for clear readability
+4. **ExpandableSection complete redesign:**
+   - Visible expand button (always shown, not hover-only)
+   - Full-screen modal via `createPortal` to `document.body` — escapes all parent overflow/z-index constraints
+   - Identical size and layout to PDF viewer modal (`max-w-5xl h-[85vh]`)
+   - Proper header with close button, scrollable content area
+5. **Inner elements** — Input fields, sub-cards, table headers, badges all updated to solid pastel theme
+
+**Human feedback loop:**
+- "perbaiki dashboard agar komponen menggunakan warna solid" → solid gradient cards
+- "header dan navigasinya masih banyak yang tidak keliatan teksnya" → white solid header bars
+- "expand di luar saja, mirip seperti view pdf" → portal-based full-screen modal
+- "seharusnya expand seperti ini" (showed PDF viewer reference) → matched exact dimensions
+- "done i love this one" → approved final result
+
+---
+
 ## Key Decisions Made Together
 
 | Decision | Human | Agent | Reasoning |
@@ -475,11 +508,12 @@ Each finding includes the reproducible command to verify it.
 - Temporal anomaly detection (5 patterns)
 - PDF report generator with branded watermark
 - Web dashboard with SSE real-time streaming
+- Dashboard UI polish: solid gradient cards, portal-based expand modals
 - Moltbook social integration (autonomous heartbeat)
 - FINDINGS.md: 7 concrete insights from real Octant data
-- All documentation, unit tests (13), 40+ git commits
+- All documentation, unit tests (13), 45+ git commits
 - Hackathon API submission, Moltbook social engagement
 
 ---
 
-*Final version — 32 phases across 4 sessions of human-agent collaboration.*
+*Final version — 33 phases across 5 sessions of human-agent collaboration.*
