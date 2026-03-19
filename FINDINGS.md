@@ -125,22 +125,25 @@ Command: `./tessera simulate -e 5`
 
 Comparing the healthiest vs most concerning projects in Epoch 5:
 
-| Metric | Healthiest (0x7Dd4) | Most Concerning (0x02Cb) |
+| Metric | Healthiest (0x7Dd4) | Rank #1 (0x9531) |
 |--------|--------------------|-----------------------|
-| Donors | 58 | 53 |
-| Shannon Entropy | **0.892** | 0.021 |
-| Whale Dependency | **13.4%** | 99.1% |
-| Jaccard Risk | **0.172** | 0.281 |
-| Repeat Donors | 10 | 31 |
-| Under Equal Weight | +3,105% | -76.3% |
+| Composite Score | 7.3 (rank 27/30) | **89.5** (rank 1/30) |
+| Overall Score | **61.2** | 36.6 |
+| Donors | 58 | 66 |
+| Shannon Entropy | **0.892** | 0.109 |
+| Whale Dependency | **13.4%** | 90.3% |
+| Jaccard Risk | **0.172** | 0.213 |
+| Under Equal Weight | +3,105% | -73% |
 
-The healthiest project has near-perfect donor diversity, minimal whale dependency, and low coordination risk. It would *benefit enormously* from mechanism changes. The most concerning project would *lose most of its funding* under any anti-whale mechanism.
+The healthiest project has near-perfect donor diversity, minimal whale dependency, and low coordination risk. It would *benefit enormously* from mechanism changes. The rank #1 project would *lose most of its funding* under any anti-whale mechanism.
 
 **The paradox:** The project with the *best* trust profile (0x7Dd4) ranks 27/30 by composite funding score. The project with the *worst* trust profile (0x9531) ranks #1. Simple funding-based ranking is inversely correlated with funding health. This is the core problem Tessera's multi-layer scoring solves.
 
 **What this means for evaluators:** Trust-graph metrics (Shannon entropy, whale dependency, Jaccard similarity) are strong signals for distinguishing genuine community support from concentrated influence. A project's trust profile should be weighted as heavily as its funding amount.
 
-Both reports are available as branded PDFs in the `reports/` directory.
+Both reports are available as branded PDFs in the `reports/` directory:
+- `intelligence_report__0x7dd488...407c.pdf` (healthiest)
+- `intelligence_report__0x9531c0...1306.pdf` (rank #1, whale-dominated)
 
 ---
 

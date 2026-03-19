@@ -36,6 +36,21 @@ cp .env.example .env
 
 ---
 
+## Web Dashboard
+
+The `serve` command launches a full web dashboard at `http://localhost:8080` with:
+
+- Color-coded analysis cards (each feature has its own visual identity)
+- SSE real-time streaming for the 8-step pipeline — watch each pipeline step complete in real time
+- Inline PDF report viewer (same modal for all reports)
+- Quick-select buttons for known high-signal project addresses
+- Expandable data tables with full-screen modal view (portal-based, matches PDF viewer)
+- GitHub URL enrichment for evaluate (fetches README + repo metrics)
+
+> To see the dashboard: `./tessera serve` then open http://localhost:8080
+
+---
+
 ## Key Findings from Real Data
 
 Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
@@ -67,6 +82,7 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 | `trust-graph -e N` | Donor diversity, whale dependency, Jaccard similarity matrix | Octant REST |
 | `simulate -e N` | Compare Standard QF, Capped QF, Equal Weight, Trust-Weighted QF | Octant REST |
 | `track-project <addr>` | Cross-epoch timeline + temporal anomaly detection + multi-layer scoring | Octant REST |
+| `gitcoin-rounds -r ID` | Analyze Gitcoin Grants round data | Gitcoin GraphQL |
 
 ### Qualitative Analysis (AI powered)
 
@@ -216,8 +232,9 @@ Reports are saved to `reports/` and served through the web dashboard. Each PDF c
 
 | Bounty | Prize | Tessera Features | Key Findings |
 |--------|-------|-----------------|--------------|
+| **Open Track** | $2,000 | Full 8-step evidence pipeline, 19 CLI commands, web dashboard, branded PDF reports, Trust-Weighted QF (novel mechanism) | End-to-end AI agent that analyzes, collects, evaluates, and designs mechanisms — not just a wrapper around an API |
 | **Data Analysis** | $1,000 | analyze-epoch, trust-graph, deep-eval, report-epoch, analyze-project | 41 donor clusters, 97.9% whale concentration, #1 project drops from 89.5 to 36.6 under multi-layer scoring |
-| **Data Collection** | $1,000 | collect-signals (OSO), scan-proposal (two-pass verification), extract-metrics, cross-epoch history | Evidence-grounded AI evaluation using real API data, not just text descriptions |
+| **Data Collection** | $1,000 | collect-signals (4 sources), scan-proposal (claim verification), evaluate with GitHub enrichment, cross-epoch history | Surfaces signals from Octant API, Gitcoin GraphQL, GitHub API, and OSO — then cross-references them. scan-proposal produces SUPPORTED/CONTRADICTED/UNVERIFIABLE verdicts, making signals more reliable, not just more abundant |
 | **Mechanism Design** | $1,000 | simulate (4 QF variants), Trust-Weighted QF (novel mechanism), Gini coefficients | Equal Weight +3105% for smallest project but maximizes sybil vulnerability; Trust-Weighted QF balances fairness and resistance |
 
 See [FINDINGS.md](FINDINGS.md) for detailed insights generated from real Octant data.
