@@ -38,7 +38,8 @@ export default function DashboardPage() {
   const [epochLoading, setEpochLoading] = useState(false);
 
   /* ─── Anomaly Detection ─── */
-  const [anomalyData, setAnomalyData] = useState<Record<string, unknown> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [anomalyData, setAnomalyData] = useState<any>(null);
   const [anomalyLoading, setAnomalyLoading] = useState(false);
 
   /* ─── Trust Graph ─── */
@@ -57,7 +58,8 @@ export default function DashboardPage() {
 
   /* ─── Analyze Project ─── */
   const [projectAddr, setProjectAddr] = useState("");
-  const [projectResult, setProjectResult] = useState<Record<string, unknown> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [projectResult, setProjectResult] = useState<any>(null);
   const [projectLoading, setProjectLoading] = useState(false);
   const [projectSteps, setProjectSteps] = useState<string[]>([]);
 
@@ -373,7 +375,67 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
-            {projectResult && <pre className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs whitespace-pre-wrap overflow-x-auto max-h-96">{JSON.stringify(projectResult, null, 2)}</pre>}
+            {projectResult && (
+              <div className="mt-4 space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-slate-500">Rank</p>
+                    <p className="text-lg font-bold text-slate-800">{String(projectResult.rank || "?")} / {String(projectResult.totalProjects || "?")}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-slate-500">Score</p>
+                    <p className="text-lg font-bold text-slate-800">{projectResult.quantitative?.compositeScore != null ? Number(projectResult.quantitative.compositeScore).toFixed(1) : "?"}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-slate-500">Donors</p>
+                    <p className="text-lg font-bold text-slate-800">{projectResult.trust?.uniqueDonors ?? "?"}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-slate-500">Whale Dep</p>
+                    <p className="text-lg font-bold text-slate-800">{projectResult.trust?.whaleDepRatio != null ? (Number(projectResult.trust.whaleDepRatio) * 100).toFixed(1) + "%" : "?"}</p>
+                  </div>
+                </div>
+
+                {/* Mechanism Impact */}
+                {projectResult.mechanismImpacts?.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                        <th className="px-3 py-2 text-left">Mechanism</th>
+                        <th className="px-3 py-2 text-right">Allocated</th>
+                        <th className="px-3 py-2 text-right">Change</th>
+                      </tr></thead>
+                      <tbody>
+                        {projectResult.mechanismImpacts.map((m: {name: string; allocated: number; change: number}) => (
+                          <tr key={m.name} className="border-t border-slate-100">
+                            <td className="px-3 py-2">{m.name}</td>
+                            <td className="px-3 py-2 text-right">{m.allocated.toFixed(4)} ETH</td>
+                            <td className="px-3 py-2 text-right font-semibold" style={{color: m.change > 0 ? "#16a34a" : "#dc2626"}}>{m.change > 0 ? "+" : ""}{m.change.toFixed(1)}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {projectResult.reportPath && (
+                  <div className="flex gap-3">
+                    <button onClick={() => { const f = String(projectResult.reportPath).split("/").pop(); setViewPdf(`/api/reports/${f}`); }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl px-5 py-2.5 transition">
+                      View PDF Report
+                    </button>
+                    <a href={`/api/reports/${String(projectResult.reportPath).split("/").pop()}`} download
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl px-5 py-2.5 transition">
+                      Download PDF
+                    </a>
+                  </div>
+                )}
+
+                {/* Refresh reports after generation */}
+                {projectResult.reportPath && <p className="text-xs text-green-600">PDF report generated. Check Reports section below.</p>}
+              </div>
+            )}
           </Card>
         </section>
 

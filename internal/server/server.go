@@ -18,6 +18,7 @@ import (
 	"github.com/yeheskieltame/tessera/internal/analysis"
 	"github.com/yeheskieltame/tessera/internal/data"
 	"github.com/yeheskieltame/tessera/internal/provider"
+	"github.com/yeheskieltame/tessera/internal/report"
 )
 
 // jsonError writes a JSON error response.
@@ -1042,6 +1043,53 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Generate PDF report
+	var reportPath string
+	if projectTrust != nil {
+		shortAddr := address
+		if len(shortAddr) > 14 {
+			shortAddr = shortAddr[:8] + "..." + shortAddr[len(shortAddr)-4:]
+		}
+		mechRows := [][]string{}
+		for _, mi := range mechImpacts {
+			mechRows = append(mechRows, []string{mi.Name, fmt.Sprintf("%.4f ETH", mi.Allocated), fmt.Sprintf("%+.1f%%", mi.Change)})
+		}
+		histRows := [][]string{}
+		for _, h := range histOut {
+			histRows = append(histRows, []string{fmt.Sprintf("%d", h.Epoch), fmt.Sprintf("%.4f", h.Allocated), fmt.Sprintf("%.4f", h.Matched), fmt.Sprintf("%d", h.Donors)})
+		}
+		evalText := ""
+		evalModel := "N/A"
+		evalProvider := "N/A"
+		if ai.HasProviders() {
+			// Already computed above, use from step 6
+			evalModel = "claude-opus-4-6"
+			evalProvider = "claude-cli"
+		}
+		pdfReport := &report.PDFReport{
+			Title:    fmt.Sprintf("Intelligence Report: %s", shortAddr),
+			Subtitle: fmt.Sprintf("Octant Public Goods Evaluation | Epoch %d", epoch),
+			Model:    evalModel,
+			Provider: evalProvider,
+			Metadata: map[string]string{
+				"Address":          address,
+				"Rank":             fmt.Sprintf("%d / %d projects", projectRank, len(metrics)),
+				"Composite Score":  fmt.Sprintf("%.1f / 100", projectMetric.CompositeScore),
+				"Donor Diversity":  fmt.Sprintf("%.3f (Shannon entropy)", projectTrust.DonorDiversity),
+				"Whale Dependency": fmt.Sprintf("%.1f%%", projectTrust.WhaleDepRatio*100),
+			},
+			Sections: []report.PDFSection{
+				{Heading: "Funding History", Table: &report.PDFTable{Headers: []string{"Epoch", "Allocated (ETH)", "Matched (ETH)", "Donors"}, Rows: histRows, ColW: []float64{25, 45, 45, 30}}},
+				{Heading: "Trust Profile", Body: fmt.Sprintf("Unique Donors: %d\nDonor Diversity (Shannon): %.3f\nWhale Dependency: %.1f%%\nCoordination Risk (Jaccard): %.3f\nRepeat Donors: %d", projectTrust.UniqueDonors, projectTrust.DonorDiversity, projectTrust.WhaleDepRatio*100, projectTrust.CoordinationRisk, projectTrust.RepeatDonors)},
+				{Heading: "Mechanism Simulation Impact", Table: &report.PDFTable{Headers: []string{"Mechanism", "Allocated", "Change"}, Rows: mechRows, ColW: []float64{70, 50, 40}}},
+				{Heading: "AI Deep Evaluation", Body: evalText},
+			},
+		}
+		if p, err := report.GeneratePDF(pdfReport); err == nil {
+			reportPath = p
+		}
+	}
+
 	// Final aggregated result
 	finalResult := map[string]any{
 		"address":       address,
@@ -1058,6 +1106,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		"trust":            trustData,
 		"history":          histOut,
 		"mechanismImpacts": mechImpacts,
+		"reportPath":       reportPath,
 	}
 	sse.sendDone(finalResult)
 }
