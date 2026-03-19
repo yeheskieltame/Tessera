@@ -363,9 +363,9 @@ export default function DashboardPage() {
               <div className="flex gap-2 mt-2 flex-wrap">
                 <span className="text-xs text-slate-400">Quick fill:</span>
                 {[
-                  { label: "Top project (E5)", addr: "0x9531C059C61555b0aA412FDB4A17a05c1306" },
-                  { label: "High whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
-                  { label: "Diverse donors", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
+                  { label: "Rank #1, 7 epochs, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
+                  { label: "Rank #5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
+                  { label: "Rank #19, diverse donors", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
                 ].map((ex) => (
                   <button key={ex.addr} onClick={() => setProjectAddr(ex.addr)}
                     className="text-xs px-2 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition">
@@ -521,9 +521,9 @@ export default function DashboardPage() {
               <div className="flex gap-2 mt-2 flex-wrap">
                 <span className="text-xs text-slate-400">Quick fill:</span>
                 {[
-                  { label: "Top project (E5)", addr: "0x9531C059C61555b0aA412FDB4A17a05c1306" },
-                  { label: "High whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
-                  { label: "Diverse donors", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
+                  { label: "Rank #1, 7 epochs, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
+                  { label: "Rank #5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
+                  { label: "Rank #19, diverse donors", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
                 ].map((ex) => (
                   <button key={ex.addr} onClick={() => setTrackAddr(ex.addr)}
                     className="text-xs px-2 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition">
