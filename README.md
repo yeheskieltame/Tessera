@@ -47,6 +47,8 @@ The `serve` command launches a full web dashboard at `http://localhost:8080` wit
 - Expandable data tables with full-screen modal view (portal-based, matches PDF viewer)
 - GitHub URL enrichment for evaluate (fetches README + repo metrics)
 
+![Tessera Dashboard](frontend/public/dashboard-screenshot.png)
+
 > To see the dashboard: `./tessera serve` then open http://localhost:8080
 
 ---
