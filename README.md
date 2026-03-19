@@ -107,7 +107,7 @@ The `analyze-project` command runs an 8-step pipeline that feeds all collected e
 | 4 | Mechanism Simulation | Standard QF, Capped QF, Equal Weight, Trust-Weighted QF | No |
 | 5 | Temporal Anomalies | Donor surge/exodus, funding spikes, new whale entry, coordination shifts | No |
 | 6 | Multi-Layer Scoring | Funding, Efficiency, Diversity, Consistency, Overall | No |
-| 7 | OSO Signals | GitHub activity, on-chain metrics, cross-platform funding (optional) | No |
+| 7 | Code Signals | GitHub API (fallback when OSO is down): stars, forks, commits, contributors (optional) | No |
 | 8 | AI Deep Evaluation | Evidence-grounded assessment using ALL data from steps 1-7 | Yes |
 
 Steps 1-7 are deterministic and reproducible. Step 8 uses the AI to synthesize all evidence into a narrative with trajectory analysis, organic vs gaming assessment, counterfactual impact, and confidence-rated recommendation.
@@ -214,6 +214,8 @@ Reports are saved to `reports/` and served through the web dashboard. Each PDF c
 | **Mechanism Design** | $1,000 | simulate (4 QF variants), Trust-Weighted QF (novel mechanism), Gini coefficients | Equal Weight +3105% for smallest project but maximizes sybil vulnerability; Trust-Weighted QF balances fairness and resistance |
 
 See [FINDINGS.md](FINDINGS.md) for detailed insights generated from real Octant data.
+
+**Note on data sources:** OSO (Open Source Observer) GraphQL API is currently experiencing an infrastructure outage (Hasura downstream error). Tessera includes a direct GitHub API fallback for code metrics. When OSO recovers, the `collect-signals` command will automatically use both sources. This is acknowledged as a limitation of Step 7 in the current pipeline.
 
 ---
 
