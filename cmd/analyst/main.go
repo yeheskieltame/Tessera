@@ -15,6 +15,7 @@ import (
 	"github.com/yeheskieltame/tessera/internal/data"
 	"github.com/yeheskieltame/tessera/internal/provider"
 	"github.com/yeheskieltame/tessera/internal/report"
+	"github.com/yeheskieltame/tessera/internal/server"
 	"github.com/yeheskieltame/tessera/internal/social"
 )
 
@@ -64,6 +65,8 @@ func main() {
 		cmdMoltbook(ctx)
 	case "heartbeat":
 		cmdHeartbeat(ctx)
+	case "serve":
+		cmdServe()
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -120,7 +123,14 @@ COMMANDS:
     status              Show agent status and notifications
     follow <username>   Follow another agent
   heartbeat           Run Moltbook heartbeat (check notifications, auto-reply)
-    --loop              Keep running every 10 minutes`)
+    --loop              Keep running every 10 minutes
+  serve               Start HTTP API server (PORT env or default 8080)`)
+}
+
+// --- serve ---
+
+func cmdServe() {
+	server.Start()
 }
 
 // --- status ---
