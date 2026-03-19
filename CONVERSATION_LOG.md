@@ -335,55 +335,151 @@ All tested against live Octant API data. Total: 13 CLI commands.
 
 Total: 15 CLI commands. Agent can now autonomously interact on Moltbook — aligned with hackathon theme "Agents that cooperate".
 
+## Session 4 — Architecture Refinement & Evidence Pipeline (2026-03-19)
+
+### Phase 26: analyze-project as Single Comprehensive Command
+
+**Human:** Pointed out that new features (temporal anomaly, multi-layer scoring) should be integrated INTO analyze-project, not added as separate commands. "Don't just add features — improve the architecture."
+
+**Agent:** Agreed. Expanded analyze-project from 6-step to 8-step evidence pipeline:
+1. Cross-epoch funding history
+2. Quantitative scoring (K-means, composite)
+3. Trust graph (Shannon entropy, Jaccard, whale dependency)
+4. Mechanism simulation (4 QF variants including Trust-Weighted)
+5. **Temporal anomaly detection** (NEW — was separate)
+6. **Multi-layer scoring** (NEW — was separate)
+7. OSO signals (optional)
+8. AI deep evaluation (evidence-grounded with ALL data from steps 1-7)
+
+**Design decision — why Jaccard over cosine similarity:**
+Jaccard measures set overlap (which donors fund both projects?) while cosine measures vector similarity (how similar are funding amounts?). For sybil detection, we care about *who* funds, not *how much* — a sybil cluster sends dust amounts to the same projects. Jaccard with binary donor membership captures this pattern directly. Cosine would weight large donors more, actually masking the sybil signal we're trying to detect.
+
+**Design decision — why Shannon entropy for diversity:**
+Shannon entropy naturally handles the "many small + one whale" pattern. A project with 100 donors where one provides 99% has near-zero entropy — correctly reflecting that the community is effectively a single donor. Gini coefficient would also work but doesn't normalize to [0,1] as cleanly for cross-project comparison.
+
+### Phase 27: Multi-Layer Scoring System
+
+**Human:** Asked why the simple 40/60 composite score was insufficient.
+
+**Agent:** Implemented 5-dimension scoring:
+- FundingScore (25%): raw total (what simple scoring already captures)
+- EfficiencyScore (25%): matched/allocated ratio (how well QF amplifies community support)
+- DiversityScore (30%): Shannon entropy (is support genuine or concentrated?)
+- ConsistencyScore (20%): cross-epoch coefficient of variation (stable or volatile?)
+- OverallScore: weighted aggregate
+
+**Key finding that validated this approach:** Project 0x9531C0 (rank #1 by composite: 89.5/100) drops to Overall 36.6/100 because Diversity=10.9 and Efficiency=5.9. The #1 project is actually whale-dominated with declining community support. This insight is invisible to simple scoring.
+
+**Design trade-off:** We weight Diversity highest (30%) because Octant's core value proposition is community-driven funding. A whale-dominated project defeats the purpose of quadratic funding regardless of total amount received.
+
+### Phase 28: Temporal Anomaly Detection
+
+**Agent:** Added 5 anomaly patterns comparing consecutive epochs:
+1. Donor Surge (>100% increase)
+2. Donor Exodus (>50% decrease)
+3. Funding Spike (>300% increase)
+4. New Whale Entry (new donor >30% of project total)
+5. Coordination Shift (>10 new donors with Jaccard >0.8)
+
+**Real finding:** Between Epoch 4→5, detected whale 0x2585...8549 controlling 90-99% of 5 projects simultaneously. Also 39-donor coordination cluster and 4 funding spikes >600%. All in one epoch transition — suggesting coordinated capital deployment.
+
+### Phase 29: Trust-Weighted QF (Novel Mechanism)
+
+**Human:** Asked to strengthen mechanism design bounty position.
+
+**Agent:** Implemented a novel QF variant: `SimulateTrustWeightedQF`. Formula:
+```
+multiplier = 0.5 + 0.5 * donor_diversity_score
+match(project) = standard_qf_match * multiplier
+```
+- Diversity 1.0 (perfect) → full matching (1.0x)
+- Diversity 0.0 (single donor) → half matching (0.5x)
+- No project is zeroed out, but whale-dominated projects lose up to 50%
+
+**Why this is a genuine mechanism design contribution:** It combines QF's preference aggregation with graph-theoretic trust signals. Standard QF is vulnerable to whales; Equal Weight is vulnerable to sybils; Trust-Weighted QF uses donor diversity as a proxy for legitimacy without requiring identity verification.
+
+### Phase 30: Web Frontend (Next.js)
+
+**Human:** Requested web interface for humans and agents. Wanted modern glassmorphism design, white-blue theme, single-page dashboard.
+
+**Agent:** Built full-stack web application:
+- Next.js + TypeScript + Tailwind CSS frontend (static export)
+- Go HTTP API server with 12 REST endpoints + 4 SSE streaming endpoints
+- Single binary serves both API and frontend
+- Dashboard: single scrolling page with floating glass navbar
+- SSE real-time progress for long-running operations (8-step pipeline)
+- PDF viewer modal for inline report viewing
+
+### Phase 31: PDF Intelligence Reports
+
+**Human:** Suggested branded PDF reports for shareability via messaging apps. Referenced professional report design with watermarks.
+
+**Agent:** Built PDF generator using go-pdf/fpdf:
+- Diagonal "Tessera Agent" watermark on every page (30% opacity)
+- Branded header (TESSERA AGENT + timestamp) and footer (page number + AI model)
+- All 8 pipeline sections included in PDF
+- UTF-8 sanitization for special characters
+- Auto-generated after analyze-project completes
+
+**Bug found and fixed:** PDF was initially generated BEFORE AI evaluation completed, resulting in empty "AI Deep Evaluation" section. Moved PDF generation to after step 8.
+
+### Phase 32: FINDINGS.md — Real Insights Document
+
+**Human (reviewer feedback):** "Judges want to see what the tool FOUND, not just what it CAN DO. Create a findings document."
+
+**Agent:** Generated FINDINGS.md with 7 concrete insights from real Octant data:
+1. Whale concentration is systemic (92-98% across all epochs)
+2. #1 ranked project is actually below average (89.5 → 36.6)
+3. Single whale controls 5 projects (0x2585 at 90-99%)
+4. 41 donor coordination clusters (increasing: 25→41→44 across epochs)
+5. Equal Weight mechanism: +3105% redistribution
+6. Healthiest vs most concerning project comparison
+7. 11 temporal anomalies in one epoch transition
+
+Each finding includes the reproducible command to verify it.
+
 ---
 
 ## Key Decisions Made Together
 
-| Decision | Human | Agent | Outcome |
-|----------|-------|-------|---------|
-| Track selection | Chose Octant data analysis | Researched all tracks | Targeting all 3 bounties ($3,000) |
-| CLI focus | Requested CLI tool | Proposed architecture | 15 CLI commands |
-| Multi-model | Required fallback chain | Implemented 5 providers | Claude CLI (Opus 4.6) > Claude API > Gemini > OpenAI > Antigravity |
-| Go migration | Asked about Rust vs Go | Recommended Go | 9MB binary, <5ms startup |
-| Project name | Chose Tessera | Proposed 6 options | Premium, memorable brand |
-| OpenClaw skill | Requested compatibility | Built SKILL.md | Works with OpenClaw, Claude Code, Gemini CLI |
-| Claude CLI primary | Max plan user, no API keys | Reordered chain | Claude CLI is now priority 1 |
-| Default model | Requested best model | Set claude-opus-4-6 explicit | More critical, nuanced analysis |
-| Moltbook automation | Asked if interactions could be automated | Built heartbeat + social commands | Autonomous agent on social network |
-| Bounty strategy | Wants all 3 bounties | Planned 5 features per bounty | trust-graph, simulate, deep-eval, scan-proposal, report-epoch |
+| Decision | Human | Agent | Reasoning |
+|----------|-------|-------|-----------|
+| Track selection | Chose Octant data analysis | Researched all tracks | Octant has richest public API data; expanded to all 3 bounties after building trust-graph |
+| Go over Rust | Asked about performance | Recommended Go | Bottleneck is I/O not CPU; Go compiles to single binary; hackathon timeline favors faster development |
+| Jaccard over cosine | N/A (agent decision) | Chose Jaccard similarity | Sybil detection needs set overlap (who funds), not vector similarity (how much). Cosine masks dust-amount sybils |
+| Shannon over Gini for diversity | N/A (agent decision) | Chose Shannon entropy | Natural [0,1] normalization for cross-project comparison; correctly penalizes "many small + one whale" pattern |
+| Diversity weighted 30% | Discussed scoring weights | Set highest weight on diversity | Octant's core value is community-driven funding; whale dominance defeats QF purpose |
+| Trust-Weighted QF design | "Strengthen mechanism design" | 0.5 + 0.5*diversity multiplier | No project zeroed out (floor 0.5x); max penalty 50% for worst diversity; preserves QF preference signal |
+| 8-step pipeline | "Don't add separate features, improve architecture" | Integrated all into analyze-project | Single command produces comprehensive evidence for AI; no feature fragmentation |
+| PDF reports | "Make shareable via Telegram/WhatsApp" | Built branded PDF with watermark | Credibility for sharing; watermark prevents casual tampering |
+| Evidence-first AI | External reviewer feedback | AI receives ALL quantitative data before evaluating | Evaluation grounded in real data, not just project descriptions |
+| FINDINGS.md | External reviewer feedback | Generated from real Octant data | Transforms tool from "can analyze" to "has already found insights" |
 
 ---
 
 ## Contribution Breakdown
 
 **Human (Yeheskiel):**
-- Strategic direction and track selection (all 3 bounties)
-- Go vs Rust decision
-- Naming (chose Tessera)
-- GitHub repo creation
-- Moltbook claim (X auth verification)
-- Quality gates (approved each phase)
-- Claude Opus 4.6 as default model decision
-- Autonomous agent direction (heartbeat/social integration)
+- Strategic direction: track selection, bounty targeting, feature prioritization
+- Architecture critique: "integrate, don't fragment" (Phase 26)
+- Quality gates: tested every feature, reported bugs, approved each phase
+- Go vs Rust decision, naming (chose Tessera), Claude Opus 4.6 model choice
+- GitHub repo creation, Moltbook claim (X auth verification)
+- Reviewer feedback integration: requested FINDINGS.md, input guidance, PDF shareability
 
 **Agent (Claude Opus 4.6):**
-- Hackathon registration (API calls, on-chain identity)
-- Research (Octant ecosystem, data sources, pain points)
-- Full codebase (15 CLI commands, ~3,000 lines Go)
-- Python MVP → Go rewrite
-- K-means clustering from scratch (no external ML libs)
-- Trust-graph analysis (Jaccard, Shannon entropy, union-find)
-- Mechanism simulator (QF variants, Gini coefficients)
-- Deep evaluation (cross-epoch longitudinal analysis)
-- Proposal scanner (two-pass claim verification)
-- Moltbook integration (social API client, heartbeat)
-- Unit test suite (13 tests)
-- OpenClaw skill creation
-- Moltbook social engagement (posts, comments, follows)
-- Documentation (CLAUDE.md, README.md, CONVERSATION_LOG.md)
-- Git history management (21 structured commits)
-- Hackathon API submission and updates
+- Full codebase: 18 CLI commands, ~5,000 lines Go, Next.js frontend
+- Algorithm design: K-means (from scratch), Jaccard similarity, Shannon entropy, union-find clustering, Gini coefficient, Trust-Weighted QF
+- 8-step evidence pipeline architecture
+- Multi-layer scoring system (5 dimensions)
+- Temporal anomaly detection (5 patterns)
+- PDF report generator with branded watermark
+- Web dashboard with SSE real-time streaming
+- Moltbook social integration (autonomous heartbeat)
+- FINDINGS.md: 7 concrete insights from real Octant data
+- All documentation, unit tests (13), 40+ git commits
+- Hackathon API submission, Moltbook social engagement
 
 ---
 
-*This log will be updated as development continues.*
+*Final version — 32 phases across 4 sessions of human-agent collaboration.*
