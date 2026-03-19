@@ -61,6 +61,8 @@ func main() {
 		cmdAnalyzeProject(ctx)
 	case "collect-signals":
 		cmdCollectSignals(ctx)
+	case "track-project":
+		cmdTrackProject(ctx)
 	case "moltbook":
 		cmdMoltbook(ctx)
 	case "heartbeat":
@@ -115,6 +117,8 @@ COMMANDS:
     <address>           Octant project address (required)
     -e <epoch>          Epoch to analyze (default: latest with data)
     -n <oso-name>       OSO project name for cross-referencing (optional)
+  track-project       Track project performance across epochs with temporal anomaly detection
+    <address>           Octant project address (required)
   collect-signals     Collect OSO signals for a project (code, on-chain, funding)
     <project-name>      OSO project name (required)
   moltbook            Interact with Moltbook (social network for AI agents)
@@ -1223,6 +1227,197 @@ Be specific and reference the numbers.`, projectName, formatted)
 		result, err := ai.Complete(ctx, prompt, "You are a public goods data analyst specializing in cross-referencing GitHub activity, on-chain metrics, and funding data to assess project legitimacy.")
 		if err == nil {
 			fmt.Printf("\n%s\n\n[via %s/%s]\n", result.Text, result.Provider, result.Model)
+		}
+	}
+}
+
+// --- track-project ---
+
+func cmdTrackProject(ctx context.Context) {
+	address := flagString("", 0)
+	if address == "" {
+		fmt.Fprintln(os.Stderr, "Usage: tessera track-project <project-address>")
+		os.Exit(1)
+	}
+
+	octant := data.NewOctantClient()
+	ep, err := octant.GetCurrentEpoch(ctx)
+	exitOnErr(err)
+
+	fmt.Printf("Tracking project %s across epochs 1-%d...\n\n", address, ep.CurrentEpoch)
+
+	// Fetch project history
+	history, err := octant.GetProjectHistory(ctx, address, 1, ep.CurrentEpoch)
+	exitOnErr(err)
+
+	if len(history) == 0 {
+		fmt.Println("No data found for this address in any epoch.")
+		return
+	}
+
+	// Print timeline table
+	fmt.Println("═══ Project Timeline ═══")
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(w, "  Epoch\tAllocated (ETH)\tMatched (ETH)\tTotal (ETH)\tDonors\n")
+	fmt.Fprintf(w, "  ─────\t───────────────\t─────────────\t───────────\t──────\n")
+	for _, h := range history {
+		fmt.Fprintf(w, "  %d\t%.4f\t%.4f\t%.4f\t%d\n", h.Epoch, h.Allocated, h.Matched, h.Allocated+h.Matched, h.Donors)
+	}
+	w.Flush()
+	fmt.Println()
+
+	// Temporal anomaly detection: compare latest 2 epochs with data
+	if len(history) >= 2 {
+		prevEpoch := history[len(history)-2].Epoch
+		currEpoch := history[len(history)-1].Epoch
+
+		fmt.Printf("═══ Temporal Anomaly Detection (Epoch %d → %d) ═══\n", prevEpoch, currEpoch)
+
+		// Fetch allocations for both epochs
+		prevAllocs, err := octant.GetAllocations(ctx, prevEpoch)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "  Warning: could not fetch epoch %d allocations: %v\n", prevEpoch, err)
+		}
+		currAllocs, err := octant.GetAllocations(ctx, currEpoch)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "  Warning: could not fetch epoch %d allocations: %v\n", currEpoch, err)
+		}
+
+		if prevAllocs != nil && currAllocs != nil {
+			// Convert allocations to parallel slices
+			convertAllocs := func(allocs []data.Allocation) ([]string, []float64, []string) {
+				donors := make([]string, len(allocs))
+				amounts := make([]float64, len(allocs))
+				projects := make([]string, len(allocs))
+				for i, a := range allocs {
+					donors[i] = a.Donor
+					amounts[i] = analysis.WeiToEth(a.Amount)
+					projects[i] = a.Project
+				}
+				return donors, amounts, projects
+			}
+
+			prevD, prevA, prevP := convertAllocs(prevAllocs)
+			currD, currA, currP := convertAllocs(currAllocs)
+
+			anomalies := analysis.DetectTemporalAnomalies(currD, currA, currP, prevD, prevA, prevP, prevEpoch, currEpoch)
+
+			if len(anomalies) > 0 {
+				for _, a := range anomalies {
+					sev := "  "
+					switch a.Severity {
+					case "high":
+						sev = "!!"
+					case "medium":
+						sev = "! "
+					}
+					fmt.Printf("  [%s] [%s] %s (metric: %.1f)\n", sev, a.Type, a.Description, a.Metric)
+				}
+			} else {
+				fmt.Println("  No temporal anomalies detected.")
+			}
+			fmt.Println()
+		}
+	} else {
+		fmt.Println("═══ Temporal Anomaly Detection ═══")
+		fmt.Println("  Requires data from at least 2 epochs — skipping.")
+		fmt.Println()
+	}
+
+	// Multi-layer scoring for latest epoch
+	latestEpoch := history[len(history)-1].Epoch
+	fmt.Printf("═══ Multi-Layer Scoring (Epoch %d) ═══\n", latestEpoch)
+
+	rewards, err := octant.GetProjectRewards(ctx, latestEpoch)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  Warning: could not fetch rewards: %v\n", err)
+	} else {
+		// Build ProjectMetrics for all projects in this epoch
+		var metrics []analysis.ProjectMetrics
+		for _, r := range rewards {
+			alloc := analysis.WeiToEth(r.Allocated)
+			matched := analysis.WeiToEth(r.Matched)
+			metrics = append(metrics, analysis.ProjectMetrics{
+				Address:      r.Address,
+				Allocated:    alloc,
+				Matched:      matched,
+				TotalFunding: alloc + matched,
+			})
+		}
+
+		// Count donors per project from allocations
+		latestAllocs, _ := octant.GetAllocations(ctx, latestEpoch)
+		donorCounts := map[string]map[string]bool{}
+		var allocDonors, allocProjects []string
+		var allocAmounts []float64
+		for _, a := range latestAllocs {
+			if donorCounts[a.Project] == nil {
+				donorCounts[a.Project] = map[string]bool{}
+			}
+			donorCounts[a.Project][a.Donor] = true
+			allocDonors = append(allocDonors, a.Donor)
+			allocProjects = append(allocProjects, a.Project)
+			allocAmounts = append(allocAmounts, analysis.WeiToEth(a.Amount))
+		}
+		for i := range metrics {
+			if dc, ok := donorCounts[metrics[i].Address]; ok {
+				metrics[i].DonorCount = len(dc)
+			}
+		}
+
+		// Build trust profiles
+		var trustProfiles []analysis.TrustProfile
+		if len(allocDonors) > 0 {
+			trustProfiles = analysis.BuildTrustProfiles(allocProjects, allocAmounts, allocDonors, nil)
+		}
+
+		// Compute multi-scores
+		multiScores := analysis.ComputeMultiScores(metrics, trustProfiles)
+
+		// Find the target project's score
+		normalizedAddr := strings.ToLower(address)
+		found := false
+		for _, ms := range multiScores {
+			if strings.ToLower(ms.Address) == normalizedAddr {
+				w2 := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+				fmt.Fprintf(w2, "  Funding Score\t%.1f / 100\n", ms.FundingScore)
+				fmt.Fprintf(w2, "  Efficiency Score\t%.1f / 100\n", ms.EfficiencyScore)
+				fmt.Fprintf(w2, "  Diversity Score\t%.1f / 100\n", ms.DiversityScore)
+				fmt.Fprintf(w2, "  Consistency Score\t%.1f / 100\n", ms.ConsistencyScore)
+				fmt.Fprintf(w2, "  Overall Score\t%.1f / 100\n", ms.OverallScore)
+				w2.Flush()
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Printf("  Project %s not found in epoch %d rewards.\n", address, latestEpoch)
+		}
+	}
+	fmt.Println()
+
+	// AI trend narrative (optional)
+	ai := provider.New()
+	if ai.HasProviders() && len(history) >= 2 {
+		fmt.Println("═══ AI Trend Narrative ═══")
+		var historyLines string
+		for _, h := range history {
+			historyLines += fmt.Sprintf("Epoch %d: allocated=%.4f ETH, matched=%.4f ETH, donors=%d\n", h.Epoch, h.Allocated, h.Matched, h.Donors)
+		}
+		prompt := fmt.Sprintf(`Analyze this Octant project's funding history across epochs and provide a concise trend narrative (3-5 sentences). Focus on: funding trajectory, donor growth/decline, efficiency changes, and any red flags.
+
+Project: %s
+History:
+%s
+
+Be specific with numbers. Do not use emojis.`, address, historyLines)
+
+		resp, err := ai.Complete(ctx, prompt, "You are a public goods funding analyst.")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "  AI analysis unavailable: %v\n", err)
+		} else {
+			fmt.Printf("  %s\n", resp.Text)
+			fmt.Printf("\n  [via %s/%s]\n", resp.Provider, resp.Model)
 		}
 	}
 }
