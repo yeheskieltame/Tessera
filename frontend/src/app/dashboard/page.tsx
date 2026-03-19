@@ -63,6 +63,12 @@ export default function DashboardPage() {
   const [projectLoading, setProjectLoading] = useState(false);
   const [projectSteps, setProjectSteps] = useState<string[]>([]);
 
+  /* ─── Track Project ─── */
+  const [trackAddr, setTrackAddr] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [trackResult, setTrackResult] = useState<any>(null);
+  const [trackLoading, setTrackLoading] = useState(false);
+
   /* ─── Reports ─── */
   const [reports, setReports] = useState<ReportsResponse | null>(null);
   const [viewPdf, setViewPdf] = useState<string | null>(null);
@@ -112,6 +118,16 @@ export default function DashboardPage() {
     setEvalLoading(false);
   }
 
+  async function runTrackProject() {
+    if (!trackAddr) return;
+    setTrackLoading(true); setTrackResult(null);
+    try {
+      const res = await fetch(`${API}/api/track-project?address=${encodeURIComponent(trackAddr)}`);
+      setTrackResult(await res.json());
+    } catch {}
+    setTrackLoading(false);
+  }
+
   function runAnalyzeProject() {
     if (!projectAddr) return;
     setProjectLoading(true); setProjectResult(null); setProjectSteps([]);
@@ -140,7 +156,7 @@ export default function DashboardPage() {
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
         <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg shadow-blue-100/50 rounded-full px-3 py-2 flex items-center gap-1 flex-wrap">
           <a href="/" className="px-3 py-1.5 text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">Tessera</a>
-          {["status","analyze","anomalies","trust","simulate","evaluate","project","reports"].map((id) => (
+          {["status","analyze","anomalies","trust","simulate","evaluate","project","track","reports"].map((id) => (
             <a key={id} href={`#${id}`} className="px-2.5 py-1.5 rounded-full text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition capitalize">{id}</a>
           ))}
         </div>
@@ -434,6 +450,134 @@ export default function DashboardPage() {
 
                 {/* Refresh reports after generation */}
                 {projectResult.reportPath && <p className="text-xs text-green-600">PDF report generated. Check Reports section below.</p>}
+              </div>
+            )}
+          </Card>
+        </section>
+
+        {/* ─── TRACK PROJECT ─── */}
+        <section id="track" className="scroll-mt-24">
+          <SectionHeader title="Track Project" subtitle="./tessera track-project <address> — Cross-epoch timeline + temporal anomaly detection + multi-layer scoring" />
+          <Card>
+            <div className="mb-4 p-3 rounded-xl bg-blue-50/50 border border-blue-100 text-xs text-slate-600">
+              <p className="font-semibold text-slate-700 mb-1">How to use:</p>
+              <p>Enter an Octant project address to track its performance across all epochs. This command builds a cross-epoch timeline, detects temporal anomalies (donor surge, exodus, funding spikes, new whale entry, coordination shifts), and computes multi-layer scores (Funding, Efficiency, Diversity, Consistency, Overall).</p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">Project Address</label>
+              <input placeholder="e.g. 0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" value={trackAddr} onChange={(e) => setTrackAddr(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <span className="text-xs text-slate-400">Quick fill:</span>
+                {[
+                  { label: "Top project (E5)", addr: "0x9531C059C61555b0aA412FDB4A17a05c1306" },
+                  { label: "High whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
+                  { label: "Diverse donors", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
+                ].map((ex) => (
+                  <button key={ex.addr} onClick={() => setTrackAddr(ex.addr)}
+                    className="text-xs px-2 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition">
+                    {ex.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <CmdButton onClick={runTrackProject} loading={trackLoading} label="track-project" />
+            {trackResult && (
+              <div className="mt-4 space-y-6">
+                {/* Timeline Table */}
+                {trackResult.timeline?.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-2">Cross-Epoch Timeline</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                          <th className="px-3 py-2 text-left">Epoch</th>
+                          <th className="px-3 py-2 text-right">Allocated (ETH)</th>
+                          <th className="px-3 py-2 text-right">Matched (ETH)</th>
+                          <th className="px-3 py-2 text-right">Donors</th>
+                        </tr></thead>
+                        <tbody>
+                          {trackResult.timeline.map((t: {epoch: number; allocated: number; matched: number; donors: number}) => (
+                            <tr key={t.epoch} className="border-t border-slate-100 hover:bg-blue-50/30">
+                              <td className="px-3 py-2 font-medium">Epoch {t.epoch}</td>
+                              <td className="px-3 py-2 text-right">{t.allocated?.toFixed(4)}</td>
+                              <td className="px-3 py-2 text-right">{t.matched?.toFixed(4)}</td>
+                              <td className="px-3 py-2 text-right">{t.donors}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Temporal Anomalies */}
+                {trackResult.anomalies?.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-2">Temporal Anomalies</h3>
+                    <div className="space-y-2">
+                      {trackResult.anomalies.map((a: {type: string; severity: string; epoch: number; description: string}, i: number) => (
+                        <div key={i} className={`p-3 rounded-xl border text-sm ${
+                          a.severity === "high" ? "bg-red-50 border-red-200 text-red-700" :
+                          a.severity === "medium" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
+                          "bg-blue-50 border-blue-200 text-blue-700"
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block w-2 h-2 rounded-full ${
+                              a.severity === "high" ? "bg-red-500" :
+                              a.severity === "medium" ? "bg-yellow-500" :
+                              "bg-blue-500"
+                            }`} />
+                            <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
+                            <span className="text-xs opacity-70">Epoch {a.epoch}</span>
+                            <span className={`ml-auto text-xs font-medium uppercase px-2 py-0.5 rounded-full ${
+                              a.severity === "high" ? "bg-red-100 text-red-600" :
+                              a.severity === "medium" ? "bg-yellow-100 text-yellow-600" :
+                              "bg-blue-100 text-blue-600"
+                            }`}>{a.severity}</span>
+                          </div>
+                          <p className="mt-1 text-xs opacity-80">{a.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Multi-Layer Scores */}
+                {trackResult.scores && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-2">Multi-Layer Scores</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      {[
+                        { key: "fundingScore", label: "Funding", weight: "25%" },
+                        { key: "efficiencyScore", label: "Efficiency", weight: "25%" },
+                        { key: "diversityScore", label: "Diversity", weight: "30%" },
+                        { key: "consistencyScore", label: "Consistency", weight: "20%" },
+                        { key: "overallScore", label: "Overall", weight: "" },
+                      ].map((dim) => {
+                        const val = trackResult.scores[dim.key] ?? 0;
+                        const pct = Math.min(100, Math.max(0, Number(val)));
+                        const isOverall = dim.key === "overallScore";
+                        return (
+                          <div key={dim.key} className={`p-3 rounded-xl border ${isOverall ? "bg-blue-50 border-blue-200 col-span-2 sm:col-span-1" : "bg-slate-50 border-slate-100"}`}>
+                            <p className="text-xs text-slate-500">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
+                            <p className={`text-lg font-bold ${isOverall ? "text-blue-700" : "text-slate-800"}`}>{pct.toFixed(1)}</p>
+                            <div className="w-full h-1.5 rounded-full bg-slate-200 mt-1">
+                              <div className={`h-full rounded-full ${isOverall ? "bg-blue-500" : "bg-slate-400"}`} style={{width: `${pct}%`}} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* No data fallback */}
+                {!trackResult.timeline?.length && !trackResult.anomalies?.length && !trackResult.scores && (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-sm text-slate-500">
+                    {trackResult.error ? trackResult.error : "No tracking data available for this address."}
+                  </div>
+                )}
               </div>
             )}
           </Card>

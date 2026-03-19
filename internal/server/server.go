@@ -1448,6 +1448,146 @@ func handleReportEpochStream(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleTrackProject returns cross-epoch timeline, temporal anomalies, and multi-layer scores.
+func handleTrackProject(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Query().Get("address")
+	if address == "" {
+		jsonError(w, "address query parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	octant := data.NewOctantClient()
+
+	// Fetch current epoch
+	ep, err := octant.GetCurrentEpoch(ctx)
+	if err != nil {
+		jsonError(w, fmt.Sprintf("failed to get current epoch: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch history
+	history, err := octant.GetProjectHistory(ctx, address, 1, ep.CurrentEpoch)
+	if err != nil {
+		jsonError(w, fmt.Sprintf("failed to get project history: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if len(history) == 0 {
+		jsonOK(w, map[string]any{"timeline": []any{}, "anomalies": []any{}, "scores": nil, "error": "project not found in any epoch"})
+		return
+	}
+
+	// Build timeline
+	type timelineEntry struct {
+		Epoch     int     `json:"epoch"`
+		Allocated float64 `json:"allocated"`
+		Matched   float64 `json:"matched"`
+		Donors    int     `json:"donors"`
+	}
+	timeline := make([]timelineEntry, len(history))
+	for i, h := range history {
+		timeline[i] = timelineEntry{h.Epoch, h.Allocated, h.Matched, h.Donors}
+	}
+
+	// Temporal anomalies (compare last 2 epochs)
+	var anomalies []analysis.TemporalAnomaly
+	latestEpoch := history[len(history)-1].Epoch
+
+	if len(history) >= 2 {
+		prevEpoch := history[len(history)-2].Epoch
+		prevAllocs, err1 := octant.GetAllocations(ctx, prevEpoch)
+		currAllocs, err2 := octant.GetAllocations(ctx, latestEpoch)
+		if err1 == nil && err2 == nil {
+			prevDonors := make([]string, len(prevAllocs))
+			prevAmounts := make([]float64, len(prevAllocs))
+			prevProjects := make([]string, len(prevAllocs))
+			for i, a := range prevAllocs {
+				prevDonors[i] = a.Donor
+				prevProjects[i] = a.Project
+				prevAmounts[i] = weiToEth(a.Amount)
+			}
+			currDonors := make([]string, len(currAllocs))
+			currAmounts := make([]float64, len(currAllocs))
+			currProjects := make([]string, len(currAllocs))
+			for i, a := range currAllocs {
+				currDonors[i] = a.Donor
+				currProjects[i] = a.Project
+				currAmounts[i] = weiToEth(a.Amount)
+			}
+			anomalies = analysis.DetectTemporalAnomalies(currDonors, currAmounts, currProjects, prevDonors, prevAmounts, prevProjects, prevEpoch, latestEpoch)
+		}
+	}
+
+	type anomalyOut struct {
+		Type        string  `json:"type"`
+		Severity    string  `json:"severity"`
+		Description string  `json:"description"`
+		Epoch       int     `json:"epoch"`
+		Metric      float64 `json:"metric"`
+	}
+	anomalyList := make([]anomalyOut, 0)
+	for _, a := range anomalies {
+		anomalyList = append(anomalyList, anomalyOut{a.Type, a.Severity, a.Description, a.EpochTo, a.Metric})
+	}
+
+	// Multi-layer scoring
+	rewards, err := octant.GetProjectRewards(ctx, latestEpoch)
+	var scores *analysis.MultiScore
+	if err == nil {
+		metrics := make([]analysis.ProjectMetrics, len(rewards))
+		for i, rw := range rewards {
+			alloc := analysis.WeiToEth(rw.Allocated)
+			matched := analysis.WeiToEth(rw.Matched)
+			metrics[i] = analysis.ProjectMetrics{
+				Address:      rw.Address,
+				Allocated:    alloc,
+				Matched:      matched,
+				TotalFunding: alloc + matched,
+			}
+		}
+
+		// Build trust profiles for diversity score
+		allocs, _ := octant.GetAllocations(ctx, latestEpoch)
+		var trustProfiles []analysis.TrustProfile
+		if allocs != nil {
+			projects := make([]string, len(allocs))
+			donors := make([]string, len(allocs))
+			amounts := make([]float64, len(allocs))
+			for i, a := range allocs {
+				projects[i] = a.Project
+				donors[i] = a.Donor
+				amounts[i] = weiToEth(a.Amount)
+			}
+			trustProfiles = analysis.BuildTrustProfiles(projects, amounts, donors, nil)
+		}
+
+		multiScores := analysis.ComputeMultiScores(metrics, trustProfiles)
+		for _, ms := range multiScores {
+			if strings.EqualFold(ms.Address, address) {
+				scores = &ms
+				break
+			}
+		}
+	}
+
+	result := map[string]any{
+		"address":   address,
+		"timeline":  timeline,
+		"anomalies": anomalyList,
+	}
+	if scores != nil {
+		result["scores"] = map[string]any{
+			"fundingScore":     scores.FundingScore,
+			"efficiencyScore":  scores.EfficiencyScore,
+			"diversityScore":   scores.DiversityScore,
+			"consistencyScore": scores.ConsistencyScore,
+			"overallScore":     scores.OverallScore,
+		}
+	}
+	jsonOK(w, result)
+}
+
 // loadRoutes registers all API routes and the static file server.
 func loadRoutes() {
 	// API endpoints
@@ -1460,6 +1600,7 @@ func loadRoutes() {
 	handle("/api/trust-graph", handleTrustGraph)
 	handle("/api/simulate", handleSimulate)
 	handle("/api/evaluate", handleEvaluate)
+	handle("/api/track-project", handleTrackProject)
 	handle("/api/analyze-project", handleAnalyzeProject)
 	handle("/api/reports", func(w http.ResponseWriter, r *http.Request) {
 		// Route to list vs serve based on path

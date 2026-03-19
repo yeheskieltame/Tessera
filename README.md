@@ -2,420 +2,196 @@
 
 AI-powered public goods project evaluation for the Ethereum ecosystem.
 
-Tessera analyzes projects funded by [Octant](https://octant.build), [Gitcoin](https://gitcoin.co), and other public goods platforms. It combines quantitative data analysis with qualitative AI assessment to surface patterns that human evaluators cannot scale alone.
-
-Named after the Latin word for *mosaic piece* — assembling fragments of data into a complete picture.
+*Named after the Latin word for "mosaic piece" -- assembling fragments of on-chain data, funding records, and community signals into a complete picture of project health.*
 
 ---
 
-## How It Works
+## What It Does
 
-Tessera operates in two modes: **quantitative** (data-driven, no AI needed) and **qualitative** (AI-powered text analysis). Both can be combined for comprehensive project evaluation.
-
-### System Flow
-
-```mermaid
-flowchart TD
-    subgraph Input
-        A[Octant API] -->|epochs, projects, allocations, rewards| D[Data Layer]
-        B[Gitcoin GraphQL] -->|rounds, donations, matching| D
-        C[OSO GraphQL] -->|GitHub metrics, on-chain activity| D
-        E[User Text Input] --> Q
-    end
-
-    subgraph Processing
-        D --> P[Quantitative Engine]
-        D --> Q[Qualitative Engine]
-        P -->|K-means clustering| R1[Cluster Assignment]
-        P -->|Normalized scoring| R2[Composite Score 0-100]
-        P -->|Donor pattern analysis| R3[Anomaly Flags]
-        Q -->|LLM multi-model fallback| R4[8-Dimension Evaluation]
-        Q -->|Text extraction| R5[Impact Metrics]
-    end
-
-    subgraph Output
-        R1 --> Report[Markdown Report]
-        R2 --> Report
-        R3 --> Report
-        R4 --> Report
-        R5 --> Report
-        Report --> Terminal[Terminal Output]
-        Report --> File[reports/*.md]
-    end
-```
-
-### Data Flow Per Command
-
-| Command | Input | Processing | Output |
-|---------|-------|------------|--------|
-| `list-projects -e N` | Octant API epoch N | Fetch project addresses | Table of projects with addresses |
-| `analyze-epoch -e N` | Octant rewards for epoch N | Wei-to-ETH conversion, min-max normalization, K-means (Lloyd's algorithm, k=4), weighted composite score (40% allocated + 60% matched) | Ranked table with score, cluster, allocated/matched ETH |
-| `detect-anomalies -e N` | Octant allocations for epoch N | Donor deduplication, statistical summary (mean/median/max), top-10% concentration ratio, coordinated pattern detection (>2% threshold, >0.001 ETH) | Statistics table + anomaly flags |
-| `evaluate NAME -d DESC` | User-provided project name + description | LLM prompt with 8-dimension rubric sent via fallback chain | Scored evaluation with strengths/concerns/recommendation, saved to `reports/` |
-| `extract-metrics TEXT` | User-provided text | LLM extracts structured metrics with confidence levels | List of metrics with values, units, time periods |
-| `gitcoin-rounds -r ID` | Gitcoin GraphQL round ID | Fetch approved applications, sort by donation amount | Ranked table with donors and USD amounts |
-
-### Quantitative Analysis Pipeline
-
-```mermaid
-flowchart LR
-    A[Raw Rewards Data] --> B[Wei to ETH Conversion]
-    B --> C[Min-Max Normalization]
-    C --> D[K-Means Clustering k=4]
-    C --> E[Composite Scoring]
-    E --> F[Weighted Average: 40% Allocated + 60% Matched]
-    F --> G[Scale to 0-100]
-    D --> H[Output: Ranked Table]
-    G --> H
-```
-
-### Qualitative Analysis Pipeline
-
-```mermaid
-flowchart LR
-    A[Project Description] --> B[Build Evaluation Prompt]
-    B --> C{AI Provider Chain}
-    C -->|Try 1| D[Claude CLI / Max Plan]
-    C -->|Try 2| D2[Claude API]
-    C -->|Fallback| E[Gemini API]
-    C -->|Fallback| F[OpenAI API]
-    C -->|Fallback| G[Antigravity Proxy]
-    D --> H[8-Dimension Scored Evaluation]
-    D2 --> H
-    E --> H
-    F --> H
-    G --> H
-    H --> I[Markdown Report]
-```
-
-### Evaluation Dimensions
-
-The qualitative engine scores projects across 8 dimensions, each rated 1-10:
-
-| Dimension | What It Measures |
-|-----------|-----------------|
-| Impact Evidence | Measurable outcomes and verifiable impact data |
-| Team Credibility | Experience, transparency, and track record |
-| Innovation | Novel approaches vs. existing solutions |
-| Sustainability | Long-term viability beyond grant funding |
-| Ecosystem Alignment | Contribution to Ethereum and public goods |
-| Transparency | Clarity of goals, progress reporting, fund usage |
-| Community Engagement | Active community involvement and responsiveness |
-| Risk Assessment | Key risks and mitigation strategies |
-
-The overall score (1-100) is a weighted aggregate across all dimensions.
-
-### Anomaly Detection Logic
-
-| Check | Threshold | Flag Condition |
-|-------|-----------|----------------|
-| Whale Concentration | Top 10% of donors | Flagged if they control >50% of total funding |
-| Coordinated Donations | Same exact amount (>0.001 ETH) | Flagged if count exceeds max(5, 2% of total donations) |
-| Statistical Summary | N/A | Always reported: total, unique donors, mean, median, max |
+Tessera is a CLI tool and web dashboard that evaluates projects funded through Octant, Gitcoin, and other Ethereum public goods platforms. It combines quantitative data analysis (clustering, scoring, anomaly detection, mechanism simulation) with qualitative AI assessment (8-dimension evaluation, deep analysis, proposal scanning) to surface patterns that human evaluators cannot scale alone. All quantitative commands work without any AI provider; qualitative features use a multi-model fallback chain starting with Claude.
 
 ---
 
-## Data Sources
-
-| Source | Protocol | Base URL | Data Available |
-|--------|----------|----------|----------------|
-| Octant | REST | `backend.mainnet.octant.app` | Projects, allocations, rewards, epochs, patrons, budgets, leverage, threshold |
-| Gitcoin Grants Stack | GraphQL | `grants-stack-indexer-v2.gitcoin.co/graphql` | Rounds, applications, donations, matching amounts |
-| Open Source Observer | GraphQL | `opensource.observer/api/v1/graphql` | Project registry, GitHub metrics, on-chain activity, timeseries data |
-
-All quantitative data sources are public and require no authentication. OSO API optionally accepts an API key for higher rate limits.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Go 1.21+](https://go.dev/dl/)
-
-### Build
+## Quick Start
 
 ```bash
 git clone https://github.com/yeheskieltame/Tessera.git
 cd Tessera
 go build -o tessera ./cmd/analyst/
+./tessera serve    # Web UI at http://localhost:8080
 ```
 
-Single binary (~9MB), zero runtime dependencies.
-
-### Setup AI Provider
-
-Tessera needs an AI provider for qualitative features (evaluate, extract-metrics). Quantitative commands (analyze-epoch, detect-anomalies, list-projects) work without any AI setup.
-
-**Option A: Claude CLI (recommended, no API key needed)**
-
-If you have a [Claude Max plan](https://claude.ai) (5x subscription), just install Claude Code:
+For AI-powered features (Claude Max plan, no API key needed):
 
 ```bash
-npm i -g @anthropic-ai/claude-code
-claude login
+npm i -g @anthropic-ai/claude-code && claude login
 ```
 
-That's it. Tessera auto-detects the `claude` binary and uses it as the primary AI provider. No `.env` configuration needed.
-
-Verify:
-
-```bash
-./tessera providers
-```
-
-```
-  #  PROVIDER    MODEL
-  -  --------    -----
-  1  claude-cli  sonnet
-```
-
-**Option B: API key (if you don't have Claude Code)**
+Alternatively, set an API key in `.env`:
 
 ```bash
 cp .env.example .env
+# Set ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY
 ```
-
-Set at least one key in `.env`:
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-...   # Claude API
-GEMINI_API_KEY=...             # Google Gemini
-OPENAI_API_KEY=sk-...          # OpenAI
-```
-
-### Verify Installation
-
-```bash
-./tessera status
-```
-
-```
-  SERVICE          STATUS
-  -------          ------
-  Octant API       ok epoch 12
-  Gitcoin GraphQL  ok
-  OSO API          ok connected
-  AI Providers     1 configured
-```
-
-### Quick Demo
-
-Run these commands to see Tessera in action:
-
-```bash
-# 1. Check all data sources and AI providers
-./tessera status
-
-# 2. List all projects in Octant Epoch 5
-./tessera list-projects -e 5
-
-# 3. Run full quantitative analysis (clustering + scoring)
-./tessera analyze-epoch -e 5
-
-# 4. Detect funding anomalies (whale concentration, sybil patterns)
-./tessera detect-anomalies -e 5
-
-# 5. Evaluate a project with AI (requires AI provider)
-./tessera evaluate "Gitcoin Grants" -d "Decentralized grants platform for Ethereum public goods funding using quadratic funding"
-
-# 6. Extract impact metrics from text (requires AI provider)
-./tessera extract-metrics "The project onboarded 10,000 developers and processed $5M in grants across 3 rounds"
-```
-
-Commands 1-4 work immediately (no AI needed). Commands 5-6 require Claude CLI or an API key.
 
 ---
 
-## Usage
+## Key Findings from Real Data
 
-### List Octant Projects
+Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 
-```bash
-./tessera list-projects -e 5
-```
+| Finding | Value | Significance |
+|---------|-------|-------------|
+| Whale concentration | 97.9% | Top 10% of donors control nearly all funding |
+| Donor coordination clusters | 41 pairs (Jaccard > 0.7) | Overlapping donor sets suggest coordinated behavior |
+| Single-whale dominance | 0x2585 controls 90-99% of 5 projects | One address dictates outcomes for multiple projects |
+| Coordination shift detected | 39-donor cluster | Temporal anomaly: large group appeared in a single epoch |
+| Equal Weight mechanism impact | +3105% for smallest project | Alternative mechanism would radically redistribute funding |
+| Median Shannon entropy | 0.33 | Donor bases are structurally concentrated, not diverse |
 
-Lists all projects registered in a given Octant epoch with their addresses.
+---
 
-### Analyze an Epoch
+## All 18 Commands
 
-```bash
-./tessera analyze-epoch -e 5
-```
+### Quantitative Analysis (no AI needed)
 
-Runs the full quantitative pipeline: converts wei to ETH, normalizes metrics, clusters projects into groups, and computes composite scores.
+| Command | Description | Data Source |
+|---------|-------------|-------------|
+| `status` | Check connection to all data sources and AI providers | Octant, Gitcoin, OSO |
+| `providers` | Display configured AI providers and fallback order | Local config |
+| `list-projects -e N` | List all projects in Octant epoch N | Octant REST |
+| `analyze-epoch -e N` | K-means clustering + composite scoring for epoch N | Octant REST |
+| `detect-anomalies -e N` | Whale concentration + coordinated donation patterns | Octant REST |
+| `trust-graph -e N` | Donor diversity, whale dependency, Jaccard similarity matrix | Octant REST |
+| `simulate -e N` | Compare Standard QF, Capped QF, Equal Weight, Trust-Weighted QF | Octant REST |
+| `track-project <addr>` | Cross-epoch timeline + temporal anomaly detection + multi-layer scoring | Octant REST |
 
-Example output:
+### Qualitative Analysis (AI powered)
 
-```
-Epoch 5 Analysis — 30 projects
+| Command | Description | Data Source | AI Required |
+|---------|-------------|-------------|-------------|
+| `evaluate "Name" -d "Desc"` | 8-dimension LLM evaluation with scored rubric | User input | Yes |
+| `deep-eval <addr> -e N` | Deep evaluation combining on-chain data with AI analysis | Octant + AI | Yes |
+| `scan-proposal <url>` | Scan and evaluate a project proposal from URL | Web + AI | Yes |
+| `extract-metrics "text"` | Extract structured impact metrics from unstructured text | User input | Yes |
+| `analyze-project <addr>` | Full intelligence report: quant + trust + simulation + AI eval + PDF | Octant + AI | Yes |
+| `report-epoch -e N` | Generate comprehensive epoch report with all analyses | Octant + AI | Yes |
+| `collect-signals <addr>` | Gather community signals and sentiment for a project | Multiple | Yes |
 
-  RANK  ADDRESS          ALLOCATED (ETH)  MATCHED (ETH)  SCORE  CLUSTER
-  ----  -------          ---------------  -------------  -----  -------
-  1     0x9531C0...1306  2.2694           26.6396        89.5   1
-  2     0xBCA488...7d62  2.1218           22.8011        79.4   2
-  3     0x3250c2...A62a  0.8019           32.0558        73.9   3
-  ...
-```
+### Social (Moltbook)
 
-### Detect Funding Anomalies
+| Command | Description | Data Source |
+|---------|-------------|-------------|
+| `moltbook` | Post project update to Moltbook social feed | Moltbook REST |
+| `heartbeat` | Send periodic status heartbeat to Moltbook | Moltbook REST |
 
-```bash
-./tessera detect-anomalies -e 5
-```
+### Server
 
-Analyzes donation patterns for whale concentration and coordinated behavior.
+| Command | Description |
+|---------|-------------|
+| `serve` | Start web dashboard at http://localhost:8080 |
 
-Example output:
+---
 
-```
-Funding Anomaly Report — Epoch 5
+## Multi-Layer Scoring System
 
-  Total Donations      1902
-  Unique Donors        422
-  Total Amount         17.6302 ETH
-  Mean Donation        0.009269 ETH
-  Median Donation      0.000146 ETH
-  Max Donation         2.049135 ETH
-  Whale Concentration  97.9%
+Tessera computes a 5-dimension score for each project, designed to capture funding health beyond raw totals:
 
-  Flags:
-    - Top 10% of donors control 97.9% of total funding
-```
+| Dimension | Weight | What It Measures |
+|-----------|--------|-----------------|
+| FundingScore | 25% | Total funding normalized across the epoch |
+| EfficiencyScore | 25% | Ratio of matched funding to direct allocations |
+| DiversityScore | 30% | Shannon entropy of donor distribution (higher = more diverse) |
+| ConsistencyScore | 20% | Stability of funding across multiple epochs |
+| **OverallScore** | -- | Weighted aggregate of all dimensions |
 
-### Evaluate a Project with AI
+Projects with high OverallScore but low DiversityScore are flagged as whale-dependent. Projects with high DiversityScore but low FundingScore may be undervalued by the current mechanism.
 
-```bash
-./tessera evaluate "Project Name" -d "Description of what the project does"
-```
+---
 
-Sends the project description to the AI provider chain for 8-dimension evaluation. The result includes scores, strengths, concerns, and a recommendation. A markdown report is saved to `reports/`.
+## Temporal Anomaly Detection
 
-Optional context flag:
+The `track-project` command monitors a project across epochs and flags 5 temporal patterns:
 
-```bash
-./tessera evaluate "Project Name" -d "Description" -c "Additional context or data"
-```
+| Pattern | Detection Method | Severity |
+|---------|-----------------|----------|
+| Donor Surge | Donor count increases >50% epoch-over-epoch | Medium |
+| Donor Exodus | Donor count drops >50% epoch-over-epoch | High |
+| Funding Spike | Funding increases >3x from previous epoch | Medium |
+| New Whale Entry | New top-10% donor appears with >30% of total | High |
+| Coordination Shift | Jaccard similarity of donor sets changes >0.5 between epochs | High |
 
-### Extract Impact Metrics from Text
+---
 
-```bash
-./tessera extract-metrics "The project served 50,000 users and processed 2M in transactions over 6 months"
-```
+## Trust-Weighted Quadratic Funding
 
-Uses AI to extract structured metrics from unstructured text, including metric name, value, unit, time period, and confidence level.
+Tessera implements a novel mechanism design: QF modulated by donor diversity scores.
 
-### Analyze a Gitcoin Grants Round
+Standard quadratic funding is vulnerable to whale dominance and coordinated attacks. Trust-Weighted QF adjusts each donor's influence by their diversity score (derived from Shannon entropy of their donation portfolio). Donors who spread contributions across many projects receive higher weight; single-project donors receive lower weight.
 
-```bash
-./tessera gitcoin-rounds -r "ROUND_ID" --chain 1
-```
+The `simulate` command compares four mechanisms side-by-side:
 
-Fetches approved projects for a Gitcoin round and ranks them by donation amount.
-
-### Show AI Provider Chain
-
-```bash
-./tessera providers
-```
-
-Displays configured AI providers and the fallback order.
+- **Standard QF** -- baseline quadratic funding
+- **Capped QF** -- individual contribution caps
+- **Equal Weight** -- one-person-one-vote regardless of amount
+- **Trust-Weighted QF** -- QF modulated by donor diversity scores
 
 ---
 
 ## Architecture
 
-```mermaid
-graph TD
-    subgraph "cmd/analyst"
-        Main["main.go — CLI entry point, flag parsing, .env loader"]
-    end
-
-    subgraph "internal/provider"
-        Provider["provider.go — Multi-model AI fallback chain"]
-    end
-
-    subgraph "internal/data"
-        Octant["octant.go — Octant REST client"]
-        Gitcoin["gitcoin.go — Gitcoin GraphQL client"]
-        OSO["oso.go — OSO GraphQL client"]
-    end
-
-    subgraph "internal/analysis"
-        Quant["quantitative.go — K-means, scoring, anomaly detection"]
-        Qual["qualitative.go — LLM evaluation, comparison, sentiment"]
-    end
-
-    subgraph "internal/report"
-        Report["report.go — Markdown report generation"]
-    end
-
-    Main --> Provider
-    Main --> Octant
-    Main --> Gitcoin
-    Main --> OSO
-    Main --> Quant
-    Main --> Qual
-    Main --> Report
-    Qual --> Provider
-```
-
-### Module Responsibilities
-
 | Module | File | Responsibility |
 |--------|------|----------------|
-| CLI | `cmd/analyst/main.go` | Command routing, flag parsing, .env loading, terminal output formatting |
-| Provider | `internal/provider/provider.go` | HTTP calls to Claude, Gemini, OpenAI, Antigravity with automatic fallback |
-| Octant | `internal/data/octant.go` | REST client for epochs, projects, allocations, rewards, patrons, budgets, leverage, threshold |
+| CLI | `cmd/analyst/main.go` | Command routing, flag parsing, .env loading, terminal output |
+| Provider | `internal/provider/provider.go` | Multi-model AI fallback chain (Claude, Gemini, OpenAI, Antigravity) |
+| Octant | `internal/data/octant.go` | REST client for epochs, projects, allocations, rewards, patrons |
 | Gitcoin | `internal/data/gitcoin.go` | GraphQL client for rounds, applications, donations |
 | OSO | `internal/data/oso.go` | GraphQL client for project registry and timeseries metrics |
-| Quantitative | `internal/analysis/quantitative.go` | K-means clustering (Lloyd's algorithm), composite scoring, anomaly detection |
-| Qualitative | `internal/analysis/qualitative.go` | LLM prompting for evaluation, comparison, sentiment, metric extraction |
-| Report | `internal/report/report.go` | Markdown report generation with timestamped file output |
-
-### Multi-Model Fallback Chain
-
-Tessera tries AI providers in sequence. If a provider fails (rate limit, network error, invalid key), it automatically falls back to the next available provider.
-
-| Priority | Provider | Method | Default Model | Activation |
-|----------|----------|--------|---------------|------------|
-| 1 | Claude CLI | `claude --print` subprocess | sonnet | `claude` binary on PATH (Claude Code / Max plan) |
-| 2 | Claude API | Anthropic Messages API | claude-sonnet-4-6 | `ANTHROPIC_API_KEY` set |
-| 3 | Gemini | Google Generative AI | gemini-2.0-flash | `GEMINI_API_KEY` set |
-| 4 | OpenAI | Chat Completions API | gpt-4o | `OPENAI_API_KEY` set |
-| 5 | Antigravity | Claude-compatible proxy | claude-sonnet-4-5-thinking | `ANTIGRAVITY_URL` set |
-
-**Recommended setup for Claude Max plan subscribers:** Install Claude Code (`npm i -g @anthropic-ai/claude-code`), login, and Tessera automatically uses it as the primary AI provider. No API key needed.
-
-Claude CLI is auto-detected: if the `claude` binary exists, it becomes priority 1 in the fallback chain. Set `CLAUDE_CLI_DISABLED=true` to skip it. Override the model with `CLAUDE_CLI_MODEL` (default: `sonnet`, options: `opus`, `sonnet`, `haiku`).
-
-### OpenClaw Skill
-
-Tessera ships as an [OpenClaw](https://openclaw.ai) skill in `skills/public-goods-analyst/SKILL.md`. This makes it usable from OpenClaw, Claude Code, and Gemini CLI as a slash command. The skill definition includes gating requirements, install instructions, and full command documentation.
+| Quantitative | `internal/analysis/quantitative.go` | K-means clustering, composite scoring, anomaly detection, trust graph |
+| Qualitative | `internal/analysis/qualitative.go` | LLM evaluation, comparison, sentiment, metric extraction |
+| Report | `internal/report/report.go` | Markdown and PDF report generation with branded watermark |
+| Server | `internal/server/server.go` | HTTP server + SSE streaming for web dashboard |
+| Frontend | `frontend/` | Next.js dashboard with real-time streaming |
 
 ---
 
-## Problem and Solution
+## Data Sources
 
-| Problem | Detail | How Tessera Addresses It |
-|---------|--------|--------------------------|
-| Cognitive overload | Evaluators cannot review 30+ projects per epoch with diverse metrics | Automated scoring and clustering ranks all projects in seconds |
-| Qualitative data at scale | Proposals, forum discussions, and impact reports cannot be read manually for every project | AI evaluates proposals across 8 structured dimensions |
-| Sybil attacks | Fake identities can game quadratic funding | Coordinated donation pattern detection flags suspicious exact-amount clusters |
-| Whale concentration | Top donors can dominate funding allocation | Measures top-10% donor share and flags when it exceeds 50% |
-| Impact measurement | No standardized way to extract and compare impact claims | AI extracts structured metrics with confidence levels from unstructured text |
+| Source | Protocol | Data Available |
+|--------|----------|----------------|
+| Octant | REST | Projects, allocations, rewards, epochs, patrons, budgets, leverage, threshold |
+| Gitcoin Grants Stack | GraphQL | Rounds, applications, donations, matching amounts |
+| Open Source Observer | GraphQL | Project registry, GitHub metrics, on-chain activity, timeseries |
+| Moltbook | REST | Social posts, heartbeats, community engagement |
+
+All quantitative data sources are public and require no authentication. OSO optionally accepts an API key for higher rate limits.
+
+---
+
+## PDF Reports
+
+The `analyze-project` command generates branded PDF intelligence reports containing:
+
+- Quantitative scoring and epoch rank
+- Trust profile with donor diversity metrics
+- Mechanism simulation showing impact of alternative funding models
+- AI deep evaluation across 8 dimensions
+- Temporal anomaly flags
+
+Reports are saved to `reports/` and served through the web dashboard. Each PDF carries a "Tessera Agent" watermark.
 
 ---
 
 ## Built For
 
-**The Synthesis** — a 14-day hackathon where AI agents and humans build together as equals.
+**The Synthesis** -- a 14-day hackathon where AI agents and humans build together as equals.
 
 | | |
 |-|-|
-| Track | Agents for Public Goods Data Analysis for Project Evaluation (Octant) |
+| Track | Agents for Public Goods Data Analysis for Project Evaluation (Octant, $1,000) |
 | Human | Yeheskiel Yunus Rame ([@YeheskielTame](https://x.com/YeheskielTame)) |
 | Agent | Claude Opus 4.6 via Claude Code |
+| Repo | [github.com/yeheskieltame/Tessera](https://github.com/yeheskieltame/Tessera) |
 | Collaboration Log | [CONVERSATION_LOG.md](CONVERSATION_LOG.md) |
 
 ---
