@@ -710,7 +710,7 @@ func handleListReports(w http.ResponseWriter, r *http.Request) {
 func handleServeReport(w http.ResponseWriter, r *http.Request) {
 	// Extract filename from path: /api/reports/foo.pdf
 	filename := strings.TrimPrefix(r.URL.Path, "/api/reports/")
-	if filename == "" || strings.Contains(filename, "/") || strings.Contains(filename, "..") {
+	if filename == "" || strings.Contains(filename, "/") || strings.HasPrefix(filename, "..") {
 		jsonError(w, "invalid filename", http.StatusBadRequest)
 		return
 	}
