@@ -205,6 +205,18 @@ Reports are saved to `reports/` and served through the web dashboard. Each PDF c
 
 ---
 
+## Bounty Alignment
+
+| Bounty | Prize | Tessera Features | Key Findings |
+|--------|-------|-----------------|--------------|
+| **Data Analysis** | $1,000 | analyze-epoch, trust-graph, deep-eval, report-epoch, analyze-project | 41 donor clusters, 97.9% whale concentration, #1 project drops from 89.5 to 36.6 under multi-layer scoring |
+| **Data Collection** | $1,000 | collect-signals (OSO), scan-proposal (two-pass verification), extract-metrics, cross-epoch history | Evidence-grounded AI evaluation using real API data, not just text descriptions |
+| **Mechanism Design** | $1,000 | simulate (4 QF variants), Trust-Weighted QF (novel mechanism), Gini coefficients | Equal Weight +3105% for smallest project but maximizes sybil vulnerability; Trust-Weighted QF balances fairness and resistance |
+
+See [FINDINGS.md](FINDINGS.md) for detailed insights generated from real Octant data.
+
+---
+
 ## Built For
 
 **The Synthesis** -- a 14-day hackathon where AI agents and humans build together as equals.
