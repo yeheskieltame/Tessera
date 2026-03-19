@@ -54,6 +54,12 @@ body {
   pointer-events: none;
 }
 
+/* Input placeholder on dark glass backgrounds */
+input::placeholder,
+textarea::placeholder {
+  color: rgba(186, 210, 255, 0.5);
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
