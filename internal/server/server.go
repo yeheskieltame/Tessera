@@ -1063,6 +1063,9 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Step 8: AI deep evaluation (evidence-grounded with ALL collected data)
+	aiEvalText := ""
+	aiModel := "N/A"
+	aiProvider := "N/A"
 	if !ai.HasProviders() {
 		sse.sendStep(8, totalSteps, "AI evaluation skipped (no providers configured)", nil)
 	} else {
@@ -1085,14 +1088,12 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 			contextData.WriteString(fmt.Sprintf("Mechanism impact: Standard QF -> Capped QF %+.1f%%, Equal Weight %+.1f%%, Trust-Weighted %+.1f%%\n",
 				cappedP.Change, equalP.Change, trustP.Change))
 		}
-		// Include temporal anomalies in AI context
 		if len(anomalyList) > 0 {
 			contextData.WriteString(fmt.Sprintf("\nTemporal anomalies detected (%d):\n", len(anomalyList)))
 			for _, a := range anomalyList {
 				contextData.WriteString(fmt.Sprintf("  [%s] %s: %s\n", a.Severity, a.Type, a.Description))
 			}
 		}
-		// Include multi-layer scores in AI context
 		if projectScore != nil {
 			contextData.WriteString(fmt.Sprintf("\nMulti-layer scores: Funding=%.1f, Efficiency=%.1f, Diversity=%.1f, Consistency=%.1f, Overall=%.1f\n",
 				projectScore.FundingScore, projectScore.EfficiencyScore, projectScore.DiversityScore, projectScore.ConsistencyScore, projectScore.OverallScore))
@@ -1102,15 +1103,18 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			sse.sendStep(8, totalSteps, fmt.Sprintf("AI evaluation failed: %v", err), nil)
 		} else {
+			aiEvalText = evalResult.Evaluation
+			aiModel = evalResult.Model
+			aiProvider = evalResult.Provider
 			sse.sendStep(8, totalSteps, "AI deep evaluation complete", map[string]any{
-				"evaluation": evalResult.Evaluation,
-				"model":      evalResult.Model,
-				"provider":   evalResult.Provider,
+				"evaluation": aiEvalText,
+				"model":      aiModel,
+				"provider":   aiProvider,
 			})
 		}
 	}
 
-	// Generate PDF report
+	// Generate PDF report (AFTER AI evaluation so we have the text)
 	var reportPath string
 	if projectTrust != nil {
 		shortAddr := address
@@ -1125,32 +1129,49 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		for _, h := range histOut {
 			histRows = append(histRows, []string{fmt.Sprintf("%d", h.Epoch), fmt.Sprintf("%.4f", h.Allocated), fmt.Sprintf("%.4f", h.Matched), fmt.Sprintf("%d", h.Donors)})
 		}
-		evalText := ""
-		evalModel := "N/A"
-		evalProvider := "N/A"
-		if ai.HasProviders() {
-			// Already computed above, use from step 6
-			evalModel = "claude-opus-4-6"
-			evalProvider = "claude-cli"
+		// Build anomaly text for PDF
+		anomalyText := ""
+		if len(anomalyList) > 0 {
+			anomalyText = fmt.Sprintf("Temporal Anomalies Detected: %d\n\n", len(anomalyList))
+			for _, a := range anomalyList {
+				anomalyText += fmt.Sprintf("- [%s] %s: %s\n", strings.ToUpper(a.Severity), a.Type, a.Description)
+			}
 		}
+		// Build scores text for PDF
+		scoresText := ""
+		if projectScore != nil {
+			scoresText = fmt.Sprintf("Funding: %.1f/100 | Efficiency: %.1f/100 | Diversity: %.1f/100 | Consistency: %.1f/100 | Overall: %.1f/100",
+				projectScore.FundingScore, projectScore.EfficiencyScore, projectScore.DiversityScore, projectScore.ConsistencyScore, projectScore.OverallScore)
+		}
+
+		sections := []report.PDFSection{
+			{Heading: "Funding History", Table: &report.PDFTable{Headers: []string{"Epoch", "Allocated (ETH)", "Matched (ETH)", "Donors"}, Rows: histRows, ColW: []float64{25, 45, 45, 30}}},
+			{Heading: "Trust Profile", Body: fmt.Sprintf("Unique Donors: %d\nDonor Diversity (Shannon): %.3f\nWhale Dependency: %.1f%%\nCoordination Risk (Jaccard): %.3f\nRepeat Donors: %d", projectTrust.UniqueDonors, projectTrust.DonorDiversity, projectTrust.WhaleDepRatio*100, projectTrust.CoordinationRisk, projectTrust.RepeatDonors)},
+			{Heading: "Multi-Layer Scores", Body: scoresText},
+			{Heading: "Mechanism Simulation Impact", Table: &report.PDFTable{Headers: []string{"Mechanism", "Allocated", "Change"}, Rows: mechRows, ColW: []float64{70, 50, 40}}},
+		}
+		if anomalyText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Temporal Anomalies", Body: anomalyText})
+		}
+		if aiEvalText != "" {
+			sections = append(sections, report.PDFSection{Heading: "AI Deep Evaluation", Body: aiEvalText})
+		}
+
 		pdfReport := &report.PDFReport{
 			Title:    fmt.Sprintf("Intelligence Report: %s", shortAddr),
 			Subtitle: fmt.Sprintf("Octant Public Goods Evaluation | Epoch %d", epoch),
-			Model:    evalModel,
-			Provider: evalProvider,
+			Model:    aiModel,
+			Provider: aiProvider,
 			Metadata: map[string]string{
 				"Address":          address,
 				"Rank":             fmt.Sprintf("%d / %d projects", projectRank, len(metrics)),
 				"Composite Score":  fmt.Sprintf("%.1f / 100", projectMetric.CompositeScore),
+				"Overall Score":    fmt.Sprintf("%.1f / 100", func() float64 { if projectScore != nil { return projectScore.OverallScore }; return 0 }()),
 				"Donor Diversity":  fmt.Sprintf("%.3f (Shannon entropy)", projectTrust.DonorDiversity),
 				"Whale Dependency": fmt.Sprintf("%.1f%%", projectTrust.WhaleDepRatio*100),
+				"AI Model":         aiModel,
 			},
-			Sections: []report.PDFSection{
-				{Heading: "Funding History", Table: &report.PDFTable{Headers: []string{"Epoch", "Allocated (ETH)", "Matched (ETH)", "Donors"}, Rows: histRows, ColW: []float64{25, 45, 45, 30}}},
-				{Heading: "Trust Profile", Body: fmt.Sprintf("Unique Donors: %d\nDonor Diversity (Shannon): %.3f\nWhale Dependency: %.1f%%\nCoordination Risk (Jaccard): %.3f\nRepeat Donors: %d", projectTrust.UniqueDonors, projectTrust.DonorDiversity, projectTrust.WhaleDepRatio*100, projectTrust.CoordinationRisk, projectTrust.RepeatDonors)},
-				{Heading: "Mechanism Simulation Impact", Table: &report.PDFTable{Headers: []string{"Mechanism", "Allocated", "Change"}, Rows: mechRows, ColW: []float64{70, 50, 40}}},
-				{Heading: "AI Deep Evaluation", Body: evalText},
-			},
+			Sections: sections,
 		}
 		if p, err := report.GeneratePDF(pdfReport); err == nil {
 			reportPath = p
