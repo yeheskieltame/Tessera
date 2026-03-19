@@ -1,8 +1,37 @@
-.env
+# Binaries
 /tessera
 /analyst
+tessera_test
+
+# Environment
+.env
+.env.local
+
+# Reports (generated output)
 reports/
+
+# Claude
 .claude/
+
+# Go
+*.exe
+*.test
+*.prof
+
+# Node / Frontend
 node_modules/
 frontend/node_modules/
+frontend/dist/
+frontend/.next/
 frontend/.vite/
+frontend/out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
