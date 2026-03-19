@@ -73,7 +73,7 @@ func GeneratePDF(r *PDFReport) (string, error) {
 		// Watermark on every page
 		pdf.SetFont("Helvetica", "B", 54)
 		pdf.SetTextColor(220, 220, 220)
-		pdf.SetAlpha(0.12, "Normal")
+		pdf.SetAlpha(0.30, "Normal")
 		cx, cy := pageW/2, pageH/2
 		pdf.TransformBegin()
 		pdf.TransformRotate(-35, cx, cy)
@@ -299,8 +299,11 @@ func sanitize(s string) string {
 		"\u2265", ">=",    // greater-equal
 		"\u00d7", "x",     // multiplication
 		"\u2212", "-",     // minus
+		"\u2248", "~",     // approximately
+		"\u2260", "!=",    // not equal
 		"\u03b1", "alpha", // alpha
 		"\u03b2", "beta",  // beta
+		"\u221e", "inf",   // infinity
 	)
 	return r.Replace(s)
 }
