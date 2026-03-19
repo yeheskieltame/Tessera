@@ -1424,8 +1424,45 @@ func loadRoutes() {
 	handle("/api/report-epoch/stream", handleReportEpochStream)
 
 	// Serve static frontend files from ./frontend/dist
-	fs := http.FileServer(http.Dir("./frontend/dist"))
-	http.Handle("/", fs)
+	// Custom handler to support Next.js static export routing
+	distDir := "./frontend/dist"
+	fs := http.FileServer(http.Dir(distDir))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// Skip API routes
+		if strings.HasPrefix(path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Try exact file first
+		fullPath := filepath.Join(distDir, path)
+		if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		// Try path.html (Next.js static export: /dashboard -> dashboard.html)
+		cleanPath := strings.TrimSuffix(strings.TrimPrefix(path, "/"), "/")
+		if cleanPath != "" {
+			htmlPath := filepath.Join(distDir, cleanPath+".html")
+			if _, err := os.Stat(htmlPath); err == nil {
+				http.ServeFile(w, r, htmlPath)
+				return
+			}
+		}
+
+		// Try path/index.html
+		indexPath := filepath.Join(distDir, path, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			http.ServeFile(w, r, indexPath)
+			return
+		}
+
+		// Fallback to file server (handles _next/ static assets)
+		fs.ServeHTTP(w, r)
+	})
 }
 
 // Start initializes routes and starts the HTTP server.
