@@ -1196,33 +1196,73 @@ func cmdAnalyzeProject(ctx context.Context) {
 func cmdCollectSignals(ctx context.Context) {
 	projectName := flagString("", 0)
 	if projectName == "" {
-		fmt.Fprintln(os.Stderr, "Usage: tessera collect-signals <project-name>")
+		fmt.Fprintln(os.Stderr, "Usage: tessera collect-signals <project-name-or-owner/repo>")
+		fmt.Fprintln(os.Stderr, "  Examples: tessera collect-signals octant")
+		fmt.Fprintln(os.Stderr, "            tessera collect-signals golemfoundation/octant")
 		os.Exit(1)
 	}
 
-	oso := data.NewOSOClient()
-	fmt.Printf("Collecting OSO signals for: %s\n\n", projectName)
+	var allSignals string
 
-	signals := oso.CollectProjectSignals(ctx, projectName)
-	formatted := signals.FormatSignals()
-	fmt.Println(formatted)
+	// Try OSO first
+	oso := data.NewOSOClient()
+	fmt.Printf("Collecting OSO signals for: %s\n", projectName)
+	osoSignals := oso.CollectProjectSignals(ctx, projectName)
+	osoFormatted := osoSignals.FormatSignals()
+	if osoFormatted != "No OSO data available for this project." && osoFormatted != "" {
+		fmt.Println(osoFormatted)
+		allSignals += osoFormatted
+	} else {
+		fmt.Println("  OSO unavailable or no data found.")
+	}
+
+	// Try GitHub directly (fallback or additional source)
+	gh := data.NewGitHubClient()
+	if strings.Contains(projectName, "/") {
+		// owner/repo format
+		parts := strings.SplitN(projectName, "/", 2)
+		fmt.Printf("\nCollecting GitHub signals for: %s/%s\n", parts[0], parts[1])
+		ghSignals := gh.CollectGitHubSignals(ctx, parts[0], parts[1])
+		ghFormatted := ghSignals.FormatSignals()
+		if ghFormatted != "" {
+			fmt.Println(ghFormatted)
+			allSignals += "\n" + ghFormatted
+		}
+	} else {
+		// Try common org patterns
+		for _, owner := range []string{projectName, projectName + "foundation", projectName + "-protocol"} {
+			ghSignals := gh.CollectGitHubSignals(ctx, owner, projectName)
+			if ghSignals.Repo != nil {
+				fmt.Printf("\nFound GitHub repo: %s\n", ghSignals.Repo.FullName)
+				ghFormatted := ghSignals.FormatSignals()
+				fmt.Println(ghFormatted)
+				allSignals += "\n" + ghFormatted
+				break
+			}
+		}
+	}
+
+	if allSignals == "" {
+		fmt.Println("\nNo signals found from any source.")
+		return
+	}
 
 	// AI analysis if available
 	ai := provider.New()
-	if ai.HasProviders() && (signals.Code != nil || signals.Onchain != nil || signals.Funding != nil) {
-		fmt.Println("Generating signal analysis...")
-		prompt := fmt.Sprintf(`Analyze these Open Source Observer (OSO) signals for the project "%s":
+	if ai.HasProviders() {
+		fmt.Println("\nGenerating signal analysis...")
+		prompt := fmt.Sprintf(`Analyze these development and activity signals for the project "%s":
 
 %s
 
 Provide:
 1. **Development Health**: Is the project actively maintained? How does contributor activity compare to similar projects?
-2. **On-Chain Traction**: Is there real usage? Are users returning or one-time?
-3. **Funding Efficiency**: How does funding received compare to development output?
+2. **On-Chain Traction**: Is there real usage? (if on-chain data available)
+3. **Funding Efficiency**: How does funding received compare to development output? (if funding data available)
 4. **Legitimacy Signals**: What signals suggest this is a legitimate public good vs. potential gaming?
 5. **Red Flags**: Any concerning patterns in the data?
 
-Be specific and reference the numbers.`, projectName, formatted)
+Be specific and reference the numbers.`, projectName, allSignals)
 
 		result, err := ai.Complete(ctx, prompt, "You are a public goods data analyst specializing in cross-referencing GitHub activity, on-chain metrics, and funding data to assess project legitimacy.")
 		if err == nil {
