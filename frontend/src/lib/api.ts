@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE =
+  typeof window !== "undefined" ? "" : "http://localhost:8080";
 
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -8,87 +9,120 @@ async function fetchJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export interface StatusResponse {
-  octant: { connected: boolean; epoch: number };
-  ai: { provider: string; model: string };
-  gitcoin: { connected: boolean };
-  oso: { connected: boolean };
+/* ─── Types matching actual Go API responses ─── */
+
+export interface ServiceStatus {
+  name: string;
+  status: string;
+  detail: string;
 }
 
-export interface EpochInfo {
-  epoch: number;
-  fromTs: string;
-  toTs: string;
-  decisionWindow: number;
-  totalBudget: string;
-  totalAllocated: string;
-  totalMatched: string;
-  projectCount: number;
+export interface StatusResponse {
+  services: ServiceStatus[];
+}
+
+export interface EpochResponse {
+  currentEpoch: number;
 }
 
 export interface ProjectScore {
-  rank: number;
   address: string;
-  name: string;
-  allocated: string;
-  matched: string;
-  score: number;
+  allocated: number;
+  matched: number;
+  totalFunding: number;
+  compositeScore: number;
   cluster: number;
 }
 
-export interface TrustNode {
+export interface AnalyzeEpochResponse {
+  epoch: number;
+  projects: ProjectScore[];
+}
+
+export interface TrustProfile {
   address: string;
-  name: string;
-  donors: number;
-  diversity: number;
-  whaleDependency: number;
+  donorCount: number;
+  uniqueDonors: number;
+  donorDiversity: number;
+  whaleDepRatio: number;
   coordinationRisk: number;
+  repeatDonors: number;
   flags: string[];
+}
+
+export interface TrustGraphResponse {
+  epoch: number;
+  profiles: TrustProfile[];
+}
+
+export interface MechanismProject {
+  address: string;
+  allocated: number;
+  originalAlloc: number;
+  change: number;
 }
 
 export interface MechanismResult {
   name: string;
-  gini: number;
+  description: string;
+  giniCoeff: number;
   topShare: number;
   aboveThreshold: number;
+  projects: MechanismProject[];
+}
+
+export interface SimulateResponse {
+  epoch: number;
+  mechanisms: MechanismResult[];
 }
 
 export interface ReportEntry {
-  filename: string;
-  date: string;
-  project: string;
+  name: string;
   size: number;
+  modTime: string;
+}
+
+export interface ReportsResponse {
+  reports: ReportEntry[];
 }
 
 export interface AnalyzeStep {
-  step: number;
-  name: string;
-  status: "pending" | "running" | "done" | "error";
+  step: string;
+  status: string;
+  message?: string;
   data?: Record<string, unknown>;
-  error?: string;
+  result?: Record<string, unknown>;
 }
+
+/* ─── API functions ─── */
 
 export async function getStatus(): Promise<StatusResponse> {
   return fetchJson("/api/status");
 }
 
-export async function getCurrentEpoch(): Promise<EpochInfo> {
+export async function getCurrentEpoch(): Promise<EpochResponse> {
   return fetchJson("/api/epochs/current");
 }
 
-export async function analyzeEpoch(epoch: number): Promise<ProjectScore[]> {
+export async function analyzeEpoch(
+  epoch: number
+): Promise<AnalyzeEpochResponse> {
   return fetchJson(`/api/analyze-epoch?epoch=${epoch}`);
 }
 
-export async function getTrustGraph(epoch: number): Promise<TrustNode[]> {
+export async function getTrustGraph(
+  epoch: number
+): Promise<TrustGraphResponse> {
   return fetchJson(`/api/trust-graph?epoch=${epoch}`);
 }
 
-export async function getSimulation(epoch: number): Promise<MechanismResult[]> {
+export async function getSimulation(
+  epoch: number
+): Promise<SimulateResponse> {
   return fetchJson(`/api/simulate?epoch=${epoch}`);
 }
 
-export async function getReports(): Promise<ReportEntry[]> {
+export async function getReports(): Promise<ReportsResponse> {
   return fetchJson("/api/reports");
 }
 
