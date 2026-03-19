@@ -674,26 +674,32 @@ func handleListReports(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type reportEntry struct {
-		Filename string `json:"filename"`
+		Name     string `json:"name"`
 		Size     int64  `json:"size"`
-		Modified string `json:"modified"`
+		ModTime  string `json:"modTime"`
+		Type     string `json:"type"`
 	}
 	var reports []reportEntry
 	for _, e := range entries {
 		if e.IsDir() {
 			continue
 		}
-		if strings.HasSuffix(e.Name(), ".pdf") {
-			info, err := e.Info()
-			if err != nil {
-				continue
-			}
-			reports = append(reports, reportEntry{
-				Filename: e.Name(),
-				Size:     info.Size(),
-				Modified: info.ModTime().Format(time.RFC3339),
-			})
+		info, err := e.Info()
+		if err != nil {
+			continue
 		}
+		ftype := "unknown"
+		if strings.HasSuffix(e.Name(), ".pdf") {
+			ftype = "pdf"
+		} else if strings.HasSuffix(e.Name(), ".md") {
+			ftype = "markdown"
+		}
+		reports = append(reports, reportEntry{
+			Name:    e.Name(),
+			Size:    info.Size(),
+			ModTime: info.ModTime().Format(time.RFC3339),
+			Type:    ftype,
+		})
 	}
 	if reports == nil {
 		reports = []reportEntry{}
@@ -708,18 +714,19 @@ func handleServeReport(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "invalid filename", http.StatusBadRequest)
 		return
 	}
-	if !strings.HasSuffix(filename, ".pdf") {
-		jsonError(w, "only PDF files are served", http.StatusBadRequest)
-		return
-	}
-
 	path := filepath.Join("reports", filename)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		jsonError(w, "report not found", http.StatusNotFound)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/pdf")
+	if strings.HasSuffix(filename, ".pdf") {
+		w.Header().Set("Content-Type", "application/pdf")
+	} else if strings.HasSuffix(filename, ".md") {
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	} else {
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
 	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", filename))
 	http.ServeFile(w, r, path)
 }
