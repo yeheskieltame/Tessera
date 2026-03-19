@@ -67,7 +67,7 @@ const steps = [
 ];
 
 const stats = [
-  { value: "17", label: "CLI Commands" },
+  { value: "19", label: "CLI Commands" },
   { value: "3", label: "Data Sources" },
   { value: "4", label: "QF Mechanisms" },
   { value: "Real-Time", label: "SSE Streaming" },
@@ -78,8 +78,11 @@ export default function LandingPage() {
     <div className="relative overflow-hidden">
       {/* Hero */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-32">
-        {/* Decorative orb */}
-        <div className="hero-orb top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        {/* Background image */}
+        <div className="absolute inset-0 z-0">
+          <img src="/hero-bg.png" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white" />
+        </div>
 
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <h1 className="text-6xl sm:text-7xl font-black tracking-tight mb-6">

@@ -214,7 +214,13 @@ export default function DashboardPage() {
   const ai = status?.services?.find((s) => s.name === "AI Providers");
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-white">
+    <div className="min-h-screen relative">
+      {/* Fixed background image */}
+      <div className="fixed inset-0 z-0">
+        <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/80 to-white/90 backdrop-blur-sm" />
+      </div>
+      <div className="relative z-10">
 
       {/* ─── Top Bar (sticky) ─── */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
@@ -268,7 +274,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
           {/* Full Project Intelligence — PRIMARY card */}
-          <div id="project" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="project" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full -mt-5 mb-5 mx-0" style={{marginTop: "-20px", marginLeft: "-20px", marginRight: "-20px", width: "calc(100% + 40px)", borderRadius: "16px 16px 0 0"}} />
             <h3 className="text-sm font-semibold text-slate-800 mb-1">Full Project Intelligence</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera analyze-project &lt;address&gt;</p>
@@ -432,7 +438,7 @@ export default function DashboardPage() {
           </div>
 
           {/* AI Project Evaluation */}
-          <div id="evaluate" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="evaluate" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <h3 className="text-sm font-semibold text-slate-800 mb-1">AI Project Evaluation</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera evaluate &quot;Name&quot; -d &quot;Description&quot;</p>
 
@@ -464,7 +470,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
 
           {/* Epoch Analysis */}
-          <div id="analyze" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="analyze" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <h3 className="text-sm font-semibold text-slate-800 mb-1">Epoch Analysis</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera analyze-epoch -e {selectedEpoch}</p>
             <button onClick={runAnalyze} disabled={epochLoading}
@@ -534,7 +540,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Anomaly Detection */}
-          <div id="anomalies" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="anomalies" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <h3 className="text-sm font-semibold text-slate-800 mb-1">Anomaly Detection</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera detect-anomalies -e {selectedEpoch}</p>
             <button onClick={runAnomalies} disabled={anomalyLoading}
@@ -584,7 +590,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Trust Graph */}
-          <div id="trust" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="trust" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <h3 className="text-sm font-semibold text-slate-800 mb-1">Trust Graph</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera trust-graph -e {selectedEpoch}</p>
             <button onClick={runTrust} disabled={trustLoading}
@@ -666,7 +672,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
           {/* Mechanism Simulation */}
-          <div id="simulate" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="simulate" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <h3 className="text-sm font-semibold text-slate-800 mb-1">Mechanism Simulation</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera simulate -e {selectedEpoch}</p>
             <button onClick={runSimulate} disabled={simLoading}
@@ -703,7 +709,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Track Project */}
-          <div id="track" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+          <div id="track" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <h3 className="text-sm font-semibold text-slate-800 mb-1">Track Project</h3>
             <p className="text-xs text-slate-400 font-mono mb-4">./tessera track-project &lt;address&gt;</p>
 
@@ -837,7 +843,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ─── Row 4: PDF Reports (full width) ─── */}
-        <div id="reports" className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
+        <div id="reports" className="bg-white/90 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold text-slate-800 mb-1">PDF Reports</h3>
@@ -891,6 +897,7 @@ export default function DashboardPage() {
         Built by Yeheskiel Yunus Rame + Claude Opus 4.6 | The Synthesis Hackathon |{" "}
         <a href="https://github.com/yeheskieltame/Tessera" className="text-blue-500 hover:underline">GitHub</a>
       </footer>
+      </div>{/* close z-10 wrapper */}
     </div>
   );
 }
