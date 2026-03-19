@@ -227,7 +227,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent tracking-tight">Tessera</span>
-            <span className="text-xs font-medium text-slate-400 border-l border-slate-200 pl-3">Dashboard</span>
+            <span className="text-xs font-medium text-slate-900 border-l border-slate-200 pl-3">Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             {loading ? (
@@ -236,13 +236,13 @@ export default function DashboardPage() {
               <>
                 <div className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${octant?.status === "ok" ? "bg-green-400" : "bg-red-400"}`} />
-                  <span className="text-xs text-slate-500">Octant</span>
+                  <span className="text-xs text-slate-800">Octant</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${ai?.status === "ok" ? "bg-green-400" : "bg-red-400"}`} />
-                  <span className="text-xs text-slate-500">AI</span>
+                  <span className="text-xs text-slate-800">AI</span>
                 </div>
-                <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
+                <span className="text-xs font-mono text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
               </>
             )}
           </div>
@@ -252,18 +252,18 @@ export default function DashboardPage() {
       {/* ─── Epoch Control Bar (sticky) ─── */}
       <div className="sticky top-14 z-40 bg-white/20 backdrop-blur-xl border-b border-white/15">
         <div className="max-w-7xl mx-auto px-6 h-12 flex items-center gap-4">
-          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Epoch</label>
+          <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider whitespace-nowrap">Epoch</label>
           <input type="number" value={selectedEpoch} onChange={(e) => setSelectedEpoch(Number(e.target.value))}
             className="w-20 rounded-lg border border-white/40 bg-white/50 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" />
           <div className="flex gap-1">
             {[3, 4, 5, 6].map((e) => (
               <button key={e} onClick={() => setSelectedEpoch(e)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition ${selectedEpoch === e ? "bg-blue-600 text-white" : "bg-white/30 text-slate-600 hover:bg-blue-500/15"}`}>
+                className={`px-3 py-1 rounded-md text-xs font-medium transition ${selectedEpoch === e ? "bg-blue-500/80 backdrop-blur-md text-white shadow-lg shadow-blue-500/25" : "bg-blue-500/10 border border-blue-300/30 text-blue-700 hover:bg-blue-500/20"}`}>
                 {e}
               </button>
             ))}
           </div>
-          <span className="text-xs text-slate-400 hidden sm:inline">90-day funding cycles. Epoch 5 has the most data.</span>
+          <span className="text-xs text-slate-700 hidden sm:inline">90-day funding cycles. Epoch 5 has the most data.</span>
         </div>
       </div>
 
@@ -276,29 +276,29 @@ export default function DashboardPage() {
           {/* Full Project Intelligence — PRIMARY card */}
           <div id="project" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full -mt-5 mb-5 mx-0" style={{marginTop: "-20px", marginLeft: "-20px", marginRight: "-20px", width: "calc(100% + 40px)", borderRadius: "16px 16px 0 0"}} />
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">Full Project Intelligence</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera analyze-project &lt;address&gt;</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Full Project Intelligence</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera analyze-project &lt;address&gt;</p>
 
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Octant Project Address</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Octant Project Address</label>
               <input placeholder="0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" value={projectAddr} onChange={(e) => setProjectAddr(e.target.value)}
                 className="w-full rounded-lg border border-white/40 bg-white/50 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" />
               <div className="flex gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-slate-400">Quick:</span>
+                <span className="text-xs text-slate-600">Quick:</span>
                 {[
                   { label: "#1, 7ep, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
                   { label: "#5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
                   { label: "#19, diverse", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
                 ].map((ex) => (
                   <button key={ex.addr} onClick={() => setProjectAddr(ex.addr)}
-                    className="text-xs px-2 py-0.5 rounded-md bg-white/30 text-slate-600 hover:bg-blue-500/15 hover:text-blue-600 transition">
+                    className="text-xs px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-300/30 text-blue-700 hover:bg-blue-500/20 transition">
                     {ex.label}
                   </button>
                 ))}
               </div>
             </div>
             <button onClick={runAnalyzeProject} disabled={projectLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{projectLoading ? "Running..." : "tessera analyze-project (streaming)"}</span>
             </button>
@@ -325,19 +325,19 @@ export default function DashboardPage() {
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="p-2.5 rounded-xl bg-blue-500/10 backdrop-blur-md border border-blue-300/30">
-                    <p className="text-xs text-slate-500">Rank</p>
+                    <p className="text-xs text-slate-700">Rank</p>
                     <p className="text-lg font-bold text-slate-800">{String(projectResult.rank || "?")} / {String(projectResult.totalProjects || "?")}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-blue-500/10 backdrop-blur-md border border-blue-300/30">
-                    <p className="text-xs text-slate-500">Score</p>
+                    <p className="text-xs text-slate-700">Score</p>
                     <p className="text-lg font-bold text-slate-800">{projectResult.quantitative?.compositeScore != null ? Number(projectResult.quantitative.compositeScore).toFixed(1) : "?"}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-blue-500/10 backdrop-blur-md border border-blue-300/30">
-                    <p className="text-xs text-slate-500">Donors</p>
+                    <p className="text-xs text-slate-700">Donors</p>
                     <p className="text-lg font-bold text-slate-800">{projectResult.trust?.uniqueDonors ?? "?"}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-blue-500/10 backdrop-blur-md border border-blue-300/30">
-                    <p className="text-xs text-slate-500">Whale Dep</p>
+                    <p className="text-xs text-slate-700">Whale Dep</p>
                     <p className="text-lg font-bold text-slate-800">{projectResult.trust?.whaleDepRatio != null ? (Number(projectResult.trust.whaleDepRatio) * 100).toFixed(1) + "%" : "?"}</p>
                   </div>
                 </div>
@@ -358,7 +358,7 @@ export default function DashboardPage() {
                         const isOverall = dim.key === "overallScore";
                         return (
                           <div key={dim.key} className={`p-2 rounded-xl border ${isOverall ? "bg-blue-500/15 backdrop-blur-md border-blue-300/30" : "bg-white/20 backdrop-blur-md border-white/30"}`}>
-                            <p className="text-xs text-slate-500">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
+                            <p className="text-xs text-slate-700">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
                             <p className={`text-sm font-bold ${isOverall ? "text-blue-700" : "text-slate-800"}`}>{val.toFixed(1)}</p>
                             <div className="w-full h-1 rounded-full bg-slate-200 mt-1">
                               <div className={`h-full rounded-full ${isOverall ? "bg-blue-500" : "bg-slate-400"}`} style={{width: `${val}%`}} />
@@ -400,7 +400,7 @@ export default function DashboardPage() {
                   <ExpandableSection title="Mechanism Impact">
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
-                        <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                        <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                           <th className="px-2 py-1.5 text-left">Mechanism</th>
                           <th className="px-2 py-1.5 text-right">Allocated</th>
                           <th className="px-2 py-1.5 text-right">Change</th>
@@ -422,7 +422,7 @@ export default function DashboardPage() {
                 {projectResult.reportPath && (
                   <div className="flex gap-2">
                     <button onClick={() => { const f = String(projectResult.reportPath).split("/").pop(); setViewPdf(`/api/reports/${f}`); }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition">
+                      className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition">
                       View PDF Report
                     </button>
                     <a href={`/api/reports/${String(projectResult.reportPath).split("/").pop()}`} download
@@ -439,26 +439,26 @@ export default function DashboardPage() {
 
           {/* AI Project Evaluation */}
           <div id="evaluate" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">AI Project Evaluation</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera evaluate &quot;Name&quot; -d &quot;Description&quot;</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">AI Project Evaluation</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera evaluate &quot;Name&quot; -d &quot;Description&quot;</p>
 
             <div className="mb-3 p-2.5 rounded-lg bg-blue-500/10 backdrop-blur-md border border-blue-300/20 text-xs text-slate-600">
               Enter any public goods project name and description. The AI evaluates across 8 dimensions: Impact, Team, Innovation, Sustainability, Ecosystem, Transparency, Community, Risk.
             </div>
             <div className="space-y-2.5 mb-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Project Name</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Project Name</label>
                 <input placeholder="e.g. Octant, Gitcoin Grants, Protocol Guild" value={evalName} onChange={(e) => setEvalName(e.target.value)}
                   className="w-full rounded-lg border border-white/40 bg-white/50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Project Description</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Project Description</label>
                 <textarea placeholder="e.g. Octant is a public goods funding platform by Golem Foundation..." value={evalDesc} onChange={(e) => setEvalDesc(e.target.value)} rows={3}
                   className="w-full rounded-lg border border-white/40 bg-white/50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400" />
               </div>
             </div>
             <button onClick={runEvaluate} disabled={evalLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{evalLoading ? "Running..." : "tessera evaluate"}</span>
             </button>
@@ -471,10 +471,10 @@ export default function DashboardPage() {
 
           {/* Epoch Analysis */}
           <div id="analyze" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">Epoch Analysis</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera analyze-epoch -e {selectedEpoch}</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Epoch Analysis</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera analyze-epoch -e {selectedEpoch}</p>
             <button onClick={runAnalyze} disabled={epochLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{epochLoading ? "Running..." : "tessera analyze-epoch"}</span>
             </button>
@@ -484,7 +484,7 @@ export default function DashboardPage() {
                 compact={
                   <div className="overflow-x-auto mt-3">
                     <table className="w-full text-xs">
-                      <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                      <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                         <th className="px-2 py-1.5 text-left">#</th>
                         <th className="px-2 py-1.5 text-left">Address</th>
                         <th className="px-2 py-1.5 text-right">Alloc</th>
@@ -506,14 +506,14 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                     {(epochData.projects?.length ?? 0) > 5 && (
-                      <p className="text-xs text-slate-400 mt-1 text-center">Showing 5 of {epochData.projects?.length}. Hover to expand.</p>
+                      <p className="text-xs text-slate-600 mt-1 text-center">Showing 5 of {epochData.projects?.length}. Hover to expand.</p>
                     )}
                   </div>
                 }
               >
                 {/* Expanded: full table with all rows and full addresses */}
                 <table className="w-full text-sm">
-                  <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                  <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                     <th className="px-3 py-2 text-left">#</th>
                     <th className="px-3 py-2 text-left">Address</th>
                     <th className="px-3 py-2 text-right">Allocated (ETH)</th>
@@ -534,17 +534,17 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="text-xs text-slate-400 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
+                <p className="text-xs text-slate-600 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
               </ExpandableSection>
             )}
           </div>
 
           {/* Anomaly Detection */}
           <div id="anomalies" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">Anomaly Detection</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera detect-anomalies -e {selectedEpoch}</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Anomaly Detection</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera detect-anomalies -e {selectedEpoch}</p>
             <button onClick={runAnomalies} disabled={anomalyLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{anomalyLoading ? "Running..." : "tessera detect-anomalies"}</span>
             </button>
@@ -555,12 +555,12 @@ export default function DashboardPage() {
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {Object.entries(anomalyData).filter(([k]) => k !== "flags").slice(0, 4).map(([k, v]) => (
                       <div key={k} className="p-2.5 rounded-xl bg-white/30 backdrop-blur-md border border-white/30">
-                        <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                        <p className="text-xs text-slate-700 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
                         <p className="text-sm font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
                       </div>
                     ))}
                     {Object.entries(anomalyData).filter(([k]) => k !== "flags").length > 4 && (
-                      <p className="col-span-full text-xs text-slate-400 text-center">+{Object.entries(anomalyData).filter(([k]) => k !== "flags").length - 4} more stats. Hover to expand.</p>
+                      <p className="col-span-full text-xs text-slate-600 text-center">+{Object.entries(anomalyData).filter(([k]) => k !== "flags").length - 4} more stats. Hover to expand.</p>
                     )}
                     {Array.isArray((anomalyData as Record<string, unknown>).flags) && ((anomalyData as Record<string, unknown>).flags as string[]).slice(0, 2).map((f: string, i: number) => (
                       <div key={i} className="col-span-full p-2.5 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700">{f}</div>
@@ -572,7 +572,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {Object.entries(anomalyData).filter(([k]) => k !== "flags").map(([k, v]) => (
                     <div key={k} className="p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/30">
-                      <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                      <p className="text-xs text-slate-700 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
                       <p className="text-base font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
                     </div>
                   ))}
@@ -591,10 +591,10 @@ export default function DashboardPage() {
 
           {/* Trust Graph */}
           <div id="trust" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">Trust Graph</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera trust-graph -e {selectedEpoch}</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Trust Graph</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera trust-graph -e {selectedEpoch}</p>
             <button onClick={runTrust} disabled={trustLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{trustLoading ? "Running..." : "tessera trust-graph"}</span>
             </button>
@@ -604,7 +604,7 @@ export default function DashboardPage() {
                 compact={
                   <div className="overflow-x-auto mt-3">
                     <table className="w-full text-xs">
-                      <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                      <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                         <th className="px-2 py-1.5 text-left">Address</th>
                         <th className="px-2 py-1.5 text-right">Don</th>
                         <th className="px-2 py-1.5 text-right">Div</th>
@@ -630,14 +630,14 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                     {(trustData.profiles?.length ?? 0) > 5 && (
-                      <p className="text-xs text-slate-400 mt-1 text-center">Showing 5 of {trustData.profiles?.length}. Hover to expand.</p>
+                      <p className="text-xs text-slate-600 mt-1 text-center">Showing 5 of {trustData.profiles?.length}. Hover to expand.</p>
                     )}
                   </div>
                 }
               >
                 {/* Expanded: full table with all rows and full addresses */}
                 <table className="w-full text-sm">
-                  <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                  <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                     <th className="px-3 py-2 text-left">Address</th>
                     <th className="px-3 py-2 text-right">Unique Donors</th>
                     <th className="px-3 py-2 text-right">Diversity</th>
@@ -662,7 +662,7 @@ export default function DashboardPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="text-xs text-slate-400 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
+                <p className="text-xs text-slate-600 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
               </ExpandableSection>
             )}
           </div>
@@ -673,10 +673,10 @@ export default function DashboardPage() {
 
           {/* Mechanism Simulation */}
           <div id="simulate" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">Mechanism Simulation</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera simulate -e {selectedEpoch}</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Mechanism Simulation</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera simulate -e {selectedEpoch}</p>
             <button onClick={runSimulate} disabled={simLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{simLoading ? "Running..." : "tessera simulate"}</span>
             </button>
@@ -684,7 +684,7 @@ export default function DashboardPage() {
               <ExpandableSection title={`Mechanism Simulation - Epoch ${selectedEpoch}`}>
                 <div className="overflow-x-auto mt-3">
                   <table className="w-full text-xs">
-                    <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                    <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                       <th className="px-2 py-1.5 text-left">Mechanism</th>
                       <th className="px-2 py-1.5 text-right">Gini</th>
                       <th className="px-2 py-1.5 text-right">Top Share</th>
@@ -710,29 +710,29 @@ export default function DashboardPage() {
 
           {/* Track Project */}
           <div id="track" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">Track Project</h3>
-            <p className="text-xs text-slate-400 font-mono mb-4">./tessera track-project &lt;address&gt;</p>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">Track Project</h3>
+            <p className="text-xs text-blue-800/60 font-mono mb-4">./tessera track-project &lt;address&gt;</p>
 
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Project Address</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Project Address</label>
               <input placeholder="0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" value={trackAddr} onChange={(e) => setTrackAddr(e.target.value)}
                 className="w-full rounded-lg border border-white/40 bg-white/50 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" />
               <div className="flex gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-slate-400">Quick:</span>
+                <span className="text-xs text-slate-600">Quick:</span>
                 {[
                   { label: "#1, 7ep, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
                   { label: "#5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
                   { label: "#19, diverse", addr: "0x08e40e1C0681D072a54Fc5868752c02bb3996FFA" },
                 ].map((ex) => (
                   <button key={ex.addr} onClick={() => setTrackAddr(ex.addr)}
-                    className="text-xs px-2 py-0.5 rounded-md bg-white/30 text-slate-600 hover:bg-blue-500/15 hover:text-blue-600 transition">
+                    className="text-xs px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-300/30 text-blue-700 hover:bg-blue-500/20 transition">
                     {ex.label}
                   </button>
                 ))}
               </div>
             </div>
             <button onClick={runTrackProject} disabled={trackLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition disabled:opacity-50 flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition disabled:opacity-50 flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>{trackLoading ? "Running..." : "tessera track-project"}</span>
             </button>
@@ -746,7 +746,7 @@ export default function DashboardPage() {
                       <h3 className="text-xs font-semibold text-slate-700 mb-2">Cross-Epoch Timeline</h3>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
-                          <thead><tr className="bg-blue-500/10 text-slate-600 uppercase text-xs">
+                          <thead><tr className="bg-blue-500/10 text-slate-800 uppercase text-xs">
                             <th className="px-2 py-1.5 text-left">Epoch</th>
                             <th className="px-2 py-1.5 text-right">Alloc (ETH)</th>
                             <th className="px-2 py-1.5 text-right">Match (ETH)</th>
@@ -819,7 +819,7 @@ export default function DashboardPage() {
                         const isOverall = dim.key === "overallScore";
                         return (
                           <div key={dim.key} className={`p-2.5 rounded-xl border ${isOverall ? "bg-blue-500/15 backdrop-blur-md border-blue-300/30 col-span-2 sm:col-span-1" : "bg-white/20 backdrop-blur-md border-white/30"}`}>
-                            <p className="text-xs text-slate-500">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
+                            <p className="text-xs text-slate-700">{dim.label}{dim.weight ? ` (${dim.weight})` : ""}</p>
                             <p className={`text-sm font-bold ${isOverall ? "text-blue-700" : "text-slate-800"}`}>{pct.toFixed(1)}</p>
                             <div className="w-full h-1 rounded-full bg-slate-200 mt-1">
                               <div className={`h-full rounded-full ${isOverall ? "bg-blue-500" : "bg-slate-400"}`} style={{width: `${pct}%`}} />
@@ -833,7 +833,7 @@ export default function DashboardPage() {
 
                 {/* No data fallback */}
                 {!trackResult.timeline?.length && !trackResult.anomalies?.length && !trackResult.scores && (
-                  <div className="p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/30 text-xs text-slate-500">
+                  <div className="p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/30 text-xs text-slate-700">
                     {trackResult.error ? trackResult.error : "No tracking data available for this address."}
                   </div>
                 )}
@@ -846,11 +846,11 @@ export default function DashboardPage() {
         <div id="reports" className="bg-white/30 backdrop-blur-xl rounded-2xl border border-white/40 shadow-lg shadow-blue-500/5 shadow-sm hover:shadow-md transition-shadow p-5 scroll-mt-32">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-1">PDF Reports</h3>
-              <p className="text-xs text-slate-400 font-mono">Generated intelligence reports</p>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">PDF Reports</h3>
+              <p className="text-xs text-blue-800/60 font-mono">Generated intelligence reports</p>
             </div>
             <button onClick={() => getReports().then(setReports).catch(() => {})}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-md shadow-blue-500/30 transition flex items-center gap-2">
+              className="bg-blue-500/80 backdrop-blur-md hover:bg-blue-500/90 text-white text-xs font-medium rounded-lg px-4 py-2 shadow-lg shadow-blue-500/25 transition flex items-center gap-2">
               <span className="font-mono text-xs opacity-70">$</span>
               <span>Refresh</span>
             </button>
@@ -861,7 +861,7 @@ export default function DashboardPage() {
                 <div key={r.name} className="flex items-center justify-between p-3 rounded-xl bg-white/30 backdrop-blur-md border border-white/30">
                   <div className="min-w-0 mr-3">
                     <p className="text-xs font-medium text-slate-700 font-mono truncate">{r.name}</p>
-                    <p className="text-xs text-slate-400">{r.modTime} -- {(r.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-xs text-slate-600">{r.modTime} -- {(r.size / 1024).toFixed(1)} KB</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     {r.name.endsWith(".pdf") && (
@@ -874,7 +874,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-400">No reports yet. Run analyze-project to generate PDF reports.</p>
+            <p className="text-xs text-slate-600">No reports yet. Run analyze-project to generate PDF reports.</p>
           )}
         </div>
 
@@ -893,7 +893,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <footer className="text-center py-8 text-xs text-slate-400 border-t border-white/20">
+      <footer className="text-center py-8 text-xs text-slate-600 border-t border-white/20">
         Built by Yeheskiel Yunus Rame + Claude Opus 4.6 | The Synthesis Hackathon |{" "}
         <a href="https://github.com/yeheskieltame/Tessera" className="text-blue-500 hover:underline">GitHub</a>
       </footer>
