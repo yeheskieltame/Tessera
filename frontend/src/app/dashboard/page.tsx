@@ -19,6 +19,63 @@ import {
 
 const API = "";
 
+/* ─── Helper: truncate address ─── */
+function shortAddr(addr: string) {
+  if (!addr || addr.length <= 16) return addr;
+  return addr.slice(0, 8) + "\u2026" + addr.slice(-6);
+}
+
+/* ─── Helper: Copy address button ─── */
+function CopyAddr({ addr }: { addr: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <span className="inline-flex items-center gap-1 font-mono text-xs">
+      {addr}
+      <button
+        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(addr); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+        className="text-blue-400 hover:text-blue-600 ml-1 whitespace-nowrap"
+      >
+        {copied ? "Copied!" : "Copy"}
+      </button>
+    </span>
+  );
+}
+
+/* ─── Reusable ExpandableSection ─── */
+function ExpandableSection({ title, children, compact }: { title: string; children: React.ReactNode; compact?: React.ReactNode }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      {/* Compact view inside card */}
+      <div className="relative group">
+        {compact || children}
+        <button
+          onClick={() => setExpanded(true)}
+          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+        >
+          Expand
+        </button>
+      </div>
+
+      {/* Expanded modal overlay */}
+      {expanded && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center pt-16 px-4 pb-4 overflow-y-auto" onClick={() => setExpanded(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+              <button onClick={() => setExpanded(false)} className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+            </div>
+            <div className="overflow-x-auto">
+              {children}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function DashboardPage() {
   /* ─── Status ─── */
   const [status, setStatus] = useState<StatusResponse | null>(null);
@@ -145,6 +202,12 @@ export default function DashboardPage() {
       } catch {}
     };
     es.onerror = () => { setProjectLoading(false); es.close(); };
+  }
+
+  /* ─── Helper: select address from table row ─── */
+  function selectProjectAddr(addr: string) {
+    setProjectAddr(addr);
+    document.getElementById("project")?.scrollIntoView({ behavior: "smooth" });
   }
 
   const octant = status?.services?.find((s) => s.name === "Octant API");
@@ -303,47 +366,51 @@ export default function DashboardPage() {
 
                 {/* Temporal Anomalies */}
                 {projectResult.anomalies?.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-semibold text-slate-700 mb-2">Temporal Anomalies ({projectResult.anomalies.length})</h3>
-                    <div className="space-y-1.5">
-                      {projectResult.anomalies.map((a: {type: string; severity: string; description: string; epoch: number}, i: number) => (
-                        <div key={i} className={`p-2 rounded-xl border text-xs ${
-                          a.severity === "high" ? "bg-red-50 border-red-200 text-red-700" :
-                          a.severity === "medium" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
-                          "bg-blue-50 border-blue-200 text-blue-700"
-                        }`}>
-                          <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
-                          <span className="text-xs opacity-70 ml-2">Epoch {a.epoch}</span>
-                          <span className={`ml-2 text-xs font-medium uppercase px-1.5 py-0.5 rounded-full ${
-                            a.severity === "high" ? "bg-red-100" : a.severity === "medium" ? "bg-yellow-100" : "bg-blue-100"
-                          }`}>{a.severity}</span>
-                          <p className="text-xs mt-0.5 opacity-80">{a.description}</p>
-                        </div>
-                      ))}
+                  <ExpandableSection title="Temporal Anomalies">
+                    <div>
+                      <h3 className="text-xs font-semibold text-slate-700 mb-2">Temporal Anomalies ({projectResult.anomalies.length})</h3>
+                      <div className="space-y-1.5">
+                        {projectResult.anomalies.map((a: {type: string; severity: string; description: string; epoch: number}, i: number) => (
+                          <div key={i} className={`p-2 rounded-xl border text-xs ${
+                            a.severity === "high" ? "bg-red-50 border-red-200 text-red-700" :
+                            a.severity === "medium" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
+                            "bg-blue-50 border-blue-200 text-blue-700"
+                          }`}>
+                            <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
+                            <span className="text-xs opacity-70 ml-2">Epoch {a.epoch}</span>
+                            <span className={`ml-2 text-xs font-medium uppercase px-1.5 py-0.5 rounded-full ${
+                              a.severity === "high" ? "bg-red-100" : a.severity === "medium" ? "bg-yellow-100" : "bg-blue-100"
+                            }`}>{a.severity}</span>
+                            <p className="text-xs mt-0.5 opacity-80">{a.description}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  </ExpandableSection>
                 )}
 
                 {/* Mechanism Impact */}
                 {projectResult.mechanismImpacts?.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
-                        <th className="px-2 py-1.5 text-left">Mechanism</th>
-                        <th className="px-2 py-1.5 text-right">Allocated</th>
-                        <th className="px-2 py-1.5 text-right">Change</th>
-                      </tr></thead>
-                      <tbody>
-                        {projectResult.mechanismImpacts.map((m: {name: string; allocated: number; change: number}) => (
-                          <tr key={m.name} className="border-t border-slate-100">
-                            <td className="px-2 py-1.5">{m.name}</td>
-                            <td className="px-2 py-1.5 text-right">{m.allocated.toFixed(4)} ETH</td>
-                            <td className="px-2 py-1.5 text-right font-semibold" style={{color: m.change > 0 ? "#16a34a" : "#dc2626"}}>{m.change > 0 ? "+" : ""}{m.change.toFixed(1)}%</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <ExpandableSection title="Mechanism Impact">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                          <th className="px-2 py-1.5 text-left">Mechanism</th>
+                          <th className="px-2 py-1.5 text-right">Allocated</th>
+                          <th className="px-2 py-1.5 text-right">Change</th>
+                        </tr></thead>
+                        <tbody>
+                          {projectResult.mechanismImpacts.map((m: {name: string; allocated: number; change: number}) => (
+                            <tr key={m.name} className="border-t border-slate-100">
+                              <td className="px-2 py-1.5">{m.name}</td>
+                              <td className="px-2 py-1.5 text-right">{m.allocated.toFixed(4)} ETH</td>
+                              <td className="px-2 py-1.5 text-right font-semibold" style={{color: m.change > 0 ? "#16a34a" : "#dc2626"}}>{m.change > 0 ? "+" : ""}{m.change.toFixed(1)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </ExpandableSection>
                 )}
 
                 {projectResult.reportPath && (
@@ -406,30 +473,63 @@ export default function DashboardPage() {
               <span>{epochLoading ? "Running..." : "tessera analyze-epoch"}</span>
             </button>
             {epochData && (
-              <div className="overflow-x-auto mt-3">
-                <table className="w-full text-xs">
+              <ExpandableSection
+                title={`Epoch ${selectedEpoch} Analysis - ${epochData.projects?.length ?? 0} Projects`}
+                compact={
+                  <div className="overflow-x-auto mt-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                        <th className="px-2 py-1.5 text-left">#</th>
+                        <th className="px-2 py-1.5 text-left">Address</th>
+                        <th className="px-2 py-1.5 text-right">Alloc</th>
+                        <th className="px-2 py-1.5 text-right">Match</th>
+                        <th className="px-2 py-1.5 text-right">Score</th>
+                        <th className="px-2 py-1.5 text-center">C</th>
+                      </tr></thead>
+                      <tbody>
+                        {epochData.projects?.slice(0, 5).map((p, i) => (
+                          <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                            <td className="px-2 py-1.5 font-medium">{i + 1}</td>
+                            <td className="px-2 py-1.5 font-mono text-xs truncate max-w-[100px]" title={p.address}>{shortAddr(p.address)}</td>
+                            <td className="px-2 py-1.5 text-right">{p.allocated?.toFixed(4)}</td>
+                            <td className="px-2 py-1.5 text-right">{p.matched?.toFixed(4)}</td>
+                            <td className="px-2 py-1.5 text-right font-semibold">{p.compositeScore?.toFixed(1)}</td>
+                            <td className="px-2 py-1.5 text-center"><span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs">{p.cluster}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {(epochData.projects?.length ?? 0) > 5 && (
+                      <p className="text-xs text-slate-400 mt-1 text-center">Showing 5 of {epochData.projects?.length}. Hover to expand.</p>
+                    )}
+                  </div>
+                }
+              >
+                {/* Expanded: full table with all rows and full addresses */}
+                <table className="w-full text-sm">
                   <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
-                    <th className="px-2 py-1.5 text-left">#</th>
-                    <th className="px-2 py-1.5 text-left">Address</th>
-                    <th className="px-2 py-1.5 text-right">Alloc</th>
-                    <th className="px-2 py-1.5 text-right">Match</th>
-                    <th className="px-2 py-1.5 text-right">Score</th>
-                    <th className="px-2 py-1.5 text-center">C</th>
+                    <th className="px-3 py-2 text-left">#</th>
+                    <th className="px-3 py-2 text-left">Address</th>
+                    <th className="px-3 py-2 text-right">Allocated (ETH)</th>
+                    <th className="px-3 py-2 text-right">Matched (ETH)</th>
+                    <th className="px-3 py-2 text-right">Composite Score</th>
+                    <th className="px-3 py-2 text-center">Cluster</th>
                   </tr></thead>
                   <tbody>
                     {epochData.projects?.map((p, i) => (
-                      <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50/30">
-                        <td className="px-2 py-1.5 font-medium">{i + 1}</td>
-                        <td className="px-2 py-1.5 font-mono text-xs truncate max-w-[100px]" title={p.address}>{p.address.slice(0, 6)}...{p.address.slice(-4)}</td>
-                        <td className="px-2 py-1.5 text-right">{p.allocated?.toFixed(4)}</td>
-                        <td className="px-2 py-1.5 text-right">{p.matched?.toFixed(4)}</td>
-                        <td className="px-2 py-1.5 text-right font-semibold">{p.compositeScore?.toFixed(1)}</td>
-                        <td className="px-2 py-1.5 text-center"><span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs">{p.cluster}</span></td>
+                      <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                        <td className="px-3 py-2 font-medium">{i + 1}</td>
+                        <td className="px-3 py-2"><CopyAddr addr={p.address} /></td>
+                        <td className="px-3 py-2 text-right font-mono">{p.allocated?.toFixed(4)}</td>
+                        <td className="px-3 py-2 text-right font-mono">{p.matched?.toFixed(4)}</td>
+                        <td className="px-3 py-2 text-right font-semibold">{p.compositeScore?.toFixed(1)}</td>
+                        <td className="px-3 py-2 text-center"><span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">{p.cluster}</span></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+                <p className="text-xs text-slate-400 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
+              </ExpandableSection>
             )}
           </div>
 
@@ -443,17 +543,43 @@ export default function DashboardPage() {
               <span>{anomalyLoading ? "Running..." : "tessera detect-anomalies"}</span>
             </button>
             {anomalyData && (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {Object.entries(anomalyData).filter(([k]) => k !== "flags").map(([k, v]) => (
-                  <div key={k} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
-                    <p className="text-sm font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
+              <ExpandableSection
+                title={`Anomaly Detection - Epoch ${selectedEpoch}`}
+                compact={
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {Object.entries(anomalyData).filter(([k]) => k !== "flags").slice(0, 4).map(([k, v]) => (
+                      <div key={k} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                        <p className="text-sm font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
+                      </div>
+                    ))}
+                    {Object.entries(anomalyData).filter(([k]) => k !== "flags").length > 4 && (
+                      <p className="col-span-full text-xs text-slate-400 text-center">+{Object.entries(anomalyData).filter(([k]) => k !== "flags").length - 4} more stats. Hover to expand.</p>
+                    )}
+                    {Array.isArray((anomalyData as Record<string, unknown>).flags) && ((anomalyData as Record<string, unknown>).flags as string[]).slice(0, 2).map((f: string, i: number) => (
+                      <div key={i} className="col-span-full p-2.5 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700">{f}</div>
+                    ))}
                   </div>
-                ))}
-                {Array.isArray((anomalyData as Record<string, unknown>).flags) && ((anomalyData as Record<string, unknown>).flags as string[]).map((f: string, i: number) => (
-                  <div key={i} className="col-span-full p-2.5 rounded-xl bg-red-50 border border-red-100 text-xs text-red-700">{f}</div>
-                ))}
-              </div>
+                }
+              >
+                {/* Expanded: all stats + all flags */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {Object.entries(anomalyData).filter(([k]) => k !== "flags").map(([k, v]) => (
+                    <div key={k} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                      <p className="text-base font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v > 100 ? 0 : 4)) : String(v)}</p>
+                    </div>
+                  ))}
+                </div>
+                {Array.isArray((anomalyData as Record<string, unknown>).flags) && ((anomalyData as Record<string, unknown>).flags as string[]).length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-semibold text-red-700">Flags</h4>
+                    {((anomalyData as Record<string, unknown>).flags as string[]).map((f: string, i: number) => (
+                      <div key={i} className="p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700">{f}</div>
+                    ))}
+                  </div>
+                )}
+              </ExpandableSection>
             )}
           </div>
 
@@ -467,34 +593,71 @@ export default function DashboardPage() {
               <span>{trustLoading ? "Running..." : "tessera trust-graph"}</span>
             </button>
             {trustData && (
-              <div className="overflow-x-auto mt-3">
-                <table className="w-full text-xs">
+              <ExpandableSection
+                title={`Trust Graph - Epoch ${selectedEpoch} - ${trustData.profiles?.length ?? 0} Profiles`}
+                compact={
+                  <div className="overflow-x-auto mt-3">
+                    <table className="w-full text-xs">
+                      <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                        <th className="px-2 py-1.5 text-left">Address</th>
+                        <th className="px-2 py-1.5 text-right">Don</th>
+                        <th className="px-2 py-1.5 text-right">Div</th>
+                        <th className="px-2 py-1.5 text-right">Whale</th>
+                        <th className="px-2 py-1.5 text-right">Coord</th>
+                        <th className="px-2 py-1.5 text-center">Flags</th>
+                      </tr></thead>
+                      <tbody>
+                        {trustData.profiles?.slice(0, 5).map((p) => (
+                          <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                            <td className="px-2 py-1.5 font-mono text-xs" title={p.address}>{shortAddr(p.address)}</td>
+                            <td className="px-2 py-1.5 text-right">{p.uniqueDonors}</td>
+                            <td className="px-2 py-1.5 text-right">{p.donorDiversity?.toFixed(3)}</td>
+                            <td className="px-2 py-1.5 text-right">{(p.whaleDepRatio * 100)?.toFixed(1)}%</td>
+                            <td className="px-2 py-1.5 text-right">{p.coordinationRisk?.toFixed(3)}</td>
+                            <td className="px-2 py-1.5 text-center">
+                              {p.flags?.length > 0
+                                ? <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs">{p.flags.length}</span>
+                                : <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-xs">OK</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {(trustData.profiles?.length ?? 0) > 5 && (
+                      <p className="text-xs text-slate-400 mt-1 text-center">Showing 5 of {trustData.profiles?.length}. Hover to expand.</p>
+                    )}
+                  </div>
+                }
+              >
+                {/* Expanded: full table with all rows and full addresses */}
+                <table className="w-full text-sm">
                   <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
-                    <th className="px-2 py-1.5 text-left">Address</th>
-                    <th className="px-2 py-1.5 text-right">Don</th>
-                    <th className="px-2 py-1.5 text-right">Div</th>
-                    <th className="px-2 py-1.5 text-right">Whale</th>
-                    <th className="px-2 py-1.5 text-right">Coord</th>
-                    <th className="px-2 py-1.5 text-center">Flags</th>
+                    <th className="px-3 py-2 text-left">Address</th>
+                    <th className="px-3 py-2 text-right">Unique Donors</th>
+                    <th className="px-3 py-2 text-right">Diversity</th>
+                    <th className="px-3 py-2 text-right">Whale Dep</th>
+                    <th className="px-3 py-2 text-right">Coord Risk</th>
+                    <th className="px-3 py-2 text-left">Flags</th>
                   </tr></thead>
                   <tbody>
                     {trustData.profiles?.map((p) => (
-                      <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50/30">
-                        <td className="px-2 py-1.5 font-mono text-xs" title={p.address}>{p.address.slice(0, 6)}...{p.address.slice(-4)}</td>
-                        <td className="px-2 py-1.5 text-right">{p.uniqueDonors}</td>
-                        <td className="px-2 py-1.5 text-right">{p.donorDiversity?.toFixed(3)}</td>
-                        <td className="px-2 py-1.5 text-right">{(p.whaleDepRatio * 100)?.toFixed(1)}%</td>
-                        <td className="px-2 py-1.5 text-right">{p.coordinationRisk?.toFixed(3)}</td>
-                        <td className="px-2 py-1.5 text-center">
+                      <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onClick={() => selectProjectAddr(p.address)}>
+                        <td className="px-3 py-2"><CopyAddr addr={p.address} /></td>
+                        <td className="px-3 py-2 text-right">{p.uniqueDonors}</td>
+                        <td className="px-3 py-2 text-right font-mono">{p.donorDiversity?.toFixed(3)}</td>
+                        <td className="px-3 py-2 text-right font-mono">{(p.whaleDepRatio * 100)?.toFixed(1)}%</td>
+                        <td className="px-3 py-2 text-right font-mono">{p.coordinationRisk?.toFixed(3)}</td>
+                        <td className="px-3 py-2">
                           {p.flags?.length > 0
-                            ? <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs">{p.flags.length}</span>
+                            ? <div className="space-y-0.5">{p.flags.map((f, fi) => <span key={fi} className="inline-block mr-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-xs">{f}</span>)}</div>
                             : <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-xs">OK</span>}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+                <p className="text-xs text-slate-400 mt-3">Click any row to populate the Full Project Intelligence address input.</p>
+              </ExpandableSection>
             )}
           </div>
         </div>
@@ -512,28 +675,30 @@ export default function DashboardPage() {
               <span>{simLoading ? "Running..." : "tessera simulate"}</span>
             </button>
             {simData && (
-              <div className="overflow-x-auto mt-3">
-                <table className="w-full text-xs">
-                  <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
-                    <th className="px-2 py-1.5 text-left">Mechanism</th>
-                    <th className="px-2 py-1.5 text-right">Gini</th>
-                    <th className="px-2 py-1.5 text-right">Top Share</th>
-                    <th className="px-2 py-1.5 text-right">Above Thr</th>
-                    <th className="px-2 py-1.5 text-right">Projects</th>
-                  </tr></thead>
-                  <tbody>
-                    {simData.mechanisms?.map((m) => (
-                      <tr key={m.name} className="border-t border-slate-100 hover:bg-blue-50/30">
-                        <td className="px-2 py-1.5 font-medium">{m.name}</td>
-                        <td className="px-2 py-1.5 text-right">{m.giniCoeff?.toFixed(3)}</td>
-                        <td className="px-2 py-1.5 text-right">{(m.topShare * 100)?.toFixed(1)}%</td>
-                        <td className="px-2 py-1.5 text-right">{m.aboveThreshold}</td>
-                        <td className="px-2 py-1.5 text-right">{m.projects?.length}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ExpandableSection title={`Mechanism Simulation - Epoch ${selectedEpoch}`}>
+                <div className="overflow-x-auto mt-3">
+                  <table className="w-full text-xs">
+                    <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                      <th className="px-2 py-1.5 text-left">Mechanism</th>
+                      <th className="px-2 py-1.5 text-right">Gini</th>
+                      <th className="px-2 py-1.5 text-right">Top Share</th>
+                      <th className="px-2 py-1.5 text-right">Above Thr</th>
+                      <th className="px-2 py-1.5 text-right">Projects</th>
+                    </tr></thead>
+                    <tbody>
+                      {simData.mechanisms?.map((m) => (
+                        <tr key={m.name} className="border-t border-slate-100 hover:bg-blue-50/30">
+                          <td className="px-2 py-1.5 font-medium">{m.name}</td>
+                          <td className="px-2 py-1.5 text-right">{m.giniCoeff?.toFixed(3)}</td>
+                          <td className="px-2 py-1.5 text-right">{(m.topShare * 100)?.toFixed(1)}%</td>
+                          <td className="px-2 py-1.5 text-right">{m.aboveThreshold}</td>
+                          <td className="px-2 py-1.5 text-right">{m.projects?.length}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </ExpandableSection>
             )}
           </div>
 
@@ -570,61 +735,65 @@ export default function DashboardPage() {
               <div className="mt-3 space-y-4">
                 {/* Timeline Table */}
                 {trackResult.timeline?.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-semibold text-slate-700 mb-2">Cross-Epoch Timeline</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
-                          <th className="px-2 py-1.5 text-left">Epoch</th>
-                          <th className="px-2 py-1.5 text-right">Alloc (ETH)</th>
-                          <th className="px-2 py-1.5 text-right">Match (ETH)</th>
-                          <th className="px-2 py-1.5 text-right">Donors</th>
-                        </tr></thead>
-                        <tbody>
-                          {trackResult.timeline.map((t: {epoch: number; allocated: number; matched: number; donors: number}) => (
-                            <tr key={t.epoch} className="border-t border-slate-100 hover:bg-blue-50/30">
-                              <td className="px-2 py-1.5 font-medium">Epoch {t.epoch}</td>
-                              <td className="px-2 py-1.5 text-right">{t.allocated?.toFixed(4)}</td>
-                              <td className="px-2 py-1.5 text-right">{t.matched?.toFixed(4)}</td>
-                              <td className="px-2 py-1.5 text-right">{t.donors}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  <ExpandableSection title="Cross-Epoch Timeline">
+                    <div>
+                      <h3 className="text-xs font-semibold text-slate-700 mb-2">Cross-Epoch Timeline</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead><tr className="bg-slate-50 text-slate-500 uppercase text-xs">
+                            <th className="px-2 py-1.5 text-left">Epoch</th>
+                            <th className="px-2 py-1.5 text-right">Alloc (ETH)</th>
+                            <th className="px-2 py-1.5 text-right">Match (ETH)</th>
+                            <th className="px-2 py-1.5 text-right">Donors</th>
+                          </tr></thead>
+                          <tbody>
+                            {trackResult.timeline.map((t: {epoch: number; allocated: number; matched: number; donors: number}) => (
+                              <tr key={t.epoch} className="border-t border-slate-100 hover:bg-blue-50/30">
+                                <td className="px-2 py-1.5 font-medium">Epoch {t.epoch}</td>
+                                <td className="px-2 py-1.5 text-right">{t.allocated?.toFixed(4)}</td>
+                                <td className="px-2 py-1.5 text-right">{t.matched?.toFixed(4)}</td>
+                                <td className="px-2 py-1.5 text-right">{t.donors}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
+                  </ExpandableSection>
                 )}
 
                 {/* Temporal Anomalies */}
                 {trackResult.anomalies?.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-semibold text-slate-700 mb-2">Temporal Anomalies</h3>
-                    <div className="space-y-1.5">
-                      {trackResult.anomalies.map((a: {type: string; severity: string; epoch: number; description: string}, i: number) => (
-                        <div key={i} className={`p-2.5 rounded-xl border text-xs ${
-                          a.severity === "high" ? "bg-red-50 border-red-200 text-red-700" :
-                          a.severity === "medium" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
-                          "bg-blue-50 border-blue-200 text-blue-700"
-                        }`}>
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${
-                              a.severity === "high" ? "bg-red-500" :
-                              a.severity === "medium" ? "bg-yellow-500" :
-                              "bg-blue-500"
-                            }`} />
-                            <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
-                            <span className="text-xs opacity-70">Epoch {a.epoch}</span>
-                            <span className={`ml-auto text-xs font-medium uppercase px-1.5 py-0.5 rounded-full ${
-                              a.severity === "high" ? "bg-red-100 text-red-600" :
-                              a.severity === "medium" ? "bg-yellow-100 text-yellow-600" :
-                              "bg-blue-100 text-blue-600"
-                            }`}>{a.severity}</span>
+                  <ExpandableSection title={`Temporal Anomalies (${trackResult.anomalies.length})`}>
+                    <div>
+                      <h3 className="text-xs font-semibold text-slate-700 mb-2">Temporal Anomalies</h3>
+                      <div className="space-y-1.5">
+                        {trackResult.anomalies.map((a: {type: string; severity: string; epoch: number; description: string}, i: number) => (
+                          <div key={i} className={`p-2.5 rounded-xl border text-xs ${
+                            a.severity === "high" ? "bg-red-50 border-red-200 text-red-700" :
+                            a.severity === "medium" ? "bg-yellow-50 border-yellow-200 text-yellow-700" :
+                            "bg-blue-50 border-blue-200 text-blue-700"
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+                                a.severity === "high" ? "bg-red-500" :
+                                a.severity === "medium" ? "bg-yellow-500" :
+                                "bg-blue-500"
+                              }`} />
+                              <span className="font-semibold capitalize">{a.type?.replace(/_/g, " ")}</span>
+                              <span className="text-xs opacity-70">Epoch {a.epoch}</span>
+                              <span className={`ml-auto text-xs font-medium uppercase px-1.5 py-0.5 rounded-full ${
+                                a.severity === "high" ? "bg-red-100 text-red-600" :
+                                a.severity === "medium" ? "bg-yellow-100 text-yellow-600" :
+                                "bg-blue-100 text-blue-600"
+                              }`}>{a.severity}</span>
+                            </div>
+                            <p className="mt-0.5 text-xs opacity-80">{a.description}</p>
                           </div>
-                          <p className="mt-0.5 text-xs opacity-80">{a.description}</p>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  </ExpandableSection>
                 )}
 
                 {/* Multi-Layer Scores */}
