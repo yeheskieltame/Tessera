@@ -8,7 +8,7 @@ AI-powered public goods project evaluation for the Ethereum ecosystem.
 
 ## What It Does
 
-Tessera is a CLI tool and web dashboard that evaluates projects funded through Octant, Gitcoin, and other Ethereum public goods platforms. It combines quantitative data analysis (clustering, scoring, anomaly detection, mechanism simulation) with qualitative AI assessment (8-dimension evaluation, deep analysis, proposal scanning) to surface patterns that human evaluators cannot scale alone. All quantitative commands work without any AI provider; qualitative features use a multi-model fallback chain starting with Claude.
+Tessera is a CLI tool (18 commands) and web dashboard that evaluates projects funded through Octant, Gitcoin, and other Ethereum public goods platforms. Its core command (`analyze-project`) runs an 8-step evidence pipeline: cross-epoch funding history, quantitative scoring, trust-graph analysis (Jaccard similarity, Shannon entropy), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), OSO data collection, and AI deep evaluation via Claude Opus 4.6. The AI evaluation is evidence-grounded -- it receives all quantitative and trust data before generating its assessment, not just project descriptions. Output includes branded PDF reports with Tessera Agent watermark.
 
 ---
 
@@ -48,6 +48,8 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 | Coordination shift detected | 39-donor cluster | Temporal anomaly: large group appeared in a single epoch |
 | Equal Weight mechanism impact | +3105% for smallest project | Alternative mechanism would radically redistribute funding |
 | Median Shannon entropy | 0.33 | Donor bases are structurally concentrated, not diverse |
+| #1 project multi-layer score | 36.6/100 (vs 89.5 composite) | Multi-layer scoring reveals whale dependency that simple scores hide |
+| 931% funding spike | E4 to E5, fewer donors | Textbook whale-driven behavior flagged by temporal anomaly detection |
 
 ---
 
@@ -93,6 +95,25 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 
 ---
 
+## Evidence Pipeline (analyze-project)
+
+The `analyze-project` command runs an 8-step pipeline that feeds all collected evidence into the AI evaluation:
+
+| Step | Name | Data | AI Required |
+|------|------|------|-------------|
+| 1 | Funding History | Cross-epoch allocations, matched funding, donor counts | No |
+| 2 | Quantitative Scoring | K-means clustering, composite score, epoch rank | No |
+| 3 | Trust Graph | Shannon entropy, whale dependency, Jaccard similarity, coordination risk | No |
+| 4 | Mechanism Simulation | Standard QF, Capped QF, Equal Weight, Trust-Weighted QF | No |
+| 5 | Temporal Anomalies | Donor surge/exodus, funding spikes, new whale entry, coordination shifts | No |
+| 6 | Multi-Layer Scoring | Funding, Efficiency, Diversity, Consistency, Overall | No |
+| 7 | OSO Signals | GitHub activity, on-chain metrics, cross-platform funding (optional) | No |
+| 8 | AI Deep Evaluation | Evidence-grounded assessment using ALL data from steps 1-7 | Yes |
+
+Steps 1-7 are deterministic and reproducible. Step 8 uses the AI to synthesize all evidence into a narrative with trajectory analysis, organic vs gaming assessment, counterfactual impact, and confidence-rated recommendation.
+
+---
+
 ## Multi-Layer Scoring System
 
 Tessera computes a 5-dimension score for each project, designed to capture funding health beyond raw totals:
@@ -100,10 +121,12 @@ Tessera computes a 5-dimension score for each project, designed to capture fundi
 | Dimension | Weight | What It Measures |
 |-----------|--------|-----------------|
 | FundingScore | 25% | Total funding normalized across the epoch |
-| EfficiencyScore | 25% | Ratio of matched funding to direct allocations |
+| EfficiencyScore | 25% | Ratio of matched funding to direct allocations (QF amplification) |
 | DiversityScore | 30% | Shannon entropy of donor distribution (higher = more diverse) |
-| ConsistencyScore | 20% | Stability of funding across multiple epochs |
+| ConsistencyScore | 20% | Cross-epoch funding stability (coefficient of variation) |
 | **OverallScore** | -- | Weighted aggregate of all dimensions |
+
+**Why this matters:** The #1 ranked project by simple composite score (89.5/100) drops to an Overall Score of 36.6/100 when multi-layer scoring is applied -- because its Diversity is 10.9 (whale-dominated) and Efficiency is 5.9 (low QF amplification). Multi-layer scoring catches what simple funding totals miss.
 
 Projects with high OverallScore but low DiversityScore are flagged as whale-dependent. Projects with high DiversityScore but low FundingScore may be undervalued by the current mechanism.
 
@@ -188,7 +211,7 @@ Reports are saved to `reports/` and served through the web dashboard. Each PDF c
 
 | | |
 |-|-|
-| Track | Agents for Public Goods Data Analysis for Project Evaluation (Octant, $1,000) |
+| Tracks | Data Analysis ($1,000) + Data Collection ($1,000) + Mechanism Design ($1,000) |
 | Human | Yeheskiel Yunus Rame ([@YeheskielTame](https://x.com/YeheskielTame)) |
 | Agent | Claude Opus 4.6 via Claude Code |
 | Repo | [github.com/yeheskieltame/Tessera](https://github.com/yeheskieltame/Tessera) |

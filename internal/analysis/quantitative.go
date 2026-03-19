@@ -299,7 +299,9 @@ type MultiScore struct {
 // ComputeMultiScores computes a 5-dimension score for each project.
 // trustProfiles may be nil or empty; in that case DiversityScore falls back to
 // normalized donor count.
-func ComputeMultiScores(projects []ProjectMetrics, trustProfiles []TrustProfile) []MultiScore {
+// epochHistory is optional: map[address][]epochFunding for consistency scoring.
+// If nil, ConsistencyScore defaults to 50.
+func ComputeMultiScores(projects []ProjectMetrics, trustProfiles []TrustProfile, epochHistory ...map[string][]float64) []MultiScore {
 	if len(projects) == 0 {
 		return nil
 	}
@@ -367,8 +369,31 @@ func ComputeMultiScores(projects []ProjectMetrics, trustProfiles []TrustProfile)
 			ms.DiversityScore = math.Round(normalize(float64(p.DonorCount), minDonors, maxDonors) * 10000) / 100
 		}
 
-		// ConsistencyScore: default 50 (neutral) for single-epoch data
-		ms.ConsistencyScore = 50.0
+		// ConsistencyScore: computed from cross-epoch funding variance if available
+		ms.ConsistencyScore = 50.0 // default neutral
+		if len(epochHistory) > 0 && epochHistory[0] != nil {
+			if hist, ok := epochHistory[0][p.Address]; ok && len(hist) >= 2 {
+				// Consistency = 100 - normalized coefficient of variation
+				// Low variance = high consistency
+				var sum float64
+				for _, v := range hist {
+					sum += v
+				}
+				mean := sum / float64(len(hist))
+				if mean > 0 {
+					var variance float64
+					for _, v := range hist {
+						d := v - mean
+						variance += d * d
+					}
+					variance /= float64(len(hist))
+					cv := math.Sqrt(variance) / mean // coefficient of variation
+					// CV of 0 = perfect consistency (100), CV >= 2 = very inconsistent (0)
+					score := (1 - math.Min(cv/2.0, 1.0)) * 100
+					ms.ConsistencyScore = math.Round(score*100) / 100
+				}
+			}
+		}
 
 		// OverallScore: 25% funding + 25% efficiency + 30% diversity + 20% consistency
 		ms.OverallScore = math.Round((ms.FundingScore*0.25+ms.EfficiencyScore*0.25+ms.DiversityScore*0.30+ms.ConsistencyScore*0.20)*100) / 100
