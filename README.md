@@ -41,7 +41,7 @@ Public goods evaluators in the Ethereum ecosystem face three core problems:
 
 **Qualitative bottleneck.** Proposal quality, team credibility, and community engagement require judgment that cannot be automated with rules alone, but is too slow to apply manually across dozens of projects.
 
-Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources, run deterministic quantitative analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis.
+Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources, run deterministic quantitative analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis. For concrete evidence of these problems in real Octant data, see [FINDINGS.md](FINDINGS.md).
 
 ## Solution
 
@@ -962,7 +962,9 @@ go build -o tessera ./cmd/analyst/
 
 ## Key Findings from Real Data
 
-Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors). All findings are reproducible by running the commands shown. Full details in [FINDINGS.md](FINDINGS.md).
+Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors). The table below summarizes the findings. Each finding includes the CLI command to reproduce it.
+
+**For the full analysis with methodology, cross-epoch trends, interpretation, and implications for mechanism design, read [FINDINGS.md](FINDINGS.md).**
 
 | Finding | Value | Command | Significance |
 |---------|-------|---------|--------------|
@@ -973,6 +975,8 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors). Al
 | Equal Weight redistribution | +3105% for smallest project | `simulate -e 5` | Alternative mechanisms would radically redistribute |
 | Median Shannon entropy | 0.33 | `trust-graph -e 5` | Donor bases are structurally concentrated |
 | 931% funding spike | E4 to E5, fewer donors | `track-project 0x9531...1306` | Whale-driven surge flagged by temporal anomaly detection |
+
+These findings demonstrate that standard composite scoring hides structural problems in public goods funding. The full writeup in [FINDINGS.md](FINDINGS.md) covers each finding in depth: the data behind it, what it means for evaluators, and how Tessera's multi-layer scoring and Trust-Weighted QF address it.
 
 ## Hackathon Context
 
