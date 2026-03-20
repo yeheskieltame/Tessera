@@ -1,0 +1,12 @@
+.env
+.git
+.claude
+.DS_Store
+node_modules
+frontend/node_modules
+frontend/.next
+frontend/dist
+reports/
+tessera
+*.exe
+*.test
