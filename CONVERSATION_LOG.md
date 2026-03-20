@@ -805,6 +805,28 @@ Each finding includes the reproducible command to verify it.
 - Hackathon API — `deployedURL` updated to HF Spaces URL
 - Conversation log updated (phases 46-47)
 
+### Phase 48: Comprehensive README Rewrite (System Documentation)
+
+**Human:** "As a system analyst, analyze the entire project: problem, solution, concepts, mechanism, system flow, I/O, architecture. All must be clearly documented in README. Use tables and Mermaid for visualization. Sequence diagrams showing how everything connects."
+
+**Agent:** Deep codebase exploration (read all 16 Go files, frontend, API client). Rewrote README from scratch as comprehensive system documentation:
+
+- Problem statement (3 core problems evaluators face)
+- System architecture (Mermaid component diagram)
+- Sequence diagrams (analyze-project flow, evaluate flow)
+- Evidence pipeline (9 steps with source, method, output, AI requirement)
+- Data source API reference (Octant 11 functions, Gitcoin 3 queries, OSO 6 queries, GitHub 3 endpoints, Blockchain 5 RPC methods, Moltbook 6 endpoints)
+- Algorithm documentation with formulas (composite scoring, K-means, Shannon entropy, Jaccard similarity, whale dependency, union-find clustering, 4 QF mechanisms, Gini coefficient, multi-layer scoring)
+- AI provider chain with fallback flowchart
+- HTTP API reference (19 endpoints + 4 SSE streams)
+- CLI command reference (20 commands with I/O)
+- Dashboard component architecture (Mermaid diagram)
+- Multi-chain scanner specification (9 chains, RPC methods, ERC-20 contract scanning)
+- PDF report section structure
+- Deployment architecture (Docker multi-stage build diagram)
+- Project structure with per-file descriptions
+- 19 sections, comprehensive table of contents
+
 ---
 
-_Final version — 47 phases across 8 sessions of human-agent collaboration._
+_Final version — 48 phases across 8 sessions of human-agent collaboration._
