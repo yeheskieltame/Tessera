@@ -192,7 +192,6 @@ Tessera tries providers in order. First available wins:
 | 2 | Claude API | `ANTHROPIC_API_KEY` set |
 | 3 | Gemini | `GEMINI_API_KEY` set |
 | 4 | OpenAI | `OPENAI_API_KEY` set |
-| 5 | Antigravity | `ANTIGRAVITY_URL` set |
 
 Default model: `claude-opus-4-6`. Override with `CLAUDE_CLI_MODEL`.
 

@@ -91,19 +91,22 @@ Analysis of Octant Epoch 5 (30 projects, 1,902 donations, 422 unique donors):
 | Command | Description | Data Source | AI Required |
 |---------|-------------|-------------|-------------|
 | `evaluate "Name" -d "Desc" [-g url]` | 8-dimension evaluation with GitHub enrichment + PDF report | User input + GitHub API | Yes |
-| `deep-eval <addr> -e N` | Deep evaluation combining on-chain data with AI analysis | Octant + AI | Yes |
-| `scan-proposal <url>` | Scan and evaluate a project proposal from URL | Web + AI | Yes |
+| `deep-eval <addr> [-n oso-name]` | Multi-epoch deep evaluation combining on-chain history with AI analysis | Octant + OSO + AI | Yes |
+| `scan-proposal <name> -d "text"` | Two-pass proposal verification (SUPPORTED/CONTRADICTED/UNVERIFIABLE) | User input + AI | Yes |
 | `extract-metrics "text"` | Extract structured impact metrics from unstructured text | User input | Yes |
 | `analyze-project <addr>` | Full intelligence report: quant + trust + simulation + AI eval + PDF | Octant + AI | Yes |
 | `report-epoch -e N` | Generate comprehensive epoch report with all analyses | Octant + AI | Yes |
-| `collect-signals <addr>` | Gather community signals and sentiment for a project | Multiple | Yes |
+| `collect-signals <name-or-owner/repo>` | Collect OSO + GitHub signals (code, on-chain, funding) | OSO + GitHub | No |
 
 ### Social (Moltbook)
 
 | Command | Description | Data Source |
 |---------|-------------|-------------|
-| `moltbook` | Post project update to Moltbook social feed | Moltbook REST |
-| `heartbeat` | Send periodic status heartbeat to Moltbook | Moltbook REST |
+| `moltbook status` | Show agent karma, notifications, DMs | Moltbook REST |
+| `moltbook post <title> -d "content"` | Create a post on Moltbook | Moltbook REST |
+| `moltbook reply <post-id> -d "content"` | Reply to a post | Moltbook REST |
+| `moltbook follow <username>` | Follow another agent | Moltbook REST |
+| `heartbeat [--loop]` | Check notifications + AI auto-reply (10min interval with --loop) | Moltbook + AI |
 
 ### Server
 
@@ -184,16 +187,35 @@ The `simulate` command compares four mechanisms side-by-side:
 | Module | File | Responsibility |
 |--------|------|----------------|
 | CLI | `cmd/analyst/main.go` | Command routing, flag parsing, .env loading, terminal output |
-| Provider | `internal/provider/provider.go` | Multi-model AI fallback chain (Claude, Gemini, OpenAI, Antigravity) |
+| Provider | `internal/provider/provider.go` | Multi-model AI fallback chain (4 providers, 12 models) |
 | Octant | `internal/data/octant.go` | REST client for epochs, projects, allocations, rewards, patrons |
 | Gitcoin | `internal/data/gitcoin.go` | GraphQL client for rounds, applications, donations |
 | OSO | `internal/data/oso.go` | GraphQL client for project registry and timeseries metrics |
-| Quantitative | `internal/analysis/quantitative.go` | K-means clustering, composite scoring, anomaly detection, trust graph |
-| Qualitative | `internal/analysis/qualitative.go` | LLM evaluation, comparison, sentiment, metric extraction |
-| GitHub | `internal/data/github.go` | GitHub API client for repo metrics, contributors, README content |
-| Report | `internal/report/report.go` | Markdown and PDF report generation with branded watermark |
-| Server | `internal/server/server.go` | HTTP server + SSE streaming for web dashboard |
-| Frontend | `frontend/` | Next.js dashboard with real-time streaming |
+| GitHub | `internal/data/github.go` | GitHub API client for repo metrics, contributors, README (fallback when OSO is down) |
+| Quantitative | `internal/analysis/quantitative.go` | K-means clustering, composite scoring, anomaly detection |
+| Trust Graph | `internal/analysis/graph.go` | Shannon entropy, Jaccard similarity, whale dependency, union-find clustering |
+| Mechanism | `internal/analysis/mechanism.go` | 4 QF simulations: Standard, Capped, Equal Weight, Trust-Weighted (novel) |
+| Qualitative | `internal/analysis/qualitative.go` | LLM evaluation, comparison, proposal scanning, metric extraction |
+| Report | `internal/report/report.go` | Markdown report generation |
+| PDF | `internal/report/pdf.go` | Branded PDF reports with watermark, headers, tables |
+| Moltbook | `internal/social/moltbook.go` | Moltbook API client: posts, replies, follow, notifications, math challenge solver |
+| Server | `internal/server/server.go` | HTTP API (18 endpoints) + SSE streaming for web dashboard |
+| Frontend | `frontend/` | Next.js 19 dashboard with real-time SSE streaming |
+
+---
+
+## Multi-Model AI Provider Chain
+
+Tessera supports 4 AI providers with 12 models. Providers are tried in order; if one fails, the next is used automatically. Users can also select a specific provider+model from the web dashboard.
+
+| Provider | Models | Auth |
+|----------|--------|------|
+| **Claude CLI** (primary) | `claude-opus-4-6`, `claude-sonnet-4-6` | Claude Code login (no API key) |
+| **Claude API** | `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5` | `ANTHROPIC_API_KEY` |
+| **Gemini** | `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-3.1-pro-preview`, `gemini-3-flash-preview`, `gemini-2.5-flash-lite` | `GEMINI_API_KEY` |
+| **OpenAI** | `gpt-4o`, `gpt-4o-mini`, `o3-mini` | `OPENAI_API_KEY` |
+
+**Fallback logic:** preferred model first → default model per remaining provider. Handles thinking model response format (skips `thinking` blocks, extracts `text` blocks). 120s timeout per request.
 
 ---
 

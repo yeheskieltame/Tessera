@@ -94,10 +94,38 @@ export interface AnalyzeStep {
   result?: Record<string, unknown>;
 }
 
+export interface ProviderInfo {
+  name: string;
+  model: string;
+  ready: boolean;
+  reason?: string;
+  default?: boolean;
+}
+
+export interface ProvidersResponse {
+  providers: ProviderInfo[];
+  preferred: string;
+  preferredModel: string;
+}
+
 /* ─── API functions ─── */
 
 export async function getStatus(): Promise<StatusResponse> {
   return fetchJson("/api/status");
+}
+
+export async function getProviders(): Promise<ProvidersResponse> {
+  return fetchJson("/api/providers");
+}
+
+export async function selectProvider(providerName: string, model: string): Promise<{ preferred: string; preferredModel: string; status: string }> {
+  const res = await fetch(`${API_BASE}/api/providers/select`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: providerName, model }),
+  });
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
 }
 
 export async function getCurrentEpoch(): Promise<EpochResponse> {

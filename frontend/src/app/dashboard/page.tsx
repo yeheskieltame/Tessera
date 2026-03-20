@@ -10,12 +10,15 @@ import {
   getSimulation,
   getReports,
   getReportUrl,
+  getProviders,
+  selectProvider,
   streamAnalyzeProject,
   type StatusResponse,
   type AnalyzeEpochResponse,
   type TrustGraphResponse,
   type SimulateResponse,
   type ReportsResponse,
+  type ProvidersResponse,
 } from "@/lib/api";
 
 const API = "";
@@ -135,6 +138,24 @@ export default function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [trackResult, setTrackResult] = useState<any>(null);
   const [trackLoading, setTrackLoading] = useState(false);
+
+  /* ─── Providers ─── */
+  const [providersData, setProvidersData] = useState<ProvidersResponse | null>(null);
+  const [providerSwitching, setProviderSwitching] = useState(false);
+
+  useEffect(() => { getProviders().then(setProvidersData).catch(() => {}); }, []);
+
+  async function handleSelectProvider(compositeKey: string) {
+    const [provName, ...modelParts] = compositeKey.split("|");
+    const modelName = modelParts.join("|");
+    if (!provName || !modelName) return;
+    setProviderSwitching(true);
+    try {
+      await selectProvider(provName, modelName);
+      setProvidersData(await getProviders());
+    } catch {}
+    setProviderSwitching(false);
+  }
 
   /* ─── Reports ─── */
   const [reports, setReports] = useState<ReportsResponse | null>(null);
@@ -280,6 +301,60 @@ export default function DashboardPage() {
 
       {/* ─── Main Content ─── */}
       <main className="max-w-7xl mx-auto px-6 pt-8 pb-20">
+
+        {/* ─── AI Model Selector (inline dropdown, grouped by provider) ─── */}
+        {providersData && (() => {
+          const activeKey = providersData.preferred && providersData.preferredModel
+            ? `${providersData.preferred}|${providersData.preferredModel}`
+            : (() => { const first = providersData.providers.find((p) => p.ready && p.default); return first ? `${first.name}|${first.model}` : ""; })();
+          const readyModels = providersData.providers.filter((p) => p.ready).length;
+          const readyProviders = new Set(providersData.providers.filter((p) => p.ready).map((p) => p.name)).size;
+          const totalProviders = new Set(providersData.providers.map((p) => p.name)).size;
+
+          // Group by provider for <optgroup>
+          const groups: { name: string; label: string; items: typeof providersData.providers }[] = [];
+          const provLabels: Record<string, string> = {
+            "claude-cli": "Claude CLI (Max Plan)",
+            "claude-api": "Claude API",
+            "gemini": "Google Gemini",
+            "openai": "OpenAI",
+          };
+          let currentGroup = "";
+          for (const p of providersData.providers) {
+            if (p.name !== currentGroup) {
+              currentGroup = p.name;
+              groups.push({ name: p.name, label: provLabels[p.name] || p.name, items: [] });
+            }
+            groups[groups.length - 1].items.push(p);
+          }
+
+          return (
+            <div className="mb-5 flex items-center gap-3 flex-wrap">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">AI Model</label>
+              <div className="relative">
+                <select
+                  value={activeKey}
+                  onChange={(e) => handleSelectProvider(e.target.value)}
+                  disabled={providerSwitching}
+                  className="appearance-none rounded-xl border border-slate-200/80 bg-white/80 backdrop-blur-xl pl-3 pr-8 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 cursor-pointer min-w-[300px]"
+                >
+                  {groups.map((g) => (
+                    <optgroup key={g.name} label={`${g.items[0].ready ? "\u2713" : "\u2717"} ${g.label}`}>
+                      {g.items.map((p) => (
+                        <option key={`${p.name}|${p.model}`} value={`${p.name}|${p.model}`} disabled={!p.ready}>
+                          {p.model}{!p.ready ? ` \u2014 ${p.reason || "not configured"}` : ""}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </div>
+              {providerSwitching && <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
+              <span className="text-xs text-slate-500">{readyProviders}/{totalProviders} providers ready ({readyModels} models)</span>
+            </div>
+          );
+        })()}
 
         {/* ─── Row 1: Hero Actions (2 columns) ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">

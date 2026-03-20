@@ -187,7 +187,6 @@ Provider dicoba berurutan. Jika gagal, otomatis pindah ke berikutnya:
 2. **Claude API** (`ANTHROPIC_API_KEY`) — direct API fallback
 3. **Google Gemini** (`GEMINI_API_KEY`) — fallback
 4. **OpenAI** (`OPENAI_API_KEY`) — fallback
-5. **Antigravity Proxy** (`ANTIGRAVITY_URL`) — fallback (Claude via Google Antigravity)
 
 > **Untuk pengguna Claude Max plan:** Cukup install Claude Code (`npm i -g @anthropic-ai/claude-code`), login, dan Tessera akan otomatis menggunakan Claude CLI sebagai AI provider. Tidak perlu API key.
 
@@ -259,20 +258,15 @@ SYNTHESIS_TEAM_ID=...
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
 OPENAI_API_KEY=sk-...
-ANTIGRAVITY_URL=http://localhost:8080
 
-# Claude CLI (auto-detected if `claude` binary exists)
+# Claude CLI (auto-detected if `claude` binary exists, no key needed)
 # CLAUDE_CLI_DISABLED=true
-# CLAUDE_CLI_MODEL=sonnet
-
-# Model overrides (optional)
-CLAUDE_MODEL=claude-sonnet-4-6
-GEMINI_MODEL=gemini-2.0-flash
-OPENAI_MODEL=gpt-4o
-ANTIGRAVITY_MODEL=claude-sonnet-4-5-thinking
 
 # Data source (optional)
 OSO_API_KEY=...
+
+# Note: Model selection is done via the Dashboard UI dropdown.
+# No model override env vars needed.
 ```
 
 ---
@@ -282,15 +276,16 @@ OSO_API_KEY=...
 - [x] Registrasi hackathon (ERC-8004 on-chain identity)
 - [x] Setup GitHub repo (public) — https://github.com/yeheskieltame/Tessera
 - [x] Self-custody transfer — NFT #32417 → `0x77c4a1cD22005b67Eb9CcEaE7E9577188d7Bca82`
-- [x] Create project draft via API — UUID: `87473a05b9c64d74b284c5bcf01fed64`, slug: `tessera-2ee6`
+- [x] Create project draft via API — UUID: `87473a05b9c64d74b284c5bcf01fed64`, slug: `tessera-bf0d`
 - [x] Conversation log submitted via API (14→19 phases)
 - [x] Unit tests (13 tests, all passing)
 - [x] Sample output (examples/sample-output.md)
-- [x] Moltbook agent registered (`synthesis-agent`)
-- [ ] Moltbook human claim (visit claim URL, verify email + tweet)
-- [ ] Moltbook post (after claim)
-- [ ] Publish project
-- [ ] Verifikasi di `GET /projects` listing
+- [x] Moltbook agent registered (`tessera-agent`) — karma: 6, followers: 2, following: 6, posts: 1, comments: 5
+- [x] Moltbook human claim — claimed by human, `is_claimed: true`
+- [x] Moltbook post — "Tessera: AI-Powered Public Goods Evaluation for Octant" (https://www.moltbook.com/s/general/tessera-ai-powered-public-goods-evaluation-for-octant)
+- [x] Publish project — status: `publish`, verified 2026-03-19
+- [x] Verifikasi di `GET /projects` listing — found on page 7, slug: `tessera-bf0d`
+- [x] 3 tracks assigned: Data Analysis, Data Collection, Mechanism Design
 
 ---
 

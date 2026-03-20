@@ -496,6 +496,55 @@ Each finding includes the reproducible command to verify it.
 
 **Human insight:** "seharusnya memberikan beberapa inputan opsional data sumber tambahan untuk evaluate project seperti link github, untuk mempermudah kita mengambil data Readme nya dari github"
 
+## Session 6 — Final Audit & Documentation Sync (2026-03-20)
+
+### Phase 35: Full Project Audit & API Verification
+
+**Human:** "Analisa project saya dengan teliti, lalu berikan rangkuman apa yang sudah selesai, analisa mendalam, dan strategi selanjutnya."
+
+**Agent:** Performed comprehensive audit:
+- Read all Go source files (~8,400 LOC), frontend (~1,850 LOC), all config files
+- Ran all 13 unit tests (all passing)
+- Verified all external APIs live:
+  - Synthesis Hackathon API: project status `publish`, 3 tracks assigned, slug `tessera-bf0d`
+  - Moltbook API: `tessera-agent` active, karma 6, 2 followers, 1 post, 5 comments, `is_claimed: true`
+  - Gemini API: 45 models available
+  - OSO API: still down (DOWNSTREAM_SERVICE_ERROR), GitHub fallback working
+- Found Tessera in public project listing (page 7 of GET /projects)
+
+**Key finding:** CLAUDE.md submission checklist was outdated — showed 4 items unchecked that were actually completed:
+- Moltbook human claim (done)
+- Moltbook post (done, with URL)
+- Publish project (done, status: publish)
+- Public listing verification (done, page 7)
+
+**Agent:** Updated all checklist items to `[x]` with verification details.
+
+### Phase 36: README-to-Code Alignment Audit
+
+**Human:** "Apakah README sudah up to date, selaras dengan arsitektur di kode, fitur multimodelnya?"
+
+**Agent:** Found 7 discrepancies between README and actual code:
+
+1. **Architecture table** missing 4 files (`graph.go`, `mechanism.go`, `pdf.go`, `moltbook.go`) — added all 15 modules
+2. **`scan-proposal`** documented as `<url>` — corrected to `<name> -d "text"`
+3. **`deep-eval`** documented as `<addr> -e N` — corrected to `<addr> [-n oso-name]`
+4. **`collect-signals`** documented as `<addr>` with AI Required — corrected to `<name-or-owner/repo>`, no AI needed
+5. **Moltbook commands** listed as 2 generic lines — expanded to 5 detailed subcommands
+6. **`quantitative.go`** claimed to handle trust graph — corrected (trust graph is in separate `graph.go`)
+7. **Multi-model section** missing entirely — added: 4 providers, 12 models, fallback logic, thinking model support
+
+### Phase 37: Multi-Model Provider Chain Enhancement
+
+**Context:** During audit, verified the provider chain supports:
+- 4 providers: Claude CLI, Claude API, Gemini, OpenAI
+- 12 models total with user-selectable preference via dashboard
+- Thinking model response parsing (skips `thinking` blocks, extracts `text`)
+- 120s timeout, automatic fallback on failure
+- `SetPreferred()`/`GetPreferred()` for dashboard model selection
+
+**Agent:** Added dedicated "Multi-Model AI Provider Chain" section to README with full model catalog table, auth requirements, and fallback logic description.
+
 ---
 
 ## Key Decisions Made Together
@@ -537,9 +586,10 @@ Each finding includes the reproducible command to verify it.
 - Evaluate command: GitHub enrichment + PDF report generation
 - Moltbook social integration (autonomous heartbeat)
 - FINDINGS.md: 7 concrete insights from real Octant data
-- All documentation, unit tests (13), 45+ git commits
+- All documentation, unit tests (13), 48+ git commits
 - Hackathon API submission, Moltbook social engagement
+- Full project audit: API verification, README-code alignment, checklist sync
 
 ---
 
-*Final version — 34 phases across 5 sessions of human-agent collaboration.*
+*Final version — 37 phases across 6 sessions of human-agent collaboration.*

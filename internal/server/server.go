@@ -126,16 +126,57 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 
 func handleProviders(w http.ResponseWriter, r *http.Request) {
 	ai := provider.New()
-	providers := ai.Providers()
-	type providerInfo struct {
-		Name  string `json:"name"`
-		Model string `json:"model"`
+	all := ai.AllProviders()
+	prefProvider, prefModel := provider.GetPreferred()
+	jsonOK(w, map[string]any{
+		"providers":      all,
+		"preferred":      prefProvider,
+		"preferredModel": prefModel,
+	})
+}
+
+func handleSelectProvider(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonError(w, "POST required", http.StatusMethodNotAllowed)
+		return
 	}
-	out := make([]providerInfo, len(providers))
-	for i, p := range providers {
-		out[i] = providerInfo{p.Name, p.Model}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		jsonError(w, "failed to read body", http.StatusBadRequest)
+		return
 	}
-	jsonOK(w, map[string]any{"providers": out})
+	defer r.Body.Close()
+
+	var req struct {
+		Provider string `json:"provider"`
+		Model    string `json:"model"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		jsonError(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate provider+model combo exists and is ready
+	ai := provider.New()
+	all := ai.AllProviders()
+	found := false
+	for _, p := range all {
+		if p.Name == req.Provider && p.Model == req.Model {
+			if !p.Ready {
+				jsonError(w, fmt.Sprintf("provider %s/%s is not ready: %s", req.Provider, req.Model, p.Reason), http.StatusBadRequest)
+				return
+			}
+			found = true
+			break
+		}
+	}
+	if !found && req.Provider != "" {
+		jsonError(w, fmt.Sprintf("unknown provider+model: %s/%s", req.Provider, req.Model), http.StatusBadRequest)
+		return
+	}
+
+	provider.SetPreferred(req.Provider, req.Model)
+	jsonOK(w, map[string]any{"preferred": req.Provider, "preferredModel": req.Model, "status": "ok"})
 }
 
 func handleCurrentEpoch(w http.ResponseWriter, r *http.Request) {
@@ -1729,6 +1770,7 @@ func loadRoutes() {
 	// API endpoints
 	handle("/api/status", handleStatus)
 	handle("/api/providers", handleProviders)
+	handle("/api/providers/select", handleSelectProvider)
 	handle("/api/epochs/current", handleCurrentEpoch)
 	handle("/api/projects", handleProjects)
 	handle("/api/analyze-epoch", handleAnalyzeEpoch)
@@ -1803,7 +1845,7 @@ func Start() {
 	loadRoutes()
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "3001"
 	}
 	fmt.Printf("Tessera API server running on http://localhost:%s\n", port)
 	fmt.Printf("  API:      http://localhost:%s/api/status\n", port)
