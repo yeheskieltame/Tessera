@@ -260,7 +260,7 @@ Reports are saved to `reports/` and served through the web dashboard.
 
 | Bounty               | Prize  | Tessera Features                                                                                                                                                     |
 | -------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Open Track**       | $2,000 | Full 9-step pipeline, 20 CLI commands, web dashboard, branded PDF reports, Trust-Weighted QF, multi-chain blockchain scanner                                         |
+| **Open Track**       | $28,308 | Full 9-step pipeline, 20 CLI commands, web dashboard, branded PDF reports, Trust-Weighted QF, multi-chain blockchain scanner                                         |
 | **Data Analysis**    | $1,000 | analyze-epoch, trust-graph, deep-eval, report-epoch, analyze-project: 41 donor clusters, 97.9% whale concentration, multi-layer scoring                              |
 | **Data Collection**  | $1,000 | 7 data sources (Octant, Gitcoin, OSO, GitHub, 9 blockchain RPCs, block explorers, Moltbook), ERC-20 token balances (USDC/USDT/DAI), scan-proposal claim verification |
 | **Mechanism Design** | $1,000 | simulate (4 QF variants), Trust-Weighted QF (novel), Gini coefficients, per-project redistribution analysis                                                          |
@@ -275,7 +275,7 @@ See [FINDINGS.md](FINDINGS.md) for detailed insights from real Octant data.
 
 |                   |                                                                               |
 | ----------------- | ----------------------------------------------------------------------------- |
-| Tracks            | Data Analysis ($1,000) + Data Collection ($1,000) + Mechanism Design ($1,000) |
+| Tracks            | Data Analysis ($1,000) + Data Collection ($1,000) + Mechanism Design ($1,000) + Open Track ($28,308) |
 | Human             | Yeheskiel Yunus Tame ([@YeheskielTame](https://x.com/YeheskielTame))          |
 | Agent             | Claude Opus 4.6 via Claude Code                                               |
 | Repo              | [github.com/yeheskieltame/Tessera](https://github.com/yeheskieltame/Tessera)  |

@@ -746,4 +746,38 @@ Each finding includes the reproducible command to verify it.
 
 ---
 
-_Final version — 43 phases across 7 sessions of human-agent collaboration._
+## Session 8 — Submission Hardening & Deployment (2026-03-21)
+
+### Phase 44: Comprehensive Submission Audit
+
+**Human:** "Analisa project ini, dan skill hackathon, submission dan judging, sudah berapa persen project kita, apa yang sudah kuat dan dimana lagi yang perlu diperbaiki."
+
+**Agent:** Performed full audit:
+
+- Fetched all hackathon skill docs (skill.md, submission/skill.md, catalog/prizes.md, themes.md)
+- Deep codebase exploration (20 commands verified, 8,404 lines Go, 13 tests passing)
+- Mapped project against judging criteria per track
+- Assessment: ~85-90% complete, strongest in Data Analysis and Mechanism Design tracks
+- Identified gaps: test coverage (~10%), no live demo URL, Open Track not assigned
+
+### Phase 45: Open Track Registration & Frontend Deployment
+
+**Agent:**
+
+- **Critical discovery:** Open Track ($28,308.96 prize pool — the LARGEST prize) was missing from project tracks
+- Added Open Track UUID (`fdb76d08812b43f6a5f454744b66f590`) via API — now 4 tracks total
+- Fixed landing page stats (19→20 commands, 4→7 data sources, 8→9 pipeline steps)
+- Added `epoch5_*.json` and `frontend/dist/` to .gitignore
+- Built and deployed static frontend to GitHub Pages (`gh-pages` branch)
+- Updated `deployedURL` in hackathon API to `https://yeheskieltame.github.io/Tessera/`
+- Updated README and CLAUDE.md with 4-track info and correct prize amounts
+
+**Key outcomes:**
+
+- Project now eligible for $28,308 Open Track + $3,000 Octant tracks = $31,308 total prize potential
+- Live demo URL available for judges
+- All submission metadata updated
+
+---
+
+_Final version — 45 phases across 8 sessions of human-agent collaboration._

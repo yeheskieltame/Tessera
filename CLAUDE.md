@@ -315,7 +315,7 @@ OSO_API_KEY=...
 - [x] Moltbook post — "Tessera: AI-Powered Public Goods Evaluation for Octant" (https://www.moltbook.com/s/general/tessera-ai-powered-public-goods-evaluation-for-octant)
 - [x] Publish project — status: `publish`, verified 2026-03-19
 - [x] Verifikasi di `GET /projects` listing — found on page 7, slug: `tessera-bf0d`
-- [x] 3 tracks assigned: Data Analysis, Data Collection, Mechanism Design
+- [x] 4 tracks assigned: Data Analysis, Data Collection, Mechanism Design, Open Track ($28,308)
 
 ---
 

@@ -26,6 +26,12 @@ frontend/.next/
 frontend/.vite/
 frontend/out/
 
+# Generated data
+epoch5_*.json
+
+# Build output
+frontend/dist/
+
 # OS
 .DS_Store
 Thumbs.db

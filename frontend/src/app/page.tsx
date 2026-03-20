@@ -41,10 +41,10 @@ const steps = [
 ];
 
 const stats = [
-  { value: "19", label: "CLI Commands" },
-  { value: "4", label: "Data Sources" },
+  { value: "20", label: "CLI Commands" },
+  { value: "7", label: "Data Sources" },
   { value: "4", label: "QF Mechanisms" },
-  { value: "8-Step", label: "Pipeline" },
+  { value: "9-Step", label: "Pipeline" },
 ];
 
 /* ─── Smooth scroll helper ─── */
