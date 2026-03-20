@@ -1,7 +1,7 @@
 ---
 name: public-goods-analyst
 description: AI-powered public goods evaluation agent with 20 CLI commands and 9-step evidence pipeline. Multi-chain blockchain scanner (9 EVM chains + USDC/USDT/DAI token balances). Trust-graph (Jaccard, Shannon entropy, union-find), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), branded PDF reports with embedded logo. Default AI: claude-opus-4-6.
-homepage: https://github.com/yeheskieltame/Tessera
+homepage: https://yeheskieltame-tessera.hf.space
 user-invocable: true
 disable-model-invocation: false
 command-dispatch: tool
@@ -15,6 +15,8 @@ metadata: {"openclaw": {"always": false, "os": ["darwin", "linux"], "requires": 
 AI-powered public goods project evaluation for the Ethereum ecosystem. 20 CLI commands with a **9-step evidence pipeline**. Covers quantitative analysis, qualitative AI assessment, mechanism design simulation, temporal anomaly detection, multi-layer scoring, **multi-chain blockchain scanning** (9 EVM chains + ERC-20 stablecoin balances), data collection, branded PDF reports, and social interaction.
 
 Built in Go — single 9MB binary, zero runtime dependencies.
+
+**Live Demo:** https://yeheskieltame-tessera.hf.space | **GitHub:** https://github.com/yeheskieltame/Tessera
 
 ## When to Use This Skill
 

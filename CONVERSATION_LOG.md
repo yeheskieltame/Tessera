@@ -775,9 +775,36 @@ Each finding includes the reproducible command to verify it.
 **Key outcomes:**
 
 - Project now eligible for $28,308 Open Track + $3,000 Octant tracks = $31,308 total prize potential
-- Live demo URL available for judges
 - All submission metadata updated
+
+### Phase 46: Full-Stack Deployment to Hugging Face Spaces
+
+**Human:** GitHub Pages is bad — only static, no backend. Tried Render and Railway but Stripe payment fails with Indonesian debit cards. Asked for alternatives.
+
+**Agent:** Recommended Hugging Face Spaces (Docker) — free, no credit card required:
+
+- Created multi-stage Dockerfile (Node frontend build → Go backend build → Alpine runtime)
+- Configured for HF Spaces (port 7860, non-root user)
+- Uploaded entire project via HF Python API (bypassed git-lfs requirement)
+- Added `GEMINI_API_KEY` as HF Space secret
+- Build successful — full-stack deployment live
+
+**Live URL:** https://yeheskieltame-tessera.hf.space
+
+- Landing page: fully functional
+- Dashboard: API + SSE streaming + PDF reports all working
+- Go backend running inside Docker container on HF infrastructure
+
+### Phase 47: Deployment Documentation
+
+**Agent:** Updated all project documentation with live deployment URL:
+
+- README.md — live demo link at top, Quick Start section, Built For table
+- CLAUDE.md — submission checklist, useful links
+- SKILL.md — homepage URL, live demo link
+- Hackathon API — `deployedURL` updated to HF Spaces URL
+- Conversation log updated (phases 46-47)
 
 ---
 
-_Final version — 45 phases across 8 sessions of human-agent collaboration._
+_Final version — 47 phases across 8 sessions of human-agent collaboration._

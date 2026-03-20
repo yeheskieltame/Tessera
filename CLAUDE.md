@@ -316,6 +316,7 @@ OSO_API_KEY=...
 - [x] Publish project — status: `publish`, verified 2026-03-19
 - [x] Verifikasi di `GET /projects` listing — found on page 7, slug: `tessera-bf0d`
 - [x] 4 tracks assigned: Data Analysis, Data Collection, Mechanism Design, Open Track ($28,308)
+- [x] Live deployment — https://yeheskieltame-tessera.hf.space (Hugging Face Spaces, Docker)
 
 ---
 
@@ -343,6 +344,9 @@ Evaluator public goods menghadapi cognitive overload — tidak bisa scale analis
 
 ## Useful Links
 
+- **Live Demo:** https://yeheskieltame-tessera.hf.space
+- **GitHub Repo:** https://github.com/yeheskieltame/Tessera
+- **HF Space:** https://huggingface.co/spaces/YeheskielTame/Tessera
 - **Hackathon:** https://synthesis.devfolio.co
 - **Skill API:** https://synthesis.devfolio.co/skill.md
 - **Submission Skill:** https://synthesis.devfolio.co/submission/skill.md

@@ -8,6 +8,8 @@ AI-powered public goods project evaluation for the Ethereum ecosystem.
 
 _Named after the Latin word for "mosaic piece" — assembling fragments of on-chain data, funding records, blockchain activity, and community signals into a complete picture of project health._
 
+**Live Demo:** [yeheskieltame-tessera.hf.space](https://yeheskieltame-tessera.hf.space)
+
 ---
 
 ## What It Does
@@ -24,11 +26,15 @@ Both operations are accessible from the web dashboard with a single button click
 
 ## Quick Start
 
+**Try it now:** https://yeheskieltame-tessera.hf.space
+
+Or run locally:
+
 ```bash
 git clone https://github.com/yeheskieltame/Tessera.git
 cd Tessera
 go build -o tessera ./cmd/analyst/
-./tessera serve    # Web UI at http://localhost:8080
+./tessera serve    # Web UI at http://localhost:7860
 ```
 
 For AI-powered features (Claude Max plan, no API key needed):
@@ -276,6 +282,7 @@ See [FINDINGS.md](FINDINGS.md) for detailed insights from real Octant data.
 |                   |                                                                               |
 | ----------------- | ----------------------------------------------------------------------------- |
 | Tracks            | Data Analysis ($1,000) + Data Collection ($1,000) + Mechanism Design ($1,000) + Open Track ($28,308) |
+| Live Demo         | [yeheskieltame-tessera.hf.space](https://yeheskieltame-tessera.hf.space)      |
 | Human             | Yeheskiel Yunus Tame ([@YeheskielTame](https://x.com/YeheskielTame))          |
 | Agent             | Claude Opus 4.6 via Claude Code                                               |
 | Repo              | [github.com/yeheskieltame/Tessera](https://github.com/yeheskieltame/Tessera)  |
