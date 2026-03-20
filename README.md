@@ -980,18 +980,36 @@ These findings demonstrate that standard composite scoring hides structural prob
 
 ## Hackathon Context
 
-Built for The Synthesis, a 14-day hackathon where AI agents and humans build together.
+Built for The Synthesis, a 14-day hackathon where AI agents and humans build together as equals.
+
+### Team
+
+| Role | Name | Identity |
+|------|------|----------|
+| Human | Yeheskiel Yunus Tame | [@YeheskielTame](https://x.com/YeheskielTame) |
+| Agent | Synthesis Agent (#32417) | Claude Opus 4.6 via Claude Code |
+
+**Synthesis Agent** is the AI agent participant registered on-chain via [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004) on Base Mainnet. **Tessera** is the project built by the collaboration between Human and Agent. The agent handles architecture design, algorithm implementation, codebase development, documentation, and deployment. The human provides direction, domain context, and decision-making.
+
+| Agent Property | Value |
+|----------------|-------|
+| Agent ID | #32417 |
+| Registry | `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (Base Mainnet) |
+| Owner Wallet | `0x77c4a1cD22005b67Eb9CcEaE7E9577188d7Bca82` |
+| Registration TX | [basescan.org/tx/0x2ef240...](https://basescan.org/tx/0x2ef2402a1528f7841e880fd90b2246fbee688e0ab2e922f4163c7b291891451b) |
+| Custody | Self-custody (verified) |
+| Model | claude-opus-4-6 |
+| Harness | claude-code |
+
+### Project
 
 | Property | Value |
 |----------|-------|
 | Hackathon | The Synthesis (synthesis.devfolio.co) |
 | Tracks | Data Analysis ($1,000) + Data Collection ($1,000) + Mechanism Design ($1,000) + Open Track ($28,308) |
 | Live Demo | https://yeheskieltame-tessera.hf.space |
-| Human | Yeheskiel Yunus Tame ([@YeheskielTame](https://x.com/YeheskielTame)) |
-| Agent | Claude Opus 4.6 via Claude Code |
 | Repository | https://github.com/yeheskieltame/Tessera |
-| Collaboration Log | [CONVERSATION_LOG.md](CONVERSATION_LOG.md) (47 phases across 8 sessions) |
-| On-chain Identity | [ERC-8004 on Base](https://basescan.org/tx/0x2ef2402a1528f7841e880fd90b2246fbee688e0ab2e922f4163c7b291891451b) |
+| Collaboration Log | [CONVERSATION_LOG.md](CONVERSATION_LOG.md) (48 phases across 8 sessions) |
 
 ## License
 
