@@ -86,7 +86,10 @@ export default function LandingPage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-lg" : "bg-transparent"}`}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <span className="text-lg font-bold text-white tracking-tight">Tessera</span>
+            <div className="flex items-center gap-2">
+              <img src="/tessera-icon-64.png" alt="Tessera" className="w-8 h-8" />
+              <span className="text-lg font-bold text-white tracking-tight">Tessera</span>
+            </div>
             <div className="hidden sm:flex items-center gap-6">
               <button onClick={() => scrollTo("features")} className="text-sm text-white/70 hover:text-white transition">What It Does</button>
               <button onClick={() => scrollTo("get-started")} className="text-sm text-white/70 hover:text-white transition">Get Started</button>
@@ -108,6 +111,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 text-center max-w-3xl mx-auto">
+          <img src="/tessera-icon-inverted-256.png" alt="Tessera" className="w-24 h-24 mx-auto mb-6 drop-shadow-2xl" />
           <h1 className="text-7xl sm:text-8xl font-black tracking-tight mb-6 text-white">
             Tessera
           </h1>
@@ -290,9 +294,13 @@ export default function LandingPage() {
       {/* ─── Footer ─── */}
       <footer className="border-t border-slate-100 py-12 px-6 bg-slate-50">
         <div className="max-w-4xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <img src="/tessera-icon-64.png" alt="Tessera" className="w-6 h-6" />
+            <span className="text-sm font-bold text-slate-700">Tessera</span>
+          </div>
           <p className="text-sm text-slate-600">
             Built by{" "}
-            <span className="font-semibold text-slate-800">Yeheskiel Yunus Rame</span>
+            <span className="font-semibold text-slate-800">Yeheskiel Yunus Tame</span>
             {" "}+{" "}
             <span className="font-semibold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Claude Opus 4.6</span>
           </p>

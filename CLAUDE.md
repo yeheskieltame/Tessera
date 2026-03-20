@@ -8,7 +8,7 @@
 - **Hackathon:** The Synthesis (synthesis.devfolio.co)
 - **Track:** Agents for Public Goods Data Analysis for Project Evaluation (Octant partner, $1000)
 - **Model:** Claude Opus 4.6 via Claude Code
-- **Human:** Yeheskiel Yunus Rame (@YeheskielTame)
+- **Human:** Yeheskiel Yunus Tame (@YeheskielTame)
 
 ---
 
@@ -111,6 +111,7 @@ Authorization: Bearer sk-synth-...
 ```
 
 Requirements sebelum publish:
+
 - Self-custody transfer selesai
 - Nama project ada
 - Minimal 1 track assigned
@@ -119,15 +120,16 @@ Requirements sebelum publish:
 ### Track UUIDs (Octant)
 
 Fetch dari catalog:
+
 ```bash
 GET /catalog?search=octant&per_page=100&page=2
 ```
 
-| Track | Slug | Prize |
-|-------|------|-------|
-| Agents for Public Goods Data Analysis for Project Evaluation | `data-analysis-track-j5lvk8` | $1,000 |
-| Agents for Public Goods Data Collection for Project Evaluation | `data-collection-track-w3wbn7` | $1,000 |
-| Mechanism Design for Public Goods Evaluation | `subjectivity-and-context-track-8vtj5l` | $1,000 |
+| Track                                                          | Slug                                    | Prize  |
+| -------------------------------------------------------------- | --------------------------------------- | ------ |
+| Agents for Public Goods Data Analysis for Project Evaluation   | `data-analysis-track-j5lvk8`            | $1,000 |
+| Agents for Public Goods Data Collection for Project Evaluation | `data-collection-track-w3wbn7`          | $1,000 |
+| Mechanism Design for Public Goods Evaluation                   | `subjectivity-and-context-track-8vtj5l` | $1,000 |
 
 ### Team Management
 
@@ -145,6 +147,7 @@ POST /teams/:teamUUID/leave       # Leave team
 ### Tech Stack
 
 **Go** — dipilih karena:
+
 - Single binary ~9MB, zero runtime dependencies
 - Startup <5ms (vs Python ~300ms)
 - Native concurrency (goroutines) untuk multi-agent future
@@ -155,25 +158,35 @@ POST /teams/:teamUUID/leave       # Leave team
 ```
 synthesis/
 ├── .env                          # API keys (gitignored)
-├── .gitignore
 ├── go.mod / go.sum               # Go module
 ├── CLAUDE.md                     # File ini
-├── analyst                       # Compiled binary (~9MB)
+├── tessera                       # Compiled binary (~9MB)
 ├── cmd/
 │   └── analyst/
-│       └── main.go               # CLI entry point + flag parsing
+│       └── main.go               # CLI entry point (20 commands)
 ├── internal/
 │   ├── provider/
-│   │   └── provider.go           # Multi-model AI fallback chain
+│   │   └── provider.go           # Multi-model AI fallback chain (4 providers, 12 models)
 │   ├── data/
 │   │   ├── octant.go             # Octant REST API client
 │   │   ├── gitcoin.go            # Gitcoin GraphQL client
-│   │   └── oso.go                # Open Source Observer client
+│   │   ├── oso.go                # Open Source Observer client
+│   │   ├── github.go             # GitHub API client (fallback)
+│   │   └── blockchain.go         # Multi-chain EVM scanner (9 chains, ERC-20 tokens)
 │   ├── analysis/
 │   │   ├── quantitative.go       # K-means clustering, composite scoring, anomaly detection
-│   │   └── qualitative.go        # LLM evaluation, comparison, sentiment analysis
-│   └── report/
-│       └── report.go             # Markdown report generation
+│   │   ├── graph.go              # Trust graph: Shannon entropy, Jaccard, whale dependency
+│   │   ├── mechanism.go          # 4 QF simulations: Standard, Capped, Equal, Trust-Weighted
+│   │   └── qualitative.go        # LLM evaluation, comparison, proposal scanning
+│   ├── report/
+│   │   ├── report.go             # Markdown report generation
+│   │   ├── pdf.go                # Branded PDF with embedded logo
+│   │   └── assets/               # Embedded logo PNGs (go:embed)
+│   ├── server/
+│   │   └── server.go             # HTTP API (19 endpoints, SSE streaming)
+│   └── social/
+│       └── moltbook.go           # Moltbook API client
+├── frontend/                     # Next.js 19 dashboard (2 main action cards)
 └── skills/
     └── public-goods-analyst/
         └── SKILL.md              # OpenClaw skill definition
@@ -200,36 +213,52 @@ go build -o tessera ./cmd/analyst/
 go run ./cmd/analyst/ <command>
 ```
 
-### CLI Commands
+### CLI Commands (20 total)
+
+**2 operasi utama (dashboard buttons):**
 
 ```bash
-./tessera status              # Cek koneksi semua data source
+./tessera analyze-project <addr>  # 9-step full intelligence pipeline + PDF
+./tessera evaluate "Name" -d "desc" [-g github-url]  # 8-dimension AI eval + PDF
+```
+
+**Analisis kuantitatif (tanpa AI):**
+
+```bash
+./tessera status              # Cek koneksi (Octant, Gitcoin, OSO, 9 blockchain RPCs, AI)
 ./tessera providers           # Lihat AI provider chain
 ./tessera list-projects -e 5  # List project Octant per epoch
-./tessera analyze-epoch -e 5  # Analisis kuantitatif (clustering, scoring)
-./tessera evaluate "Name" -d "desc"  # Evaluasi kualitatif via AI
-./tessera detect-anomalies -e 5      # Deteksi anomali funding/sybil
-./tessera gitcoin-rounds -r ID       # Analisis round Gitcoin
-./tessera extract-metrics "text"     # Ekstrak metrik impact dari teks
+./tessera analyze-epoch -e 5  # K-means clustering + composite scoring
+./tessera detect-anomalies -e 5      # Whale concentration + coordinated patterns
+./tessera trust-graph -e 5           # Donor diversity, Jaccard similarity
+./tessera simulate -e 5             # Compare 4 QF mechanisms
+./tessera track-project <addr>      # Cross-epoch + temporal anomalies
+./tessera scan-chain <addr>         # Scan 9 EVM chains (balance, txs, USDC/USDT/DAI)
+./tessera gitcoin-rounds -r ID      # Analisis round Gitcoin
 ```
 
 ### Data Sources
 
-| Source | Type | Data |
-|--------|------|------|
-| **Octant API** | REST | Projects, allocations, rewards, epochs, patrons, budgets, leverage, threshold |
-| **Gitcoin Grants Stack** | GraphQL | Rounds, applications, donations, matching |
-| **Open Source Observer** | GraphQL | GitHub metrics, on-chain activity, ecosystem data |
+| Source                   | Type     | Data                                                               |
+| ------------------------ | -------- | ------------------------------------------------------------------ |
+| **Octant API**           | REST     | Projects, allocations, rewards, epochs, patrons, budgets, leverage |
+| **Gitcoin Grants Stack** | GraphQL  | Rounds, applications, donations, matching                          |
+| **Open Source Observer** | GraphQL  | GitHub metrics, on-chain activity, ecosystem data                  |
+| **Blockchain RPC**       | JSON-RPC | Balance, txs, contracts, ERC-20 tokens (9 EVM chains)              |
+| **Block Explorers**      | REST     | Recent txs, token transfers, contract verification                 |
+| **GitHub API**           | REST     | Repo metrics, contributors, README                                 |
 
 ### Fitur Analisis
 
 **Kuantitatif:**
+
 - K-means clustering (mengelompokkan project berdasar profil serupa)
 - Composite scoring (skor gabungan 0-100, normalized, 40% allocated + 60% matched)
 - Anomaly detection (whale concentration, coordinated donation patterns dengan smart threshold)
 - Wei-to-ETH conversion untuk semua funding data
 
 **Kualitatif (via AI):**
+
 - Evaluasi project proposal (8 dimensi: Impact, Team, Innovation, Sustainability, Ecosystem, Transparency, Community, Risk)
 - Perbandingan multi-project
 - Analisis sentimen komunitas
@@ -238,6 +267,7 @@ go run ./cmd/analyst/ <command>
 ### OpenClaw Skill
 
 Skill `public-goods-analyst` tersedia di `skills/public-goods-analyst/SKILL.md`:
+
 - User-invocable sebagai slash command
 - Gating: butuh `tessera` binary (Go compiled)
 - Auto-build via `go build -o tessera ./cmd/analyst/`
@@ -292,6 +322,7 @@ OSO_API_KEY=...
 ## Octant Context
 
 **Octant** adalah platform public goods funding oleh Golem Foundation:
+
 - Stake 100,000 ETH sebagai validator
 - Setiap 90 hari (epoch), staking reward dibagi ke project via quadratic funding
 - User lock GLM token, lalu alokasi reward ke project pilihan
@@ -301,6 +332,7 @@ OSO_API_KEY=...
 Evaluator public goods menghadapi cognitive overload — tidak bisa scale analisis ke puluhan project dengan metrik beragam. Data kualitatif (proposal, diskusi forum) sangat sulit dinilai manual. Agent ini mengotomasi analisis kuantitatif dan kualitatif untuk membantu evaluator.
 
 **Pain points utama:**
+
 - Cognitive overload (terlalu banyak project, terlalu sedikit waktu)
 - Sybil attacks pada quadratic funding
 - Sulit mengukur impact secara counterfactual

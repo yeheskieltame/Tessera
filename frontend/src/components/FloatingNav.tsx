@@ -34,8 +34,9 @@ export default function FloatingNav() {
       <div className="glass rounded-full px-2 py-2 flex items-center gap-1 shadow-lg shadow-blue-200/40">
         <a
           href="/"
-          className="px-3 py-1.5 text-sm font-bold text-gradient mr-1"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-gradient mr-1"
         >
+          <img src="/tessera-icon-64.png" alt="Tessera" className="w-5 h-5" />
           Tessera
         </a>
         {sections.map((s) => (

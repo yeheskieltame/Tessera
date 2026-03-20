@@ -61,6 +61,8 @@ func main() {
 		cmdAnalyzeProject(ctx)
 	case "collect-signals":
 		cmdCollectSignals(ctx)
+	case "scan-chain":
+		cmdScanChain(ctx)
 	case "track-project":
 		cmdTrackProject(ctx)
 	case "moltbook":
@@ -121,6 +123,8 @@ COMMANDS:
     <address>           Octant project address (required)
   collect-signals     Collect OSO signals for a project (code, on-chain, funding)
     <project-name>      OSO project name (required)
+  scan-chain          Scan an address across 9 EVM chains (Ethereum, Base, OP, Arb, Mantle, Scroll, Linea, zkSync, Monad)
+    <address>           EVM address to scan (required)
   moltbook            Interact with Moltbook (social network for AI agents)
     post <title>        Create a post (-d <content> required)
     reply <post-id>     Reply to a post (-d <content> required)
@@ -166,6 +170,15 @@ func cmdStatus(ctx context.Context) {
 		fmt.Fprintf(w, "  OSO API\t✗ %v\n", err)
 	} else {
 		fmt.Fprintf(w, "  OSO API\t✓ connected\n")
+	}
+
+	// Blockchain
+	bc := data.NewBlockchainClient()
+	reachable, total := bc.CheckConnectivity(ctx)
+	if reachable > 0 {
+		fmt.Fprintf(w, "  Blockchain RPC\t✓ %d/%d chains reachable\n", reachable, total)
+	} else {
+		fmt.Fprintf(w, "  Blockchain RPC\t✗ no chains reachable\n")
 	}
 
 	// AI
@@ -981,7 +994,7 @@ func cmdAnalyzeProject(ctx context.Context) {
 	fmt.Printf("══════ Full Intelligence Report: %s ══════\n\n", address)
 
 	// Step 1: Find which epochs this project appears in
-	fmt.Println("[1/6] Fetching cross-epoch funding history...")
+	fmt.Println("[1/7] Fetching cross-epoch funding history...")
 	ep, err := octant.GetCurrentEpoch(ctx)
 	exitOnErr(err)
 
@@ -1006,7 +1019,7 @@ func cmdAnalyzeProject(ctx context.Context) {
 	}
 
 	// Step 2: Quantitative scoring in that epoch
-	fmt.Printf("\n[2/6] Quantitative analysis (Epoch %d)...\n", epoch)
+	fmt.Printf("\n[2/7] Quantitative analysis (Epoch %d)...\n", epoch)
 	rewards, err := octant.GetProjectRewards(ctx, epoch)
 	exitOnErr(err)
 
@@ -1040,7 +1053,7 @@ func cmdAnalyzeProject(ctx context.Context) {
 	}
 
 	// Step 3: Trust profile
-	fmt.Printf("\n[3/6] Trust graph analysis...\n")
+	fmt.Printf("\n[3/7] Trust graph analysis...\n")
 	allocations, err := octant.GetAllocations(ctx, epoch)
 	exitOnErr(err)
 
@@ -1087,7 +1100,7 @@ func cmdAnalyzeProject(ctx context.Context) {
 	}
 
 	// Step 4: Mechanism impact
-	fmt.Printf("\n[4/6] Mechanism simulation impact...\n")
+	fmt.Printf("\n[4/7] Mechanism simulation impact...\n")
 	inputs := make([]analysis.AllocationInput, len(allocations))
 	for i := range allocations {
 		inputs[i] = analysis.AllocationInput{Donor: allDonors[i], Project: allProjects[i], Amount: allAmounts[i]}
@@ -1123,10 +1136,24 @@ func cmdAnalyzeProject(ctx context.Context) {
 	}
 	w.Flush()
 
-	// Step 5: OSO signals (optional)
+	// Step 5: Multi-chain blockchain scan
+	fmt.Printf("\n[5/7] Scanning address across %d EVM chains...\n", len(data.SupportedChains))
+	bc := data.NewBlockchainClient()
+	chainSignals := bc.ScanAddress(ctx, address)
+	chainContext := ""
+	if chainSignals.TotalChainsActive > 0 {
+		chainContext = chainSignals.FormatSignals()
+		fmt.Printf("  Active on %d/%d chains | Balance: %.6f ETH | Txs: %d | Contracts: %s\n",
+			chainSignals.TotalChainsActive, len(chainSignals.Chains),
+			chainSignals.TotalBalance, chainSignals.TotalTxCount, boolLabel(chainSignals.HasContracts))
+	} else {
+		fmt.Println("  No on-chain activity found on any chain.")
+	}
+
+	// Step 6: OSO signals (optional)
 	osoMetrics := ""
 	if osoName != "" {
-		fmt.Printf("\n[5/6] Collecting OSO signals (%s)...\n", osoName)
+		fmt.Printf("\n[6/7] Collecting OSO signals (%s)...\n", osoName)
 		oso := data.NewOSOClient()
 		signals := oso.CollectProjectSignals(ctx, osoName)
 		osoMetrics = signals.FormatSignals()
@@ -1137,11 +1164,11 @@ func cmdAnalyzeProject(ctx context.Context) {
 			osoMetrics = ""
 		}
 	} else {
-		fmt.Printf("\n[5/6] OSO signals skipped (use -n <oso-name> to enable)\n")
+		fmt.Printf("\n[6/7] OSO signals skipped (use -n <oso-name> to enable)\n")
 	}
 
-	// Step 6: AI synthesis
-	fmt.Printf("\n[6/6] Generating AI deep evaluation...\n")
+	// Step 7: AI synthesis
+	fmt.Printf("\n[7/7] Generating AI deep evaluation...\n")
 
 	var contextData strings.Builder
 	contextData.WriteString(fmt.Sprintf("Project: %s\n", address))
@@ -1156,8 +1183,9 @@ func cmdAnalyzeProject(ctx context.Context) {
 	contextData.WriteString(fmt.Sprintf("Mechanism impact: Standard QF → Capped QF %+.1f%%, Equal Weight %+.1f%%, Trust-Weighted %+.1f%%\n",
 		findProject(capped).Change, findProject(equal).Change, findProject(trustWeighted).Change))
 
-	// Combine with deep eval
-	result, err := analysis.DeepEvaluateProject(ctx, ai, address, history, osoMetrics+"\n\n"+contextData.String())
+	// Combine with deep eval (include blockchain + OSO + context)
+	allContext := osoMetrics + "\n\n" + chainContext + "\n\n" + contextData.String()
+	result, err := analysis.DeepEvaluateProject(ctx, ai, address, history, allContext)
 	exitOnErr(err)
 
 	fmt.Printf("\n── AI Deep Evaluation ──\n\n%s\n\n[via %s/%s]\n\n", result.Evaluation, result.Provider, result.Model)
@@ -1237,6 +1265,10 @@ func cmdAnalyzeProject(ctx context.Context) {
 				},
 			},
 			{
+				Heading: "Multi-Chain Activity",
+				Body:    chainContext,
+			},
+			{
 				Heading: "AI Deep Evaluation",
 				Body:    result.Evaluation,
 			},
@@ -1249,6 +1281,92 @@ func cmdAnalyzeProject(ctx context.Context) {
 	} else {
 		fmt.Printf("PDF report saved to %s\n", pdfPath)
 	}
+}
+
+// --- scan-chain ---
+
+func cmdScanChain(ctx context.Context) {
+	address := flagString("", 0)
+	if address == "" {
+		fmt.Fprintln(os.Stderr, "Usage: tessera scan-chain <address>")
+		fmt.Fprintln(os.Stderr, "  Scans an EVM address across 9 chains: Ethereum, Base, OP, Arbitrum, Mantle, Scroll, Linea, zkSync Era, Monad Testnet")
+		os.Exit(1)
+	}
+
+	bc := data.NewBlockchainClient()
+	fmt.Printf("Scanning %s across %d chains...\n\n", address, len(data.SupportedChains))
+
+	signals := bc.ScanAddress(ctx, address)
+
+	// Print per-chain table
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "  CHAIN\tBALANCE\tTXS\tTYPE\tUSDC\tUSDT\tDAI\tSTATUS")
+	fmt.Fprintln(w, "  -----\t-------\t---\t----\t----\t----\t---\t------")
+
+	for _, ca := range signals.Chains {
+		if ca.Error != "" {
+			fmt.Fprintf(w, "  %s\t-\t-\t-\t-\t-\t-\t✗ err\n", ca.Chain)
+			continue
+		}
+		if ca.Balance == 0 && ca.TxCount == 0 && !ca.IsContract && len(ca.TokenBalances) == 0 {
+			fmt.Fprintf(w, "  %s\t0\t0\t-\t-\t-\t-\tinactive\n", ca.Chain)
+			continue
+		}
+
+		addrType := "EOA"
+		if ca.IsContract {
+			if ca.ContractVerified {
+				addrType = "Contract ✓"
+			} else {
+				addrType = "Contract"
+			}
+		}
+
+		testnet := ""
+		if ca.IsTestnet {
+			testnet = " (testnet)"
+		}
+
+		// Token balances by symbol
+		tokenMap := map[string]float64{}
+		for _, tb := range ca.TokenBalances {
+			tokenMap[tb.Symbol] = tb.Balance
+		}
+		fmtTok := func(sym string) string {
+			if v, ok := tokenMap[sym]; ok && v > 0 {
+				if v >= 1000 {
+					return fmt.Sprintf("$%.0f", v)
+				}
+				return fmt.Sprintf("$%.2f", v)
+			}
+			return "-"
+		}
+
+		fmt.Fprintf(w, "  %s%s\t%.6f %s\t%d\t%s\t%s\t%s\t%s\t✓\n",
+			ca.Chain, testnet, ca.Balance, ca.NativeToken, ca.TxCount, addrType,
+			fmtTok("USDC"), fmtTok("USDT"), fmtTok("DAI"))
+	}
+	w.Flush()
+
+	// Summary
+	fmt.Printf("\n  Summary:\n")
+	fmt.Printf("  Active on %d/%d chains | Multi-chain: %s\n", signals.TotalChainsActive, len(signals.Chains), boolLabel(signals.IsMultichain))
+	fmt.Printf("  Total native: %.6f ETH-equiv | Total txs: %d\n", signals.TotalBalance, signals.TotalTxCount)
+	if len(signals.TotalTokens) > 0 {
+		fmt.Printf("  Stablecoins:")
+		for sym, total := range signals.TotalTokens {
+			fmt.Printf("  %s: $%.2f", sym, total)
+		}
+		fmt.Println()
+	}
+	fmt.Printf("  Has contracts: %s | Has stablecoins: %s | Scan: %dms\n\n", boolLabel(signals.HasContracts), boolLabel(signals.HasStablecoins), signals.ScanDurationMs)
+}
+
+func boolLabel(v bool) string {
+	if v {
+		return "Yes"
+	}
+	return "No"
 }
 
 // --- collect-signals ---
@@ -1302,6 +1420,16 @@ func cmdCollectSignals(ctx context.Context) {
 		}
 	}
 
+	// Try blockchain scan if it looks like an address
+	if strings.HasPrefix(projectName, "0x") && len(projectName) == 42 {
+		bc := data.NewBlockchainClient()
+		fmt.Printf("\nScanning %s across %d EVM chains...\n", projectName, len(data.SupportedChains))
+		chainSig := bc.ScanAddress(ctx, projectName)
+		chainFormatted := chainSig.FormatSignals()
+		fmt.Println(chainFormatted)
+		allSignals += "\n" + chainFormatted
+	}
+
 	if allSignals == "" {
 		fmt.Println("\nNo signals found from any source.")
 		return
@@ -1317,7 +1445,7 @@ func cmdCollectSignals(ctx context.Context) {
 
 Provide:
 1. **Development Health**: Is the project actively maintained? How does contributor activity compare to similar projects?
-2. **On-Chain Traction**: Is there real usage? (if on-chain data available)
+2. **On-Chain Traction**: Is there real usage? What does the multi-chain presence indicate? How active is the address across different chains?
 3. **Funding Efficiency**: How does funding received compare to development output? (if funding data available)
 4. **Legitimacy Signals**: What signals suggest this is a legitimate public good vs. potential gaming?
 5. **Red Flags**: Any concerning patterns in the data?

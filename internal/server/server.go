@@ -117,6 +117,15 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 		services = append(services, serviceStatus{"OSO API", "ok", "connected"})
 	}
 
+	// Blockchain
+	bc := data.NewBlockchainClient()
+	reachable, total := bc.CheckConnectivity(ctx)
+	if reachable > 0 {
+		services = append(services, serviceStatus{"Blockchain RPC", "ok", fmt.Sprintf("%d/%d chains", reachable, total)})
+	} else {
+		services = append(services, serviceStatus{"Blockchain RPC", "error", "no chains reachable"})
+	}
+
 	// AI
 	ai := provider.New()
 	services = append(services, serviceStatus{"AI Providers", "ok", fmt.Sprintf("%d configured", len(ai.Providers()))})
@@ -856,7 +865,8 @@ func (s *sseWriter) sendEvent(v any) {
 // sendStep emits a progress step.
 func (s *sseWriter) sendStep(step, total int, message string, payload any) {
 	evt := map[string]any{
-		"step":    fmt.Sprintf("%d/%d", step, total),
+		"step":    step,
+		"total":   total,
 		"message": message,
 	}
 	if payload != nil {
@@ -933,7 +943,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	octant := data.NewOctantClient()
 	ai := provider.New()
 
-	totalSteps := 8
+	totalSteps := 9
 	// Step 1: Cross-epoch history
 	sse.sendStep(1, totalSteps, "Fetching cross-epoch funding history...", nil)
 	ep, err := octant.GetCurrentEpoch(ctx)
@@ -962,6 +972,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		histOut[i] = histEntry{h.Epoch, h.Allocated, h.Matched, h.Donors}
 	}
 	sse.sendStep(1, totalSteps, fmt.Sprintf("Found in %d epochs", len(history)), map[string]any{"history": histOut})
+
 
 	epoch := epochParam
 	if epoch == 0 {
@@ -1134,29 +1145,50 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	}
 	sse.sendStep(6, totalSteps, fmt.Sprintf("Overall score: %.1f/100", func() float64 { if projectScore != nil { return projectScore.OverallScore }; return 0 }()), scoresData)
 
-	// Step 7: OSO signals
+	// Step 7: Multi-chain blockchain scan
+	sse.sendStep(7, totalSteps, fmt.Sprintf("Scanning address across %d EVM chains...", len(data.SupportedChains)), nil)
+	bc := data.NewBlockchainClient()
+	chainSignals := bc.ScanAddress(ctx, address)
+	chainContext := ""
+	var chainData map[string]any
+	if chainSignals.TotalChainsActive > 0 {
+		chainContext = chainSignals.FormatSignals()
+		chainData = map[string]any{
+			"totalChainsActive": chainSignals.TotalChainsActive,
+			"totalBalance":      chainSignals.TotalBalance,
+			"totalTxCount":      chainSignals.TotalTxCount,
+			"totalTokens":       chainSignals.TotalTokens,
+			"isMultichain":      chainSignals.IsMultichain,
+			"hasContracts":      chainSignals.HasContracts,
+			"hasStablecoins":    chainSignals.HasStablecoins,
+			"chains":            chainSignals.Chains,
+		}
+	}
+	sse.sendStep(7, totalSteps, fmt.Sprintf("Active on %d/%d chains", chainSignals.TotalChainsActive, len(chainSignals.Chains)), chainData)
+
+	// Step 8: OSO signals
 	osoMetrics := ""
 	if osoName != "" {
-		sse.sendStep(7, totalSteps, fmt.Sprintf("Collecting OSO signals (%s)...", osoName), nil)
+		sse.sendStep(8, totalSteps, fmt.Sprintf("Collecting OSO signals (%s)...", osoName), nil)
 		oso := data.NewOSOClient()
 		signals := oso.CollectProjectSignals(ctx, osoName)
 		osoMetrics = signals.FormatSignals()
 		if osoMetrics == "No OSO data available for this project." {
 			osoMetrics = ""
 		}
-		sse.sendStep(7, totalSteps, "OSO signals collected", map[string]any{"osoMetrics": osoMetrics})
+		sse.sendStep(8, totalSteps, "OSO signals collected", map[string]any{"osoMetrics": osoMetrics})
 	} else {
-		sse.sendStep(7, totalSteps, "OSO signals skipped (no oso_name provided)", nil)
+		sse.sendStep(8, totalSteps, "OSO signals skipped (no oso_name provided)", nil)
 	}
 
-	// Step 8: AI deep evaluation (evidence-grounded with ALL collected data)
+	// Step 9: AI deep evaluation (evidence-grounded with ALL collected data)
 	aiEvalText := ""
 	aiModel := "N/A"
 	aiProvider := "N/A"
 	if !ai.HasProviders() {
-		sse.sendStep(8, totalSteps, "AI evaluation skipped (no providers configured)", nil)
+		sse.sendStep(9, totalSteps, "AI evaluation skipped (no providers configured)", nil)
 	} else {
-		sse.sendStep(8, totalSteps, "Generating AI deep evaluation...", nil)
+		sse.sendStep(9, totalSteps, "Generating AI deep evaluation...", nil)
 
 		var contextData strings.Builder
 		contextData.WriteString(fmt.Sprintf("Project: %s\n", address))
@@ -1186,14 +1218,14 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 				projectScore.FundingScore, projectScore.EfficiencyScore, projectScore.DiversityScore, projectScore.ConsistencyScore, projectScore.OverallScore))
 		}
 
-		evalResult, err := analysis.DeepEvaluateProject(ctx, ai, address, history, osoMetrics+"\n\n"+contextData.String())
+		evalResult, err := analysis.DeepEvaluateProject(ctx, ai, address, history, osoMetrics+"\n\n"+chainContext+"\n\n"+contextData.String())
 		if err != nil {
-			sse.sendStep(8, totalSteps, fmt.Sprintf("AI evaluation failed: %v", err), nil)
+			sse.sendStep(9, totalSteps, fmt.Sprintf("AI evaluation failed: %v", err), nil)
 		} else {
 			aiEvalText = evalResult.Evaluation
 			aiModel = evalResult.Model
 			aiProvider = evalResult.Provider
-			sse.sendStep(8, totalSteps, "AI deep evaluation complete", map[string]any{
+			sse.sendStep(9, totalSteps, "AI deep evaluation complete", map[string]any{
 				"evaluation": aiEvalText,
 				"model":      aiModel,
 				"provider":   aiProvider,
@@ -1240,6 +1272,9 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		if anomalyText != "" {
 			sections = append(sections, report.PDFSection{Heading: "Temporal Anomalies", Body: anomalyText})
 		}
+		if chainContext != "" {
+			sections = append(sections, report.PDFSection{Heading: "Multi-Chain Blockchain Activity", Body: chainContext})
+		}
 		if aiEvalText != "" {
 			sections = append(sections, report.PDFSection{Heading: "AI Deep Evaluation", Body: aiEvalText})
 		}
@@ -1283,6 +1318,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		"mechanismImpacts": mechImpacts,
 		"anomalies":        anomalyList,
 		"scores":           scoresData,
+		"blockchain":       chainData,
 		"reportPath":       reportPath,
 	}
 	sse.sendDone(finalResult)
@@ -1626,6 +1662,17 @@ func handleReportEpochStream(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleTrackProject returns cross-epoch timeline, temporal anomalies, and multi-layer scores.
+func handleScanChain(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Query().Get("address")
+	if address == "" {
+		jsonError(w, "address query parameter is required", http.StatusBadRequest)
+		return
+	}
+	bc := data.NewBlockchainClient()
+	signals := bc.ScanAddress(r.Context(), address)
+	jsonOK(w, signals)
+}
+
 func handleTrackProject(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Query().Get("address")
 	if address == "" {
@@ -1779,6 +1826,7 @@ func loadRoutes() {
 	handle("/api/simulate", handleSimulate)
 	handle("/api/evaluate", handleEvaluate)
 	handle("/api/track-project", handleTrackProject)
+	handle("/api/scan-chain", handleScanChain)
 	handle("/api/analyze-project", handleAnalyzeProject)
 	handle("/api/reports", func(w http.ResponseWriter, r *http.Request) {
 		// Route to list vs serve based on path

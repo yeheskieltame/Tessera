@@ -5,6 +5,19 @@ export const metadata: Metadata = {
   title: "Tessera — AI-Powered Public Goods Evaluation",
   description:
     "AI agent for public goods data analysis, trust graph evaluation, and mechanism simulation in the Ethereum ecosystem.",
+  icons: {
+    icon: [
+      { url: "/tessera-favicon.svg", type: "image/svg+xml" },
+      { url: "/tessera-favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/tessera-icon-256.png",
+  },
+  openGraph: {
+    title: "Tessera — AI-Powered Public Goods Evaluation",
+    description:
+      "AI agent for public goods data analysis, trust graph evaluation, and mechanism simulation in the Ethereum ecosystem.",
+    images: ["/tessera-icon-512.png"],
+  },
 };
 
 export default function RootLayout({
