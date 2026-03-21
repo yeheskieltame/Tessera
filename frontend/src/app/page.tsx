@@ -485,7 +485,7 @@ export default function LandingPage() {
     <div className="relative bg-[#0a0e1a]">
 
       {/* ─── Navbar ─── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#0a0e1a]/90 backdrop-blur-xl border-b border-white/5" : "bg-transparent"}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#0a0e1a]/40 backdrop-blur-xl border-b border-white/5" : "bg-transparent"}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5">
             <img src="/tessera-icon-64.png" alt="" className="w-7 h-7" />
@@ -574,8 +574,8 @@ export default function LandingPage() {
       <section id="problem" className="relative py-28 px-6 overflow-hidden">
         {/* Background: dashboard-bg with heavy overlay */}
         <div className="absolute inset-0">
-          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-[0.07]" />
-          <div className="absolute inset-0 bg-[#0a0e1a]/90" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-30" />
+          <div className="absolute inset-0 bg-[#0a0e1a]/40" />
         </div>
 
         <div className="max-w-6xl mx-auto relative">
@@ -1249,8 +1249,8 @@ export default function LandingPage() {
       <section id="findings" className="relative py-28 px-6 overflow-hidden">
         {/* Background: dashboard-bg with heavy overlay */}
         <div className="absolute inset-0">
-          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-[0.05]" style={{ objectPosition: "center 40%" }} />
-          <div className="absolute inset-0 bg-[#0a0e1a]/92" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-30" style={{ objectPosition: "center 40%" }} />
+          <div className="absolute inset-0 bg-[#0a0e1a]/40" />
         </div>
 
         <div className="max-w-6xl mx-auto relative">
@@ -1351,8 +1351,8 @@ export default function LandingPage() {
       {/* ─── Team ─── */}
       <section className="relative py-28 px-6 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-[0.06]" style={{ objectPosition: "center 60%" }} />
-          <div className="absolute inset-0 bg-[#0a0e1a]/90" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-30" style={{ objectPosition: "center 60%" }} />
+          <div className="absolute inset-0 bg-[#0a0e1a]/40" />
         </div>
         <div className="max-w-4xl mx-auto">
           <SectionHeading
