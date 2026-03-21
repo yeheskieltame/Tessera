@@ -182,6 +182,283 @@ function SectionHeading({ title, subtitle, light = false }: { title: string; sub
 }
 
 /* ═══════════════════════════════════════════════════════════
+   ACCORDION ITEM
+   ═══════════════════════════════════════════════════════════ */
+
+function AccordionItem({ title, tag, children, defaultOpen = false }: { title: string; tag?: string; children: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className={`rounded-xl border transition-all duration-300 ${open ? "bg-white/[0.03] border-white/10" : "bg-white/[0.01] border-white/5 hover:border-white/10"}`}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left"
+      >
+        <svg
+          className={`w-4 h-4 text-white/30 flex-shrink-0 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-sm font-semibold text-white flex-1">{title}</span>
+        {tag && <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/30 font-mono flex-shrink-0">{tag}</span>}
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-400"
+        style={{ maxHeight: open ? "2000px" : "0", opacity: open ? 1 : 0 }}
+      >
+        <div className="px-5 pb-5 pt-0">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETUP ACCORDION
+   ═══════════════════════════════════════════════════════════ */
+
+function SetupAccordion() {
+  return (
+    <div className="space-y-3">
+
+      {/* Installation */}
+      <Reveal delay={50}>
+        <AccordionItem title="Installation" tag="Step 1" defaultOpen={true}>
+          <p className="text-xs text-white/40 mb-4">Clone the repository and build the Go binary. Requires Go 1.25+ and Node.js 20+.</p>
+          <CodeBlock code={`git clone https://github.com/yeheskieltame/Tessera.git
+cd Tessera
+go build -o tessera ./cmd/analyst/`} label="Terminal" />
+          <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+            <p className="text-[11px] text-white/30">The binary is ~9MB with zero runtime dependencies. Works on macOS, Linux, and Windows.</p>
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      {/* AI Provider Setup */}
+      <Reveal delay={100}>
+        <AccordionItem title="Configure AI Provider" tag="Step 2">
+          <p className="text-xs text-white/40 mb-4">Choose one of the following. Claude CLI is auto-detected if installed.</p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-[11px] text-white/25 uppercase tracking-wider mb-2">Option A: Claude Max Plan (recommended, no API key)</p>
+              <CodeBlock code={`npm i -g @anthropic-ai/claude-code
+claude login`} />
+            </div>
+            <div>
+              <p className="text-[11px] text-white/25 uppercase tracking-wider mb-2">Option B: Gemini API Key</p>
+              <CodeBlock code={`echo 'GEMINI_API_KEY=your-key-here' > .env`} />
+            </div>
+            <div>
+              <p className="text-[11px] text-white/25 uppercase tracking-wider mb-2">Option C: Any other provider</p>
+              <CodeBlock code={`# Set one or more in .env
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AI...`} />
+            </div>
+          </div>
+          <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+            <p className="text-[11px] text-white/30">Fallback order: Claude CLI &rarr; Claude API &rarr; Gemini &rarr; OpenAI. If one fails, the next is tried automatically. Quantitative commands (analyze-epoch, trust-graph, simulate, scan-chain) work without any AI provider.</p>
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      {/* Build Frontend */}
+      <Reveal delay={150}>
+        <AccordionItem title="Build Frontend (optional)" tag="Step 3">
+          <p className="text-xs text-white/40 mb-4">Only needed if you want the web dashboard. CLI works without it.</p>
+          <CodeBlock code={`cd frontend && npm install && npm run build && cd ..`} label="Terminal" />
+          <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+            <p className="text-[11px] text-white/30">Next.js 19 static export. The Go server serves the dashboard from ./frontend/dist/ automatically.</p>
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      {/* Launch */}
+      <Reveal delay={200}>
+        <AccordionItem title="Launch Server + Dashboard" tag="Step 4">
+          <p className="text-xs text-white/40 mb-4">Start the HTTP API and web dashboard with a single command.</p>
+          <CodeBlock code={`./tessera serve
+# Server starts on http://localhost:3001
+# Dashboard: http://localhost:3001
+# API: http://localhost:3001/api/status`} label="Terminal" />
+        </AccordionItem>
+      </Reveal>
+
+      {/* Divider */}
+      <Reveal delay={250}>
+        <div className="flex items-center gap-3 py-4">
+          <div className="h-px flex-1 bg-white/5" />
+          <span className="text-xs text-white/20 font-medium">CLI Commands Reference</span>
+          <div className="h-px flex-1 bg-white/5" />
+        </div>
+      </Reveal>
+
+      {/* Primary Commands */}
+      <Reveal delay={300}>
+        <AccordionItem title="Full Project Intelligence (9-step pipeline)" tag="Primary">
+          <p className="text-xs text-white/40 mb-4">The main command. Runs all 9 analysis steps against an Octant project address and generates a branded PDF report.</p>
+          <CodeBlock code={`./tessera analyze-project 0x9531C059098e3d194fF87FebB587aB07B30B1306 -e 5
+
+# Optional flags:
+#   -e <epoch>     Specify epoch (default: latest)
+#   -n <oso-name>  OSO project name for code metrics`} label="Usage" />
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {["Funding history", "K-means clustering", "Trust graph", "4 QF simulations", "Temporal anomalies", "Multi-layer scores", "9-chain blockchain scan", "Code signals", "AI deep evaluation"].map((s, i) => (
+              <div key={s} className="px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 text-[10px] text-white/30">
+                <span className="text-white/15 font-mono mr-1">{i + 1}.</span> {s}
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+            <p className="text-[11px] text-white/30">Output: PDF report saved to reports/ directory. Also available via dashboard with real-time SSE streaming.</p>
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      <Reveal delay={350}>
+        <AccordionItem title="AI Project Evaluation (8 dimensions)" tag="Primary">
+          <p className="text-xs text-white/40 mb-4">Evaluate any public goods project across 8 dimensions using AI. Optionally enrich with GitHub data.</p>
+          <CodeBlock code={`./tessera evaluate "Gitcoin Passport" \\
+  -d "Decentralized identity verification for sybil resistance" \\
+  -g "https://github.com/gitcoinco/passport"
+
+# Flags:
+#   -d <description>  Project description (required)
+#   -g <github-url>   GitHub repo for enrichment (optional)
+#   -c <context>      Additional context (optional)`} label="Usage" />
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {["Impact Evidence", "Team Credibility", "Innovation", "Sustainability", "Ecosystem Fit", "Transparency", "Community", "Risk Assessment"].map((d) => (
+              <div key={d} className="px-3 py-2 rounded-lg bg-white/[0.02] border border-white/5 text-[10px] text-white/30 text-center">{d}</div>
+            ))}
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      {/* Quantitative Commands */}
+      <Reveal delay={400}>
+        <AccordionItem title="Epoch Analysis (no AI needed)" tag="Quantitative">
+          <p className="text-xs text-white/40 mb-4">Analyze an entire Octant epoch. All commands are deterministic and reproducible.</p>
+          <div className="space-y-3">
+            <CodeBlock code={`# List all projects in an epoch
+./tessera list-projects -e 5
+
+# K-means clustering + composite scoring
+./tessera analyze-epoch -e 5
+
+# Whale concentration + coordinated donation detection
+./tessera detect-anomalies -e 5
+
+# Donor diversity, Jaccard similarity, coordination risk
+./tessera trust-graph -e 5
+
+# Compare 4 QF mechanisms side-by-side
+./tessera simulate -e 5
+
+# Full epoch intelligence report (4-step)
+./tessera report-epoch -e 5`} label="Epoch Commands" />
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      <Reveal delay={450}>
+        <AccordionItem title="Project Tracking + Blockchain Scan" tag="Quantitative">
+          <p className="text-xs text-white/40 mb-4">Track a single project across epochs or scan any address across 9 EVM blockchains.</p>
+          <div className="space-y-3">
+            <CodeBlock code={`# Cross-epoch timeline + temporal anomalies + multi-layer scores
+./tessera track-project 0x9531C059098e3d194fF87FebB587aB07B30B1306
+
+# Scan address across 9 EVM chains (ETH, Base, OP, Arb, Mantle, Scroll, Linea, zkSync, Monad)
+# Returns: balance, tx count, contract status, USDC/USDT/DAI balances
+./tessera scan-chain 0x9531C059098e3d194fF87FebB587aB07B30B1306
+
+# Gitcoin Grants round analysis
+./tessera gitcoin-rounds -r 23 --chain 42161`} label="Project Commands" />
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      <Reveal delay={500}>
+        <AccordionItem title="AI-Powered Analysis Commands" tag="AI Required">
+          <p className="text-xs text-white/40 mb-4">Commands that use the AI provider chain for qualitative analysis.</p>
+          <div className="space-y-3">
+            <CodeBlock code={`# Multi-epoch deep evaluation with trajectory analysis
+./tessera deep-eval 0x9531C059098e3d194fF87FebB587aB07B30B1306 -n "octant"
+
+# Proposal verification: checks claims against evidence
+./tessera scan-proposal "Project X" -d "We have 10,000 daily active users..."
+
+# Extract structured impact metrics from free text
+./tessera extract-metrics "Our protocol processed $2M in Q4, onboarded 500 users..."
+
+# Collect cross-source signals (OSO + GitHub + blockchain)
+./tessera collect-signals "gitcoin-passport"`} label="AI Commands" />
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      <Reveal delay={550}>
+        <AccordionItem title="Status, Providers + Social" tag="Utility">
+          <p className="text-xs text-white/40 mb-4">Check connectivity, manage AI providers, and interact on Moltbook.</p>
+          <div className="space-y-3">
+            <CodeBlock code={`# Check all data sources, blockchain RPCs, and AI provider status
+./tessera status
+
+# Show configured AI providers and fallback order
+./tessera providers
+
+# Moltbook social commands
+./tessera moltbook status           # Agent profile, karma, followers
+./tessera moltbook post             # Publish a post
+./tessera moltbook reply            # Reply to a post
+./tessera moltbook follow           # Follow an agent
+
+# Auto-reply to notifications
+./tessera heartbeat --loop`} label="Utility Commands" />
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+      {/* Environment Variables */}
+      <Reveal delay={600}>
+        <AccordionItem title="Environment Variables" tag="Reference">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left py-2 pr-4 text-white/30 font-medium">Variable</th>
+                  <th className="text-left py-2 pr-4 text-white/30 font-medium">Required</th>
+                  <th className="text-left py-2 text-white/30 font-medium">Purpose</th>
+                </tr>
+              </thead>
+              <tbody className="text-white/25">
+                {[
+                  ["ANTHROPIC_API_KEY", "1 of 3", "Claude API access"],
+                  ["GEMINI_API_KEY", "1 of 3", "Google Gemini access"],
+                  ["OPENAI_API_KEY", "1 of 3", "OpenAI access"],
+                  ["OSO_API_KEY", "No", "Open Source Observer API"],
+                  ["MOLTBOOK_API_KEY", "No", "Moltbook social network"],
+                  ["PORT", "No", "Server port (default: 3001)"],
+                  ["CLAUDE_CLI_DISABLED", "No", "Skip Claude CLI auto-detection"],
+                ].map(([v, req, purpose]) => (
+                  <tr key={v} className="border-b border-white/[0.03]">
+                    <td className="py-2 pr-4 font-mono text-white/40">{v}</td>
+                    <td className="py-2 pr-4">{req}</td>
+                    <td className="py-2">{purpose}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+            <p className="text-[11px] text-white/30">At least one AI provider key is needed for AI commands. Quantitative commands and blockchain scanning work without any key. Claude CLI is auto-detected if the claude binary exists in PATH.</p>
+          </div>
+        </AccordionItem>
+      </Reveal>
+
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    PAGE
    ═══════════════════════════════════════════════════════════ */
 
@@ -863,7 +1140,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <SectionHeading
             title="Get Started"
-            subtitle="From zero to a running dashboard. Or try the live demo instantly."
+            subtitle="From zero to a running dashboard, or try the live demo instantly. Click each section below to expand."
           />
 
           <Reveal>
@@ -881,21 +1158,7 @@ export default function LandingPage() {
             </div>
           </Reveal>
 
-          <div className="space-y-4">
-            {SETUP_STEPS.map((s, i) => (
-              <Reveal key={s.num} delay={i * 100}>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full border border-white/15 flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">{s.num}</span>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-bold text-white mb-2">{s.title}</h3>
-                    <CodeBlock code={s.code} />
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <SetupAccordion />
         </div>
       </section>
 
