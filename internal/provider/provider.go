@@ -27,7 +27,7 @@ var providerOrder = []string{"claude-cli", "claude-api", "gemini", "openai"}
 var modelCatalog = map[string][]string{
 	"claude-cli":  {"claude-opus-4-6", "claude-sonnet-4-6"},
 	"claude-api":  {"claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"},
-	"gemini":      {"gemini-2.5-pro", "gemini-2.5-flash", "gemini-3.1-pro-preview", "gemini-3-flash-preview", "gemini-2.5-flash-lite"},
+	"gemini":      {"gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-3-flash-preview", "gemini-3.1-pro-preview"},
 	"openai":      {"gpt-4o", "gpt-4o-mini", "o3-mini"},
 }
 
