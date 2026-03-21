@@ -337,15 +337,15 @@ export default function DashboardPage() {
 
       {/* ─── Top Bar ─── */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-slate-200/80 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/" className="flex items-center gap-2">
               <img src="/tessera-icon-64.png" alt="Tessera" className="w-7 h-7" />
               <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-violet-600 bg-clip-text text-transparent tracking-tight">Tessera</span>
             </a>
-            <span className="text-xs font-medium text-slate-800 border-l border-slate-300 pl-3">Dashboard</span>
+            <span className="text-xs font-medium text-slate-800 border-l border-slate-300 pl-3 hidden sm:inline">Dashboard</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             {loading ? (
               <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
             ) : (
@@ -355,7 +355,7 @@ export default function DashboardPage() {
                   { svc: blockchain, label: "Chains" },
                   { svc: ai, label: "AI" },
                 ].map(({ svc, label }) => (
-                  <div key={label} className="flex items-center gap-1.5">
+                  <div key={label} className="flex items-center gap-1.5 hidden sm:flex">
                     <span className={`w-2 h-2 rounded-full ${svc?.status === "ok" ? "bg-green-400" : "bg-red-400"}`} />
                     <span className="text-xs font-medium text-slate-700">{label}</span>
                     {svc?.detail && <span className="text-xs text-slate-800 hidden sm:inline">({svc.detail})</span>}
@@ -364,7 +364,7 @@ export default function DashboardPage() {
                 <span className="text-xs font-mono text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
               </>
             )}
-            <a href="/" className="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-100 transition">
+            <a href="/" className="ml-1 sm:ml-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-100 transition">
               Home
             </a>
           </div>
@@ -372,7 +372,7 @@ export default function DashboardPage() {
       </header>
 
       {/* ─── Main Content ─── */}
-      <main className="max-w-7xl mx-auto px-6 pt-8 pb-20">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-8 pb-20">
 
         {/* AI Model Selector */}
         {providersData && (() => {
@@ -387,11 +387,11 @@ export default function DashboardPage() {
             groups[groups.length - 1].items.push(p);
           }
           return (
-            <div className="mb-6 flex items-center gap-3 flex-wrap">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">AI Model</label>
               <div className="relative">
                 <select value={activeKey} onChange={(e) => handleSelectProvider(e.target.value)} disabled={providerSwitching}
-                  className="appearance-none rounded-xl border border-slate-200/80 bg-white/80 backdrop-blur-xl pl-3 pr-8 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 cursor-pointer min-w-[300px]">
+                  className="appearance-none rounded-xl border border-slate-200/80 bg-white/80 backdrop-blur-xl pl-3 pr-8 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 cursor-pointer min-w-0 w-full sm:min-w-[300px]">
                   {groups.map((g) => (
                     <optgroup key={g.name} label={`${g.items[0].ready ? "\u2713" : "\u2717"} ${g.label}`}>
                       {g.items.map((p) => (
@@ -410,8 +410,8 @@ export default function DashboardPage() {
         })()}
 
         {/* ═══════ EPOCH TOOLS BAR ═══════ */}
-        <div className="mb-6 bg-white/70 backdrop-blur-2xl rounded-2xl border border-slate-200/60 shadow-sm p-4">
-          <div className="flex items-center gap-4 flex-wrap">
+        <div className="mb-6 bg-white/70 backdrop-blur-2xl rounded-2xl border border-slate-200/60 shadow-sm p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Epoch</label>
               <input type="number" value={selectedEpoch} onChange={(e) => setSelectedEpoch(Number(e.target.value))}
@@ -581,7 +581,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* ───── CARD 1: Full Project Intelligence ───── */}
-          <div className="bg-gradient-to-br from-white/90 via-blue-50/70 to-indigo-100/50 backdrop-blur-2xl rounded-3xl border border-blue-100/60 shadow-lg shadow-blue-500/5 p-6">
+          <div className="bg-gradient-to-br from-white/90 via-blue-50/70 to-indigo-100/50 backdrop-blur-2xl rounded-3xl border border-blue-100/60 shadow-lg shadow-blue-500/5 p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-1">
               <img src="/tessera-icon-64.png" alt="" className="w-6 h-6" />
               <h3 className="text-base font-bold text-slate-800">Full Project Intelligence</h3>
@@ -642,7 +642,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ───── CARD 2: AI Project Evaluation ───── */}
-          <div className="bg-gradient-to-br from-white/90 via-violet-50/70 to-purple-100/50 backdrop-blur-2xl rounded-3xl border border-violet-100/60 shadow-lg shadow-violet-500/5 p-6">
+          <div className="bg-gradient-to-br from-white/90 via-violet-50/70 to-purple-100/50 backdrop-blur-2xl rounded-3xl border border-violet-100/60 shadow-lg shadow-violet-500/5 p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-1">
               <img src="/tessera-icon-64.png" alt="" className="w-6 h-6" />
               <h3 className="text-base font-bold text-slate-800">AI Project Evaluation</h3>
@@ -708,7 +708,7 @@ export default function DashboardPage() {
 
         {/* ═══════ RESULTS (Full-Width, after pipeline completes) ═══════ */}
         {projectResult && (
-          <div className="mt-6 bg-white/80 backdrop-blur-2xl rounded-3xl border border-slate-200/60 shadow-lg p-6">
+          <div className="mt-6 bg-white/80 backdrop-blur-2xl rounded-3xl border border-slate-200/60 shadow-lg p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>

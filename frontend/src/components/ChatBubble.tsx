@@ -107,7 +107,7 @@ export default function ChatBubble() {
     <>
       {/* Chat Panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[460px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-8rem)] rounded-2xl border border-white/10 bg-[#0b0f1a]/95 backdrop-blur-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden animate-[chatOpen_0.3s_ease-out]">
+        <div className="fixed bottom-24 right-3 sm:right-6 z-50 w-[calc(100vw-1.5rem)] sm:w-[460px] max-w-[460px] h-[70vh] sm:h-[600px] max-h-[calc(100vh-8rem)] rounded-2xl border border-white/10 bg-[#0b0f1a]/95 backdrop-blur-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden animate-[chatOpen_0.3s_ease-out]">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
             <div className="flex items-center gap-3">
@@ -244,7 +244,7 @@ export default function ChatBubble() {
       {/* Floating Bubble */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 group"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group"
       >
         <div className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${
           open
