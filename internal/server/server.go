@@ -1814,13 +1814,171 @@ func handleTrackProject(w http.ResponseWriter, r *http.Request) {
 
 // --- Chat Agent ---
 
-const chatSystemPrompt = `You are Tessera, an AI agent for Ethereum public goods evaluation. 20 CLI commands, 9-step pipeline, 7 data sources, 9 EVM chains.
+const chatSystemPrompt = `You are Tessera, an AI agent for Ethereum public goods evaluation. Answer based on the data provided below. Be concise and technical. For format:json, respond in JSON.`
 
-Commands: analyze-project <addr>, evaluate "Name" -d "Desc", analyze-epoch -e N, detect-anomalies -e N, trust-graph -e N, simulate -e N, track-project <addr>, scan-chain <addr>, status, providers.
+// chatDetectIntent uses keyword matching to detect if user wants to run a command.
+func chatDetectIntent(msg string) (cmd string, epoch int, addr string) {
+	lower := strings.ToLower(msg)
+	epoch = 5
+	for e := 1; e <= 10; e++ {
+		if strings.Contains(lower, fmt.Sprintf("epoch %d", e)) || strings.Contains(lower, fmt.Sprintf("epoch%d", e)) {
+			epoch = e
+			break
+		}
+	}
+	for _, word := range strings.Fields(msg) {
+		if strings.HasPrefix(word, "0x") && len(word) >= 10 {
+			addr = word
+			break
+		}
+	}
+	switch {
+	case strings.Contains(lower, "analyze epoch") || strings.Contains(lower, "epoch analysis") || strings.Contains(lower, "ranking") || strings.Contains(lower, "top project") || strings.Contains(lower, "highest") || strings.Contains(lower, "list project"):
+		cmd = "analyze-epoch"
+	case strings.Contains(lower, "anomal") || strings.Contains(lower, "whale") || strings.Contains(lower, "detect"):
+		cmd = "detect-anomalies"
+	case strings.Contains(lower, "trust") || strings.Contains(lower, "donor") || strings.Contains(lower, "entropy") || strings.Contains(lower, "jaccard") || strings.Contains(lower, "diversity"):
+		cmd = "trust-graph"
+	case strings.Contains(lower, "simulat") || strings.Contains(lower, "mechanism") || strings.Contains(lower, "quadratic") || strings.Contains(lower, "qf"):
+		cmd = "simulate"
+	case (strings.Contains(lower, "scan") && strings.Contains(lower, "chain")) || strings.Contains(lower, "blockchain") || strings.Contains(lower, "balance"):
+		if addr != "" {
+			cmd = "scan-chain"
+		}
+	case strings.Contains(lower, "track") && addr != "":
+		cmd = "track-project"
+	}
+	return
+}
 
-Key data: 97.9% whale concentration, rank #1 drops 89.5 to 36.6 under multi-layer scoring, 41 donor clusters, Trust-Weighted QF redistributes 3105%.
-
-Be concise. For format:json requests, respond in JSON.`
+func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (string, error) {
+	octant := data.NewOctantClient()
+	switch cmd {
+	case "analyze-epoch":
+		rewards, err := octant.GetProjectRewards(ctx, epoch)
+		if err != nil {
+			return "", err
+		}
+		metrics := make([]analysis.ProjectMetrics, len(rewards))
+		for i, r := range rewards {
+			alloc := analysis.WeiToEth(r.Allocated)
+			matched := analysis.WeiToEth(r.Matched)
+			metrics[i] = analysis.ProjectMetrics{Address: r.Address, Allocated: alloc, Matched: matched, TotalFunding: alloc + matched}
+		}
+		metrics = analysis.ComputeCompositeScores(metrics)
+		sort.Slice(metrics, func(i, j int) bool { return metrics[i].CompositeScore > metrics[j].CompositeScore })
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Epoch %d Analysis (%d projects):\n", epoch, len(metrics)))
+		sb.WriteString("Rank | Address | Allocated ETH | Matched ETH | Score\n")
+		for i, m := range metrics {
+			sb.WriteString(fmt.Sprintf("%d | %s | %.4f | %.4f | %.1f\n", i+1, m.Address, m.Allocated, m.Matched, m.CompositeScore))
+			if i >= 14 {
+				sb.WriteString(fmt.Sprintf("... and %d more\n", len(metrics)-15))
+				break
+			}
+		}
+		return sb.String(), nil
+	case "detect-anomalies":
+		allocs, err := octant.GetAllocations(ctx, epoch)
+		if err != nil {
+			return "", err
+		}
+		donors := make([]string, len(allocs))
+		amounts := make([]float64, len(allocs))
+		for i, a := range allocs {
+			donors[i] = a.Donor
+			amounts[i] = analysis.WeiToEth(a.Amount)
+		}
+		report := analysis.DetectAnomalies(donors, amounts)
+		return fmt.Sprintf("Anomaly Report Epoch %d:\nDonations: %d, Unique donors: %d\nTotal: %.4f ETH, Whale concentration: %.1f%%\nMean: %.6f, Median: %.6f, Max: %.4f\nFlags: %v",
+			epoch, report.TotalDonations, report.UniqueDonors, report.TotalAmount,
+			report.WhaleConcentration*100, report.MeanDonation, report.MedianDonation, report.MaxDonation, report.Flags), nil
+	case "trust-graph":
+		allocs, err := octant.GetAllocations(ctx, epoch)
+		if err != nil {
+			return "", err
+		}
+		projects := make([]string, len(allocs))
+		tgDonors := make([]string, len(allocs))
+		tgAmounts := make([]float64, len(allocs))
+		for i, a := range allocs {
+			projects[i] = a.Project
+			tgDonors[i] = a.Donor
+			tgAmounts[i] = weiToEth(a.Amount)
+		}
+		profiles := analysis.BuildTrustProfiles(projects, tgAmounts, tgDonors, nil)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Trust Graph Epoch %d (%d projects):\n", epoch, len(profiles)))
+		sb.WriteString("Address | Donors | Diversity | WhaleDep | CoordRisk | Flags\n")
+		for _, p := range profiles {
+			sb.WriteString(fmt.Sprintf("%s | %d | %.3f | %.3f | %.3f | %v\n",
+				p.Address, p.UniqueDonors, p.DonorDiversity, p.WhaleDepRatio, p.CoordinationRisk, p.Flags))
+		}
+		return sb.String(), nil
+	case "simulate":
+		allocs, err := octant.GetAllocations(ctx, epoch)
+		if err != nil {
+			return "", err
+		}
+		simProjects := make([]string, len(allocs))
+		simDonors := make([]string, len(allocs))
+		simAmounts := make([]float64, len(allocs))
+		simInputs := make([]analysis.AllocationInput, len(allocs))
+		for i, a := range allocs {
+			eth := weiToEth(a.Amount)
+			simProjects[i] = a.Project
+			simDonors[i] = a.Donor
+			simAmounts[i] = eth
+			simInputs[i] = analysis.AllocationInput{Donor: a.Donor, Project: a.Project, Amount: eth}
+		}
+		trustProfiles := analysis.BuildTrustProfiles(simProjects, simAmounts, simDonors, nil)
+		trustScores := map[string]float64{}
+		for _, tp := range trustProfiles {
+			trustScores[tp.Address] = tp.DonorDiversity
+		}
+		original := analysis.SimulateStandardQF(simInputs)
+		capped := analysis.SimulateCappedQF(simInputs, 0.10)
+		equal := analysis.SimulateEqualWeight(simInputs)
+		trustWeighted := analysis.SimulateTrustWeightedQF(simInputs, trustScores)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Mechanism Simulation Epoch %d:\n", epoch))
+		for _, m := range []analysis.MechanismResult{original, capped, equal, trustWeighted} {
+			sb.WriteString(fmt.Sprintf("%s: Gini=%.3f, TopShare=%.1f%%, AboveThreshold=%d\n",
+				m.Name, m.GiniCoeff, m.TopShare*100, m.AboveThreshold))
+		}
+		return sb.String(), nil
+	case "scan-chain":
+		if addr == "" {
+			return "", fmt.Errorf("address required")
+		}
+		bc := data.NewBlockchainClient()
+		signals := bc.ScanAddress(ctx, addr)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Blockchain Scan %s:\nActive chains: %d, Balance: %.6f, Txs: %d, Multichain: %v\n",
+			signals.Address, signals.TotalChainsActive, signals.TotalBalance, signals.TotalTxCount, signals.IsMultichain))
+		for _, c := range signals.Chains {
+			if c.Error == "" && (c.Balance > 0 || c.TxCount > 0) {
+				sb.WriteString(fmt.Sprintf("%s: %.6f %s, %d txs\n", c.Chain, c.Balance, c.NativeToken, c.TxCount))
+			}
+		}
+		return sb.String(), nil
+	case "track-project":
+		if addr == "" {
+			return "", fmt.Errorf("address required")
+		}
+		history, err := octant.GetProjectHistory(ctx, addr, 1, 10)
+		if err != nil {
+			return "", err
+		}
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Project %s history:\n", addr))
+		for _, h := range history {
+			sb.WriteString(fmt.Sprintf("E%d: %.4f alloc, %.4f matched, %d donors\n", h.Epoch, h.Allocated, h.Matched, h.Donors))
+		}
+		return sb.String(), nil
+	}
+	return "", nil
+}
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -1835,32 +1993,53 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "message required", http.StatusBadRequest)
 		return
 	}
+	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
+	defer cancel()
+
+	cmd, epoch, addr := chatDetectIntent(body.Message)
+	var dataContext string
+	if cmd != "" {
+		fetched, err := chatFetchData(ctx, cmd, epoch, addr)
+		if err != nil {
+			dataContext = fmt.Sprintf("Error: %s", err.Error())
+		} else {
+			dataContext = fetched
+		}
+	}
 
 	ai := provider.New()
 	if !ai.HasProviders() {
+		if dataContext != "" {
+			jsonOK(w, map[string]any{"reply": dataContext, "model": "none", "provider": "direct-data"})
+			return
+		}
 		jsonError(w, "no AI provider configured", http.StatusServiceUnavailable)
 		return
 	}
 
 	prompt := body.Message
-	if body.Format == "json" {
-		prompt += "\n\nRespond in JSON format."
+	if dataContext != "" {
+		prompt = fmt.Sprintf("User: %s\n\nReal data from Tessera:\n%s\n\nAnswer based on this data. Be specific with numbers.", body.Message, dataContext)
 	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
-	defer cancel()
+	if body.Format == "json" {
+		prompt += "\n\nRespond in JSON."
+	}
 
 	resp, err := ai.CompleteChat(ctx, prompt, chatSystemPrompt)
 	if err != nil {
-		jsonError(w, "AI provider error: "+err.Error(), http.StatusInternalServerError)
+		if dataContext != "" {
+			jsonOK(w, map[string]any{"reply": dataContext, "model": "none", "provider": "direct-data"})
+			return
+		}
+		jsonError(w, "AI error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonOK(w, map[string]any{
-		"reply":    resp.Text,
-		"model":    resp.Model,
-		"provider": resp.Provider,
-	})
+	result := map[string]any{"reply": resp.Text, "model": resp.Model, "provider": resp.Provider}
+	if cmd != "" {
+		result["command"] = cmd
+	}
+	jsonOK(w, result)
 }
 
 func handleChatStream(w http.ResponseWriter, r *http.Request) {
@@ -1875,35 +2054,55 @@ func handleChatStream(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "message required", http.StatusBadRequest)
 		return
 	}
-
 	sse := newSSEWriter(w)
 	if sse == nil {
 		return
 	}
-
-	sse.sendStep(1, 2, "Thinking...", nil)
-
-	ai := provider.New()
-	if !ai.HasProviders() {
-		sse.sendError("no AI provider configured")
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
 	defer cancel()
 
-	resp, err := ai.Complete(ctx, body.Message, chatSystemPrompt)
-	if err != nil {
-		sse.sendError("AI error: " + err.Error())
+	cmd, epoch, addr := chatDetectIntent(body.Message)
+	var dataContext string
+	if cmd != "" {
+		sse.sendStep(1, 3, fmt.Sprintf("Running %s...", cmd), map[string]any{"command": cmd, "epoch": epoch})
+		fetched, err := chatFetchData(ctx, cmd, epoch, addr)
+		if err != nil {
+			dataContext = "Error: " + err.Error()
+		} else {
+			dataContext = fetched
+		}
+		sse.sendStep(2, 3, "Generating response...", nil)
+	} else {
+		sse.sendStep(1, 2, "Thinking...", nil)
+	}
+
+	ai := provider.New()
+	if !ai.HasProviders() {
+		if dataContext != "" {
+			sse.sendDone(map[string]any{"reply": dataContext, "model": "none", "provider": "direct-data"})
+		} else {
+			sse.sendError("no AI provider configured")
+		}
 		return
 	}
 
-	sse.sendDone(map[string]any{
-		"reply":    resp.Text,
-		"model":    resp.Model,
-		"provider": resp.Provider,
-	})
+	prompt := body.Message
+	if dataContext != "" {
+		prompt = fmt.Sprintf("User: %s\n\nReal data:\n%s\n\nAnswer based on data.", body.Message, dataContext)
+	}
+
+	resp, err := ai.CompleteChat(ctx, prompt, chatSystemPrompt)
+	if err != nil {
+		if dataContext != "" {
+			sse.sendDone(map[string]any{"reply": dataContext, "model": "none", "provider": "direct-data"})
+		} else {
+			sse.sendError("AI error: " + err.Error())
+		}
+		return
+	}
+	sse.sendDone(map[string]any{"reply": resp.Text, "model": resp.Model, "provider": resp.Provider, "command": cmd})
 }
+
 
 // loadRoutes registers all API routes and the static file server.
 func loadRoutes() {
