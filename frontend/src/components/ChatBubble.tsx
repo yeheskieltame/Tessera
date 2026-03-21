@@ -59,7 +59,7 @@ export default function ChatBubble() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", text: "Hi, I'm Tessera Agent. I can analyze Octant epochs, detect whale concentration, run trust-graph analysis, simulate QF mechanisms, and scan blockchains.\n\nTry asking:\n**\"analyze epoch 5\"**\n**\"whale concentration\"**\n**\"simulate mechanisms\"**" },
+    { role: "assistant", text: "Hi, I'm Tessera Agent. I analyze Octant public goods projects across 9 data sources with signal reliability scoring.\n\nClick a quick action below or ask me anything:\n**\"analyze epoch 5\"** - K-means clustering + whale detection\n**\"trust graph epoch 5\"** - Donor diversity + coordination risk\n**\"collect signals rotki\"** - Cross-source signals + Discourse\n**\"evaluate project\"** - 8-dimension AI scoring + PDF" },
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -196,18 +196,28 @@ export default function ChatBubble() {
             )}
           </div>
 
-          {/* Quick actions */}
+          {/* Quick actions — auto-send on click */}
           {messages.length <= 1 && !loading && (
-            <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-              {["Analyze epoch 5", "Whale concentration", "Trust graph", "Simulate QF", "Analyze project 0x9531C059098e3d194fF87FebB587aB07B30B1306"].map((q) => (
-                <button
-                  key={q}
-                  onClick={() => { setInput(q); }}
-                  className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[11px] text-white/60 hover:text-white hover:border-white/15 transition"
-                >
-                  {q}
-                </button>
-              ))}
+            <div className="px-4 pb-2">
+              <p className="text-[10px] text-white/30 mb-1.5 font-semibold uppercase tracking-wider">Quick Actions</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Epoch 5 Analysis", cmd: "analyze epoch 5" },
+                  { label: "Whale Detection", cmd: "detect anomalies epoch 5" },
+                  { label: "Trust Graph", cmd: "trust graph epoch 5" },
+                  { label: "Simulate 4 QF", cmd: "simulate mechanisms epoch 5" },
+                  { label: "Collect Signals: Rotki", cmd: "collect signals rotki" },
+                  { label: "Scan Chain 0x3250c2", cmd: "scan chain 0x3250c2CEE20FA34D1c4F68eAA87E53512e95A62a" },
+                ].map(({ label, cmd }) => (
+                  <button
+                    key={cmd}
+                    onClick={() => { setInput(cmd); setTimeout(() => { setInput(""); setMessages(prev => [...prev, { role: "user", text: cmd }]); setLoading(true); fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: cmd }) }).then(r => r.json()).then(data => { if (data.reply) setMessages(prev => [...prev, { role: "assistant", text: data.reply, model: data.model, command: data.command, reportPath: data.reportPath }]); else if (data.error) setMessages(prev => [...prev, { role: "assistant", text: `Error: ${data.error}` }]); setLoading(false); }).catch(() => { setMessages(prev => [...prev, { role: "assistant", text: "Connection failed." }]); setLoading(false); }); }, 50); }}
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[11px] text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-blue-500/30 transition"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

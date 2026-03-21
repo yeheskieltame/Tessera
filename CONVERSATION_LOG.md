@@ -847,6 +847,81 @@ Each finding includes the reproducible command to verify it.
 - Dashboard responsive on all screen sizes
 - Landing page polished: strong text, grid backgrounds, visual SVG diagrams
 
+## Session 9 — Signal Quality Framework & Data Collection Enhancement (2026-03-22)
+
+### Phase 54: AI-Researcher Analysis & Adaptive Collection Loop
+
+**Human:** Shared analysis of HKU's AI-Researcher (NeurIPS 2025 Spotlight) and asked to apply architectural patterns to Tessera.
+
+**Agent:** Identified 5 transferable concepts: Resource Collector → Signal Collector pattern, Resource Filter → Signal Quality Scoring, Multi-Level Input, Iterative Validation, Hierarchical Evaluation. Implemented Adaptive Collection Loop (`internal/analysis/adaptive.go`) that detects data gaps after initial collection and auto-discovers additional signals (OSO projects, GitHub repos, Gitcoin cross-references).
+
+### Phase 55: Signal Reliability Framework
+
+**Agent:** Created signal reliability classification (`internal/analysis/reliability.go`). Every data point classified as HIGH (on-chain, immutable), MEDIUM (independent but gameable), or LOW (self-reported). Produces reliability score 0-100 and data completeness percentage.
+
+### Phase 56: Pipeline Expansion to 11 Steps
+
+**Agent:** Expanded analyze-project from 9 to 11 steps. Step 10: Adaptive Collection (gap detection + auto-discovery). Step 11: Signal Reliability Assessment. Both integrated into server SSE stream, CLI, PDF reports, and frontend dashboard.
+
+### Phase 57: Evaluate Streaming
+
+**Human:** Noticed evaluate button had no streaming progress (unlike analyze-project).
+
+**Agent:** Created `GET /api/evaluate/stream` SSE endpoint with 5-step pipeline (Input Validation → GitHub Signals → AI Evaluation → Signal Reliability → PDF Generation). Updated dashboard with `EVAL_PIPELINE_STEPS` and step-by-step progress timeline. Added `streamEvaluateProject()` to API client.
+
+### Phase 58: Data Freshness & Signal Corroboration
+
+**Human:** Identified that timestamps existed in sources but weren't surfaced. Key insight: "the key is timestamps."
+
+**Agent:** Deep analysis of all data sources for hidden timestamps. Created:
+- `internal/analysis/freshness.go` — tracks MeasuredAt, CollectedAt, AgeHours, IndexingLag per signal. Tags: real-time (<30m), recent (<24h), current (<7d), aging, stale.
+- `internal/analysis/corroboration.go` — 7 cross-verification checks between independent sources (OSO vs GitHub contributors, on-chain txs vs blockchain nonce, funding consistency, etc.). Produces CONFIRMED/CONFLICTING/PARTIAL/UNVERIFIABLE verdicts with weighted trust score.
+
+### Phase 59: Donor Behavior Profiling
+
+**Agent:** Created `internal/analysis/donor_profile.go`. Per-donor analysis: projects funded, total donated, concentration %, repeat status. 5 behavior tags: diversified (3+ projects), focused (1-2), whale (>10% epoch), micro (<0.01 ETH), sybil-risk (1 project, small, new). Epoch-level stats: top 1/10 donor share, median donation, repeat donor %.
+
+### Phase 60: Octant Discourse Integration
+
+**Human:** Identified Tessera was zero on community discourse data — key weakness for Data Collection track.
+
+**Agent:** Verified discuss.octant.app JSON API (public, no auth). Created `internal/data/discourse.go` with `DiscourseClient` supporting search, topic detail, and `CollectCommunitySignals()` that extracts engagement metrics (topics, posts, replies, likes, unique authors, team responsiveness, date range, post excerpts for AI analysis).
+
+### Phase 61: Optimism RetroPGF Cross-Ecosystem Validation
+
+**Agent:** Created `internal/data/retropgf.go`. Fetches all RetroPGF Round 3 applications, matches by name/address/GitHub URL. Cross-ecosystem presence: "if a project is funded by both Octant AND accepted in RetroPGF, that's independent validation by two separate communities." Also queries gov.optimism.io Discourse for governance discussions.
+
+### Phase 62: Comprehensive Integration & Testing
+
+**Agent:** Integrated all new sources into pipeline (server SSE, CLI, PDF), enhanced `collect-signals` command, and ran comprehensive tests:
+- 13 CLI commands tested: all working
+- Discourse: 4 topics found for "rotki" with 65 replies, 6 unique authors
+- Optimism Gov: 30 topics, 496 likes, 26 unique authors for "rotki"
+- Signal reliability: 89/100 for analyze-project
+- Donor profiling: 422 donors, 22 diversified, 2 whales, 6 sybil-risk
+- 9 API endpoints tested: all healthy
+
+### Phase 63: PDF Fix & Documentation Update
+
+**Human:** Found PDF rendering raw HTML tags and emoji mojibake from GitHub README.
+
+**Agent:** Fixed `sanitize()` to strip HTML tags, added `stripNonLatin1()` for emoji, `writeBodyV2()` now handles code fences and filters badge URLs. Updated README: architecture diagram (+Discourse, +RetroPGF, +Signal Quality, +Donor Profiling), sequence diagrams (9→11 steps), added Bounty Alignment table, fixed data source count (7→9).
+
+### Phase 64: ChatBubble Enhancement & Final Polish
+
+**Agent:** Updated ChatBubble quick actions to auto-send on click (not just fill input). Added 6 proven commands: Epoch 5 Analysis, Whale Detection, Trust Graph, Simulate 4 QF, Collect Signals Rotki, Scan Chain. Updated architecture SVG on landing page with all 9 data sources and 6 analysis modules.
+
+**Key outcomes:**
+
+- 11-step evidence pipeline (up from 9)
+- Signal Quality Framework: reliability scoring, freshness tracking, cross-verification
+- 9 data sources (added Discourse, RetroPGF, Optimism Gov)
+- Donor behavior profiling with 5 classification tags
+- Evaluate button now streams 5-step progress
+- PDF rendering fixed (no more raw HTML/emoji)
+- All 13 CLI commands + 9 API endpoints verified working
+- ChatBubble quick actions auto-execute with proven commands
+
 ---
 
-_Final version — 53 phases across 8 sessions of human-agent collaboration._
+_Final version — 64 phases across 9 sessions of human-agent collaboration._

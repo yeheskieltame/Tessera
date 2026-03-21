@@ -1,6 +1,6 @@
 ---
 name: public-goods-analyst
-description: AI-powered public goods evaluation agent with 20 CLI commands and 9-step evidence pipeline. Multi-chain blockchain scanner (9 EVM chains + USDC/USDT/DAI token balances). Trust-graph (Jaccard, Shannon entropy, union-find), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring (5 dimensions), branded PDF reports with embedded logo. Default AI: claude-opus-4-6.
+description: AI-powered public goods evaluation agent with 20 CLI commands and 11-step evidence pipeline. Collects from 9 data sources (Octant, Gitcoin, OSO, GitHub, 9 EVM chains, Block Explorers, Octant Discourse, Optimism RetroPGF, Optimism Gov). Signal Quality Framework classifies every signal as HIGH/MEDIUM/LOW reliability. Adaptive collection loop auto-discovers missing data. Signal corroboration cross-verifies claims. Donor behavior profiling. Trust-graph (Jaccard, Shannon entropy, union-find), mechanism simulation (4 QF variants including novel Trust-Weighted QF), temporal anomaly detection, multi-layer scoring, branded PDF reports. Default AI: claude-opus-4-6.
 homepage: https://yeheskieltame-tessera.hf.space
 user-invocable: true
 disable-model-invocation: false
@@ -12,7 +12,7 @@ metadata: {"openclaw": {"always": false, "os": ["darwin", "linux"], "requires": 
 
 # Tessera — Public Goods Analyst
 
-AI-powered public goods project evaluation for the Ethereum ecosystem. 20 CLI commands with a **9-step evidence pipeline**. Covers quantitative analysis, qualitative AI assessment, mechanism design simulation, temporal anomaly detection, multi-layer scoring, **multi-chain blockchain scanning** (9 EVM chains + ERC-20 stablecoin balances), data collection, branded PDF reports, and social interaction.
+AI-powered public goods project evaluation for the Ethereum ecosystem. 20 CLI commands with an **11-step evidence pipeline** collecting from **9 independent data sources**. Features Signal Quality Framework (HIGH/MEDIUM/LOW reliability), adaptive collection loop, signal corroboration (7 cross-verification checks), donor behavior profiling, trust-graph analysis, mechanism simulation (4 QF variants), temporal anomaly detection, multi-chain blockchain scanning (9 EVM chains), community discourse analysis (Octant forum), cross-ecosystem validation (Optimism RetroPGF), branded PDF reports, and social interaction.
 
 Built in Go — single 9MB binary, zero runtime dependencies.
 

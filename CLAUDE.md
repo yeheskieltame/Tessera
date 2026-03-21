@@ -172,12 +172,19 @@ synthesis/
 │   │   ├── gitcoin.go            # Gitcoin GraphQL client
 │   │   ├── oso.go                # Open Source Observer client
 │   │   ├── github.go             # GitHub API client (fallback)
-│   │   └── blockchain.go         # Multi-chain EVM scanner (9 chains, ERC-20 tokens)
+│   │   ├── blockchain.go         # Multi-chain EVM scanner (9 chains, ERC-20 tokens)
+│   │   ├── discourse.go          # Discourse forum client (Octant + Optimism governance)
+│   │   └── retropgf.go           # Optimism RetroPGF cross-ecosystem validator
 │   ├── analysis/
 │   │   ├── quantitative.go       # K-means clustering, composite scoring, anomaly detection
 │   │   ├── graph.go              # Trust graph: Shannon entropy, Jaccard, whale dependency
 │   │   ├── mechanism.go          # 4 QF simulations: Standard, Capped, Equal, Trust-Weighted
-│   │   └── qualitative.go        # LLM evaluation, comparison, proposal scanning
+│   │   ├── qualitative.go        # LLM evaluation, comparison, proposal scanning
+│   │   ├── adaptive.go           # Adaptive signal collection loop (gap detection + auto-discovery)
+│   │   ├── reliability.go        # Signal reliability framework (HIGH/MEDIUM/LOW tier classification)
+│   │   ├── freshness.go          # Data freshness tracking (timestamps, indexing lag, staleness)
+│   │   ├── corroboration.go      # Signal cross-verification (7 checks across independent sources)
+│   │   └── donor_profile.go      # Donor behavior profiling (diversified/focused/whale/sybil-risk)
 │   ├── report/
 │   │   ├── report.go             # Markdown report generation
 │   │   ├── pdf.go                # Branded PDF with embedded logo
@@ -247,6 +254,9 @@ go run ./cmd/analyst/ <command>
 | **Blockchain RPC**       | JSON-RPC | Balance, txs, contracts, ERC-20 tokens (9 EVM chains)              |
 | **Block Explorers**      | REST     | Recent txs, token transfers, contract verification                 |
 | **GitHub API**           | REST     | Repo metrics, contributors, README                                 |
+| **Octant Discourse**     | REST     | Community threads, engagement, likes, team responsiveness          |
+| **Optimism RetroPGF**    | REST     | Cross-ecosystem validation, impact categories, funding sources     |
+| **Optimism Gov Forum**   | REST     | Governance discussions, community sentiment                        |
 
 ### Fitur Analisis
 

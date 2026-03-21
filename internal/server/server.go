@@ -922,6 +922,137 @@ func collectAllocData(ctx context.Context, octant *data.OctantClient, epoch int)
 	return d, nil
 }
 
+// handleEvaluateStream streams a 5-step project evaluation via SSE.
+// Steps: 1-Input validation, 2-GitHub signals, 3-AI evaluation (8 dim), 4-Signal reliability, 5-PDF generation
+// GET /api/evaluate/stream?name=...&description=...&githubURL=...
+func handleEvaluateStream(w http.ResponseWriter, r *http.Request) {
+	sse := newSSEWriter(w)
+	if sse == nil {
+		return
+	}
+
+	name := r.URL.Query().Get("name")
+	description := r.URL.Query().Get("description")
+	githubURL := r.URL.Query().Get("githubURL")
+
+	totalSteps := 5
+
+	// Step 1: Validate input
+	sse.sendStep(1, totalSteps, "Validating input...", nil)
+	if name == "" || description == "" {
+		sse.sendError("name and description are required")
+		return
+	}
+	ai := provider.New()
+	if !ai.HasProviders() {
+		sse.sendError("no AI providers configured")
+		return
+	}
+	sse.sendStep(1, totalSteps, fmt.Sprintf("Project: %s", name), map[string]any{
+		"name":        name,
+		"description": description[:min(200, len(description))],
+		"hasGitHub":   githubURL != "",
+	})
+
+	// Step 2: Collect GitHub signals (if URL provided)
+	ctx := r.Context()
+	var githubContext string
+	var hasGitHub bool
+	if githubURL != "" {
+		sse.sendStep(2, totalSteps, fmt.Sprintf("Collecting GitHub signals from %s...", githubURL), nil)
+		owner, repo, err := data.ParseGitHubURL(githubURL)
+		if err == nil {
+			gh := data.NewGitHubClient()
+			signals := gh.CollectEvalSignals(ctx, owner, repo)
+			githubContext = signals.FormatForEval()
+			hasGitHub = githubContext != ""
+		}
+		if hasGitHub {
+			sse.sendStep(2, totalSteps, "GitHub signals collected", map[string]any{"hasData": true})
+		} else {
+			sse.sendStep(2, totalSteps, "GitHub signals: no data found or URL invalid", map[string]any{"hasData": false})
+		}
+	} else {
+		sse.sendStep(2, totalSteps, "GitHub signals skipped (no URL provided)", map[string]any{"hasData": false})
+	}
+
+	// Step 3: AI evaluation (8 dimensions)
+	sse.sendStep(3, totalSteps, "Running AI evaluation across 8 dimensions...", nil)
+	result, err := analysis.EvaluateProject(ctx, ai, name, description, "", githubURL)
+	if err != nil {
+		sse.sendStep(3, totalSteps, fmt.Sprintf("AI evaluation failed: %v", err), nil)
+		sse.sendError(fmt.Sprintf("evaluation failed: %v", err))
+		return
+	}
+	sse.sendStep(3, totalSteps, fmt.Sprintf("AI evaluation complete (via %s/%s)", result.Provider, result.Model), map[string]any{
+		"evaluation": result.Evaluation,
+		"model":      result.Model,
+		"provider":   result.Provider,
+	})
+
+	// Step 4: Signal reliability assessment
+	sse.sendStep(4, totalSteps, "Assessing signal reliability...", nil)
+	reliabilityReport := analysis.AssessReliability(nil, nil, "", nil, hasGitHub, 0)
+	var reliabilityData map[string]any
+	if reliabilityReport != nil {
+		reliabilityData = map[string]any{
+			"overallScore":     reliabilityReport.OverallScore,
+			"dataCompleteness": reliabilityReport.DataCompleteness,
+			"highCount":        reliabilityReport.HighCount,
+			"mediumCount":      reliabilityReport.MediumCount,
+			"lowCount":         reliabilityReport.LowCount,
+		}
+	}
+	sse.sendStep(4, totalSteps, fmt.Sprintf("Reliability: %.0f/100, completeness: %.0f%%",
+		reliabilityReport.OverallScore, reliabilityReport.DataCompleteness), reliabilityData)
+
+	// Step 5: Generate PDF report
+	sse.sendStep(5, totalSteps, "Generating PDF report...", nil)
+	metadata := map[string]string{
+		"Project":  name,
+		"AI Model": result.Model,
+	}
+	if githubURL != "" {
+		metadata["GitHub"] = githubURL
+	}
+	sections := []report.PDFSection{
+		{Heading: "Project Description", Body: description},
+	}
+	if githubContext != "" {
+		sections = append(sections, report.PDFSection{Heading: "GitHub Repository Data", Body: githubContext})
+	}
+	reliabilityText := analysis.FormatReliabilityReport(reliabilityReport)
+	if reliabilityText != "" {
+		sections = append(sections, report.PDFSection{Heading: "Signal Reliability Assessment", Body: reliabilityText})
+	}
+	sections = append(sections, report.PDFSection{Heading: "AI Evaluation", Body: result.Evaluation})
+
+	pdfReport := &report.PDFReport{
+		Title:    fmt.Sprintf("Project Evaluation: %s", name),
+		Subtitle: "AI-Powered Qualitative Assessment",
+		Model:    result.Model,
+		Provider: result.Provider,
+		Metadata: metadata,
+		Sections: sections,
+	}
+
+	var reportPath string
+	if pdfPath, pdfErr := report.GeneratePDF(pdfReport); pdfErr == nil {
+		reportPath = pdfPath
+	}
+	sse.sendStep(5, totalSteps, "PDF report generated", map[string]any{"reportPath": reportPath})
+
+	// Done
+	sse.sendDone(map[string]any{
+		"project":     result.Project,
+		"evaluation":  result.Evaluation,
+		"model":       result.Model,
+		"provider":    result.Provider,
+		"reportPath":  reportPath,
+		"reliability": reliabilityData,
+	})
+}
+
 // handleAnalyzeProjectStream streams a full 8-step project analysis via SSE.
 // Steps: 1-History, 2-Quantitative, 3-Trust, 4-Mechanism, 5-Temporal Anomaly, 6-Multi-Layer Score, 7-OSO, 8-AI Eval
 // GET /api/analyze-project/stream?address=0x...&epoch=5&oso_name=optional
@@ -943,7 +1074,7 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 	octant := data.NewOctantClient()
 	ai := provider.New()
 
-	totalSteps := 9
+	totalSteps := 11
 	// Step 1: Cross-epoch history
 	sse.sendStep(1, totalSteps, "Fetching cross-epoch funding history...", nil)
 	ep, err := octant.GetCurrentEpoch(ctx)
@@ -1233,6 +1364,141 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Step 10: Adaptive signal collection (fill gaps)
+	sse.sendStep(10, totalSteps, "Adaptive signal collection — assessing gaps...", nil)
+	collectedSignals := &analysis.CollectedSignals{
+		Address:       address,
+		HasHistory:    len(history) > 0,
+		HistoryEpochs: len(history),
+		HasTrust:      projectTrust != nil,
+		TrustProfile:  projectTrust,
+		HasChainData:  chainSignals != nil,
+		ChainSignals:  chainSignals,
+		HasOSO:        osoMetrics != "",
+		OSOMetrics:    osoMetrics,
+		HasGitHub:     false,
+		HasAnomalies:  len(anomalyList) > 0,
+		AnomalyCount:  len(anomalyList),
+		OSOName:       osoName,
+	}
+	adaptiveResult := analysis.AdaptiveCollect(ctx, collectedSignals, 2)
+	var adaptiveData map[string]any
+	if len(adaptiveResult.GapsFilled) > 0 || len(adaptiveResult.GapsRemaining) > 0 {
+		adaptiveData = map[string]any{
+			"iterations":    adaptiveResult.Iterations,
+			"gapsDetected":  len(adaptiveResult.GapsDetected),
+			"gapsFilled":    adaptiveResult.GapsFilled,
+			"gapsRemaining": adaptiveResult.GapsRemaining,
+		}
+		// Update signals from adaptive collection
+		if adaptiveResult.ExtraOSO != "" && osoMetrics == "" {
+			osoMetrics = adaptiveResult.ExtraOSO
+		}
+	}
+	// Collect community signals: Octant Discourse + Optimism RetroPGF
+	discourse := data.NewOctantDiscourseClient()
+	// Try to find a project name for discourse search — use OSO name or address
+	discourseQuery := osoName
+	if discourseQuery == "" && len(address) > 6 {
+		discourseQuery = address
+	}
+	var communitySignals *data.CommunitySignals
+	var crossEcosystem *data.CrossEcosystemPresence
+	if discourseQuery != "" {
+		communitySignals = discourse.CollectCommunitySignals(ctx, discourseQuery)
+		retropgf := data.NewRetroPGFClient()
+		crossEcosystem = retropgf.FindInRetroPGF(ctx, discourseQuery, address, "")
+	}
+
+	if adaptiveData == nil {
+		adaptiveData = map[string]any{}
+	}
+	if communitySignals != nil && communitySignals.TopicsFound > 0 {
+		adaptiveData["discourse"] = map[string]any{
+			"topicsFound":   communitySignals.TopicsFound,
+			"totalPosts":    communitySignals.TotalPosts,
+			"totalLikes":    communitySignals.TotalLikes,
+			"uniqueAuthors": communitySignals.UniqueAuthors,
+			"topTopics":     communitySignals.TopTopics,
+		}
+	}
+	if crossEcosystem != nil && crossEcosystem.InRetroPGF {
+		adaptiveData["retroPGF"] = map[string]any{
+			"found":      true,
+			"name":       crossEcosystem.RetroPGFProject.DisplayName,
+			"categories": crossEcosystem.RetroPGFCategories,
+			"funding":    crossEcosystem.RetroPGFFunding,
+		}
+	}
+
+	discourseInfo := ""
+	if communitySignals != nil && communitySignals.TopicsFound > 0 {
+		discourseInfo = fmt.Sprintf(", discourse: %d topics", communitySignals.TopicsFound)
+	}
+	retroInfo := ""
+	if crossEcosystem != nil && crossEcosystem.InRetroPGF {
+		retroInfo = ", RetroPGF: found"
+	}
+	sse.sendStep(10, totalSteps, fmt.Sprintf("Adaptive collection: %d gaps filled, %d remaining%s%s",
+		len(adaptiveResult.GapsFilled), len(adaptiveResult.GapsRemaining), discourseInfo, retroInfo), adaptiveData)
+
+	// Step 11: Signal reliability assessment
+	sse.sendStep(11, totalSteps, "Assessing signal reliability...", nil)
+	reliabilityReport := analysis.AssessReliability(
+		projectTrust, chainSignals, osoMetrics, history,
+		collectedSignals.HasGitHub, len(anomalyList),
+	)
+	var reliabilityData map[string]any
+	if reliabilityReport != nil {
+		reliabilityData = map[string]any{
+			"overallScore":     reliabilityReport.OverallScore,
+			"dataCompleteness": reliabilityReport.DataCompleteness,
+			"highCount":        reliabilityReport.HighCount,
+			"mediumCount":      reliabilityReport.MediumCount,
+			"lowCount":         reliabilityReport.LowCount,
+			"signals":          reliabilityReport.Signals,
+		}
+	}
+	// Compute data freshness, signal corroboration, and donor profiling (embedded in step 11)
+	freshnessReport := analysis.BuildFreshnessReport(history, chainSignals, "", "", nil)
+	corroborationReport := analysis.CrossVerifySignals(projectTrust, chainSignals, nil, nil, history)
+	donorReport := analysis.BuildDonorProfiles(ad.projects, ad.amounts, ad.donors, ad.prevDonors)
+
+	if reliabilityData == nil {
+		reliabilityData = map[string]any{}
+	}
+	if freshnessReport != nil {
+		reliabilityData["freshness"] = map[string]any{
+			"realtimeCount": freshnessReport.RealtimeCount,
+			"staleCount":    freshnessReport.StaleCount,
+			"oldestSignal":  freshnessReport.OldestSignal,
+			"newestSignal":  freshnessReport.NewestSignal,
+		}
+	}
+	if corroborationReport != nil {
+		reliabilityData["corroboration"] = map[string]any{
+			"trustScore":     corroborationReport.TrustScore,
+			"confirmedCount": corroborationReport.ConfirmedCount,
+			"conflictCount":  corroborationReport.ConflictCount,
+			"checks":         corroborationReport.Checks,
+		}
+	}
+	if donorReport != nil {
+		reliabilityData["donorProfiling"] = map[string]any{
+			"totalDonors":       donorReport.TotalDonors,
+			"diversifiedCount":  donorReport.DiversifiedCount,
+			"focusedCount":      donorReport.FocusedCount,
+			"whaleCount":        donorReport.WhaleCount,
+			"sybilRiskCount":    donorReport.SybilRiskCount,
+			"repeatDonorPct":    donorReport.RepeatDonorPct,
+			"top10DonorShare":   donorReport.Top10DonorShare,
+			"avgProjectsPerDonor": donorReport.AvgProjectsPerDonor,
+		}
+	}
+
+	sse.sendStep(11, totalSteps, fmt.Sprintf("Reliability: %.0f/100 | Corroboration: %.0f/100 | Donors: %d profiled",
+		reliabilityReport.OverallScore, corroborationReport.TrustScore, donorReport.TotalDonors), reliabilityData)
+
 	// Generate PDF report (AFTER AI evaluation so we have the text)
 	var reportPath string
 	if projectTrust != nil {
@@ -1274,6 +1540,40 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		}
 		if chainContext != "" {
 			sections = append(sections, report.PDFSection{Heading: "Multi-Chain Blockchain Activity", Body: chainContext})
+		}
+		// Signal Reliability section
+		reliabilityText := analysis.FormatReliabilityReport(reliabilityReport)
+		if reliabilityText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Signal Reliability Assessment", Body: reliabilityText})
+		}
+		// Adaptive Collection section
+		adaptiveText := analysis.FormatAdaptiveResult(adaptiveResult)
+		if adaptiveText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Adaptive Signal Collection", Body: adaptiveText})
+		}
+		// Data Freshness section
+		freshnessText := analysis.FormatFreshnessReport(freshnessReport)
+		if freshnessText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Data Freshness Assessment", Body: freshnessText})
+		}
+		// Signal Corroboration section
+		corroborationText := analysis.FormatCorroborationReport(corroborationReport)
+		if corroborationText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Signal Corroboration", Body: corroborationText})
+		}
+		// Donor Profiling section
+		donorText := analysis.FormatDonorProfileReport(donorReport)
+		if donorText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Donor Behavior Profiling", Body: donorText})
+		}
+		// Community Signals (Discourse)
+		if communitySignals != nil && communitySignals.TopicsFound > 0 {
+			sections = append(sections, report.PDFSection{Heading: "Community Signals (Octant Discourse)", Body: communitySignals.FormatCommunitySignals()})
+		}
+		// Cross-Ecosystem Validation (RetroPGF)
+		crossEcoText := data.FormatCrossEcosystem(crossEcosystem)
+		if crossEcoText != "" {
+			sections = append(sections, report.PDFSection{Heading: "Cross-Ecosystem Validation", Body: crossEcoText})
 		}
 		if aiEvalText != "" {
 			sections = append(sections, report.PDFSection{Heading: "AI Deep Evaluation", Body: aiEvalText})
@@ -1319,7 +1619,16 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 		"anomalies":        anomalyList,
 		"scores":           scoresData,
 		"blockchain":       chainData,
-		"reportPath":       reportPath,
+		"reliability":        reliabilityData,
+		"adaptiveCollection": adaptiveData,
+		"donorProfiling": map[string]any{
+			"totalDonors":      donorReport.TotalDonors,
+			"diversifiedCount": donorReport.DiversifiedCount,
+			"whaleCount":       donorReport.WhaleCount,
+			"sybilRiskCount":   donorReport.SybilRiskCount,
+			"top10DonorShare":  donorReport.Top10DonorShare,
+		},
+		"reportPath": reportPath,
 	}
 	sse.sendDone(finalResult)
 }
@@ -2292,6 +2601,7 @@ func loadRoutes() {
 	handle("/api/analyze-project/stream", handleAnalyzeProjectStream)
 	handle("/api/trust-graph/stream", handleTrustGraphStream)
 	handle("/api/simulate/stream", handleSimulateStream)
+	handle("/api/evaluate/stream", handleEvaluateStream)
 	handle("/api/report-epoch/stream", handleReportEpochStream)
 
 	// Serve static frontend files from ./frontend/dist

@@ -168,3 +168,15 @@ export function streamAnalyzeProject(
   }
   return new EventSource(url);
 }
+
+export function streamEvaluateProject(
+  name: string,
+  description: string,
+  githubURL?: string
+): EventSource {
+  let url = `${API_BASE}/api/evaluate/stream?name=${encodeURIComponent(name)}&description=${encodeURIComponent(description)}`;
+  if (githubURL) {
+    url += `&githubURL=${encodeURIComponent(githubURL)}`;
+  }
+  return new EventSource(url);
+}

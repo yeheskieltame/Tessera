@@ -4,7 +4,7 @@
   <img src="frontend/public/tessera-icon-256.png" alt="Tessera" width="128" />
 </p>
 
-AI-powered public goods project evaluation for the Ethereum ecosystem. A CLI tool (20 commands) and web dashboard that combines quantitative analysis, trust graph evaluation, mechanism simulation, multi-chain blockchain scanning, and LLM-based qualitative assessment into a single evidence pipeline.
+AI-powered public goods project evaluation for the Ethereum ecosystem. A CLI tool (20 commands) and web dashboard that combines quantitative analysis, trust graph evaluation, mechanism simulation, multi-chain blockchain scanning, community discourse analysis, cross-ecosystem validation (RetroPGF), LLM-based qualitative assessment, adaptive signal collection, and signal reliability scoring into a single evidence pipeline. Tessera collects data from 9 independent sources, cross-verifies signals between them, and assesses how trustworthy each one is.
 
 Live Demo: https://yeheskieltame-tessera.hf.space
 Repository: https://github.com/yeheskieltame/Tessera
@@ -42,13 +42,13 @@ Public goods evaluators in the Ethereum ecosystem face three core problems:
 
 **Qualitative bottleneck.** Proposal quality, team credibility, and community engagement require judgment that cannot be automated with rules alone, but is too slow to apply manually across dozens of projects.
 
-Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources, run deterministic quantitative analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis. For concrete evidence of these problems in real Octant data, see [FINDINGS.md](FINDINGS.md).
+Tessera solves these by automating the full evaluation pipeline: collect data from 9 independent sources (including community discourse and cross-ecosystem validation), run deterministic quantitative analysis, scan 9 blockchains, cross-verify signals between sources, assess signal reliability, and feed all evidence into an LLM for synthesis. For concrete evidence of these problems in real Octant data, see [FINDINGS.md](FINDINGS.md).
 
 ## Solution
 
 Tessera is a Go binary (9MB, zero runtime dependencies) that serves as both a CLI tool and an HTTP API with a web dashboard. It has two primary operations:
 
-`analyze-project <address>` runs a 9-step evidence pipeline against a single Octant project address. Each step collects or computes a different category of evidence. The final step feeds all prior evidence into an LLM to produce a grounded narrative assessment. Output is a branded PDF report.
+`analyze-project <address>` runs an 11-step evidence pipeline against a single Octant project address. Steps 1-8 collect deterministic data from 7 sources. Step 9 feeds all evidence into an LLM for narrative synthesis. Step 10 runs an adaptive collection loop that detects data gaps and autonomously discovers additional signals (OSO projects, GitHub repos, Gitcoin cross-references). Step 11 produces a signal reliability assessment that classifies every data point as HIGH, MEDIUM, or LOW trustworthiness. Output is a branded PDF report.
 
 `evaluate "Name" -d "Desc"` performs an 8-dimension AI evaluation of any public goods project, optionally enriched with GitHub repository data. Output is a branded PDF report.
 
@@ -72,6 +72,8 @@ graph TB
             OSO[OSO Client<br/>internal/data/oso.go]
             GitHub[GitHub Client<br/>internal/data/github.go]
             Blockchain[Blockchain Scanner<br/>internal/data/blockchain.go]
+            Discourse[Discourse Client<br/>internal/data/discourse.go]
+            RetroPGF[RetroPGF Client<br/>internal/data/retropgf.go]
         end
 
         subgraph "Analysis Layer"
@@ -79,6 +81,8 @@ graph TB
             Graph[Trust Graph<br/>entropy, Jaccard, union-find]
             Mech[Mechanism Sim<br/>4 QF variants]
             Qual[Qualitative<br/>LLM evaluation]
+            SigQual[Signal Quality<br/>reliability, freshness, corroboration]
+            DonorProf[Donor Profiling<br/>behavior classification]
         end
 
         Provider[AI Provider Chain<br/>internal/provider/provider.go<br/>4 providers, 12 models]
@@ -96,6 +100,9 @@ graph TB
         GitHubAPI[GitHub REST API]
         RPCs[9 EVM Chain RPCs]
         Explorers[Block Explorer APIs]
+        DiscourseAPI[Octant Discourse]
+        RetroPGFAPI[Optimism RetroPGF]
+        OptGovAPI[Optimism Gov Forum]
         ClaudeAPI[Claude API]
         GeminiAPI[Gemini API]
         OpenAIAPI[OpenAI API]
@@ -110,6 +117,8 @@ graph TB
     CLI --> OSO
     CLI --> GitHub
     CLI --> Blockchain
+    CLI --> Discourse
+    CLI --> RetroPGF
     CLI --> Quant
     CLI --> Graph
     CLI --> Mech
@@ -121,6 +130,8 @@ graph TB
     Server --> OSO
     Server --> GitHub
     Server --> Blockchain
+    Server --> Discourse
+    Server --> RetroPGF
     Server --> Quant
     Server --> Graph
     Server --> Mech
@@ -133,6 +144,9 @@ graph TB
     GitHub --> GitHubAPI
     Blockchain --> RPCs
     Blockchain --> Explorers
+    Discourse --> DiscourseAPI
+    RetroPGF --> RetroPGFAPI
+    RetroPGF --> OptGovAPI
     Qual --> Provider
     Provider --> ClaudeAPI
     Provider --> GeminiAPI
@@ -148,12 +162,13 @@ sequenceDiagram
     participant O as Octant API
     participant B as Blockchain RPCs (9)
     participant G as GitHub/OSO API
+    participant D as Discourse/RetroPGF
     participant A as Analysis Engine
     participant P as AI Provider
     participant R as PDF Generator
 
     U->>S: GET /api/analyze-project/stream?address=0x...
-    S-->>U: SSE: step 1/9 "Fetching funding history"
+    S-->>U: SSE: step 1/11 "Fetching funding history"
 
     S->>O: GET /rewards/projects/epoch/{e} (epochs 1-N)
     O-->>S: allocations, matched amounts (wei)
@@ -193,44 +208,60 @@ sequenceDiagram
     P-->>S: narrative evaluation, scores, recommendation
     S-->>U: SSE: step 9 done (AI evaluation)
 
-    S->>R: Generate branded PDF
+    S->>D: Discourse search + RetroPGF lookup
+    S->>A: AdaptiveCollect() — gap detection + auto-discovery
+    D-->>S: community signals, cross-ecosystem presence
+    A-->>S: gaps filled, gaps remaining
+    S-->>U: SSE: step 10 done (adaptive collection + community)
+
+    S->>A: AssessReliability() + CrossVerify() + DonorProfile() + Freshness()
+    A-->>S: reliability score, corroboration checks, donor profiles, freshness report
+    S-->>U: SSE: step 11 done (signal quality assessment)
+
+    S->>R: Generate branded PDF (all 11 steps)
     R-->>S: PDF file path
     S-->>U: SSE: done (final result + report path)
 ```
 
-### Request Flow: evaluate
+### Request Flow: evaluate (SSE streaming)
 
 ```mermaid
 sequenceDiagram
     participant U as User/Dashboard
     participant S as HTTP Server
     participant G as GitHub API
+    participant A as Analysis Engine
     participant P as AI Provider
     participant R as PDF Generator
 
-    U->>S: POST /api/evaluate {name, description, githubURL}
+    U->>S: GET /api/evaluate/stream?name=...&description=...
+    S-->>U: SSE: step 1/5 "Validating input"
 
     alt githubURL provided
-        S->>G: GET /repos/{owner}/{repo}
-        G-->>S: stars, forks, issues, language
-        S->>G: GET /repos/{owner}/{repo}/contributors
-        G-->>S: contributor list with commit counts
-        S->>G: GET /repos/{owner}/{repo}/readme
-        G-->>S: README content (base64 decoded)
+        S-->>U: SSE: step 2/5 "Collecting GitHub signals"
+        S->>G: GET /repos/{owner}/{repo} + /contributors + /readme
+        G-->>S: stars, forks, contributors, README
+        S-->>U: SSE: step 2 done (GitHub data)
     end
 
+    S-->>U: SSE: step 3/5 "Running AI evaluation"
     S->>P: LLM prompt with project info + GitHub signals
     P-->>S: 8-dimension evaluation (1-10 each, 1-100 overall)
+    S-->>U: SSE: step 3 done (evaluation text)
+
+    S->>A: AssessReliability()
+    S-->>U: SSE: step 4 done (signal reliability)
 
     S->>R: Generate branded PDF
     R-->>S: PDF file path
+    S-->>U: SSE: step 5 done (PDF report)
 
-    S-->>U: {evaluation, scores, reportPath}
+    S-->>U: SSE: done (final result + report path)
 ```
 
 ## Evidence Pipeline
 
-The `analyze-project` command executes 9 sequential steps. Each step produces structured data that is accumulated and passed to the final AI evaluation.
+The `analyze-project` command executes an 11-step evidence pipeline. Each step produces structured data that is accumulated and passed to the final AI evaluation. Steps 10-11 implement an **adaptive collection loop** inspired by AI-Researcher's resource collector pattern and a **signal reliability framework** that assesses the trustworthiness of each data source.
 
 ```mermaid
 flowchart LR
@@ -242,7 +273,9 @@ flowchart LR
     S6 --> S7[Step 7<br/>Blockchain Scan]
     S7 --> S8[Step 8<br/>Code Signals]
     S8 --> S9[Step 9<br/>AI Deep Evaluation]
-    S9 --> PDF[PDF Report]
+    S9 --> S10[Step 10<br/>Adaptive Collection]
+    S10 --> S11[Step 11<br/>Signal Reliability]
+    S11 --> PDF[PDF Report]
 ```
 
 | Step | Name | Source | Method | Output | AI Required |
@@ -256,8 +289,33 @@ flowchart LR
 | 7 | Blockchain Scan | 9 EVM RPCs | eth_getBalance, eth_getTransactionCount, eth_getCode, eth_call (ERC-20 balanceOf) | Per-chain balance, tx count, contract status, stablecoin holdings | No |
 | 8 | Code Signals | OSO GraphQL or GitHub REST | GraphQL queries or REST API calls | Stars, forks, commits, contributors, on-chain activity | No |
 | 9 | AI Deep Evaluation | All steps 1-8 | LLM prompt with full evidence context | Narrative assessment, trajectory analysis, recommendation | Yes |
+| 10 | Adaptive Collection | Steps 1-9 gaps | Iterative gap assessment + auto-discovery (OSO search, GitHub lookup, Gitcoin cross-ref) | Recovered signals, gap report | No |
+| 11 | Signal Reliability | All collected signals | Per-signal reliability classification (HIGH/MEDIUM/LOW) | Reliability score, data completeness %, tier breakdown | No |
 
-Steps 1 through 8 are deterministic and reproducible. Step 9 uses an LLM to synthesize all evidence into a narrative with trajectory analysis, organic vs gaming assessment, counterfactual impact, and confidence-rated recommendation.
+Steps 1 through 8 are deterministic and reproducible. Step 9 uses an LLM to synthesize all evidence into a narrative with trajectory analysis, organic vs gaming assessment, counterfactual impact, and confidence-rated recommendation. Steps 10-11 add signal quality assessment.
+
+### Signal Quality Framework
+
+Tessera doesn't just aggregate more data — it assesses **signal reliability**. Every data point is classified into one of three tiers:
+
+| Tier | Source Examples | Gameable? | Why |
+|------|----------------|-----------|-----|
+| **HIGH** | On-chain balances, Octant allocations, Shannon entropy, Jaccard similarity, temporal anomalies | No | Immutable on-chain data or mathematically derived from verified protocol data |
+| **MEDIUM** | OSO code metrics, GitHub contributor counts, commit frequency | Partially | Independent sources but can be inflated with effort (bot commits, fake contributors) |
+| **LOW** | GitHub stars/forks, self-reported proposal claims | Yes | Low cost to inflate (star farms) or unverified (project descriptions) |
+
+The reliability framework enables evaluators to weight evidence appropriately. A project claiming "10,000 active users" (LOW) while on-chain data shows 3 transactions (HIGH) triggers an automatic red flag.
+
+### Adaptive Signal Collection
+
+When initial data collection leaves gaps, Tessera autonomously attempts to fill them:
+
+1. **Assess gaps** — After steps 1-9, identify missing or weak signals (no OSO data? no GitHub? high coordination risk but no temporal analysis?)
+2. **Auto-discover** — Search OSO by address/project name, discover GitHub repos from OSO metadata, cross-reference Gitcoin Grants
+3. **Re-assess** — Check if new data changes the gap profile, iterate up to 2 rounds
+4. **Report** — Include gap analysis in the final report: what was recovered, what remains missing, and why
+
+This is inspired by AI-Researcher's Resource Collector pattern (NeurIPS 2025), adapted for public goods evaluation: instead of collecting academic papers, Tessera collects funding signals from multiple independent sources and assesses their quality.
 
 ## Data Sources and External APIs
 
@@ -394,6 +452,26 @@ flowchart TD
 
     AI --> PDF
 ```
+
+### Octant Discourse Forum
+
+Base URL: `https://discuss.octant.app`
+
+| Function | Endpoint | Returns |
+|----------|----------|---------|
+| Search | GET /search.json?q={query} | Posts, topics, users matching query |
+| GetTopic | GET /t/{topic_id}.json | Full topic with post stream, likes, replies |
+
+Extracts: thread count, reply count, like count, unique authors, team responsiveness, post excerpts for AI sentiment analysis. Category ID 8 ("Public Good Projects Discussion") contains all epoch submission threads.
+
+### Optimism RetroPGF Round 3
+
+| Function | Endpoint | Returns |
+|----------|----------|---------|
+| GetRound3Projects | GET https://round3.optimism.io/api/projects | All RetroPGF applications with impact categories, metrics, funding sources |
+| OptimismDiscourse | GET https://gov.optimism.io/search.json?q={query} | Governance forum discussions |
+
+Cross-ecosystem validation: if a project is funded by both Octant and accepted in Optimism RetroPGF, that's independent validation by two separate evaluator communities.
 
 ## Analysis Algorithms
 
@@ -648,7 +726,7 @@ The server serves the Next.js static export from `./frontend/dist/`. Routes are 
 
 | Command | Description | Input | Output |
 |---------|-------------|-------|--------|
-| `analyze-project <addr>` | 9-step evidence pipeline | Octant project address, optional `-e epoch`, `-n oso-name` | PDF report + console output |
+| `analyze-project <addr>` | 11-step evidence pipeline | Octant project address, optional `-e epoch`, `-n oso-name` | PDF report + console output |
 | `evaluate "Name" -d "Desc"` | 8-dimension AI evaluation | Project name, description, optional `-g github-url`, `-c context` | PDF report + console output |
 
 ### Quantitative Analysis (no AI required)
@@ -705,7 +783,7 @@ flowchart TB
         end
 
         subgraph "Pipeline View"
-            Steps[9-Step Progress Timeline<br/>Real-time SSE status per step]
+            Steps[11-Step Progress Timeline<br/>Real-time SSE status per step]
             Results[Expandable Result Sections<br/>Full-screen modal view]
         end
 
@@ -1108,6 +1186,15 @@ Built for The Synthesis, a 14-day hackathon where AI agents and humans build tog
 | Live Demo | https://yeheskieltame-tessera.hf.space |
 | Repository | https://github.com/yeheskieltame/Tessera |
 | Collaboration Log | [CONVERSATION_LOG.md](CONVERSATION_LOG.md) (48 phases across 8 sessions) |
+
+## Bounty Alignment
+
+| Track | Question | Tessera Answer | Key Features |
+|-------|----------|----------------|--------------|
+| **Data Analysis** ($1,000) | What patterns can agents extract that humans can't scale? | Trust-graph analysis reveals donor clusters and coordination patterns across 30+ projects per epoch. Multi-layer scoring exposes projects that rank #1 by total funding but score 36.6/100 when diversity and consistency are factored in. Temporal anomaly detection identifies coordinated capital deployment across epochs. Two-pass proposal scanning converts qualitative claims into SUPPORTED/CONTRADICTED verdicts. | trust-graph, analyze-project, track-project, multi-layer scoring, scan-proposal, deep-eval |
+| **Data Collection** ($1,000) | How can agents surface richer, more reliable signals? | 11-step pipeline collects from 9 independent sources including community discourse (Octant forum) and cross-ecosystem validation (Optimism RetroPGF). Signal Quality Framework classifies every data point as HIGH/MEDIUM/LOW reliability. Adaptive collection loop detects gaps and auto-discovers missing data. Signal corroboration cross-verifies claims between independent sources. Donor behavior profiling classifies donors as diversified/focused/whale/sybil-risk. | Signal Quality Framework, Adaptive Collection, Discourse, RetroPGF, corroboration, donor profiling, freshness tracking |
+| **Mechanism Design** ($1,000) | What innovations make evaluation faster, fairer, or more transparent? | Trust-Weighted QF combines quadratic funding with graph-theoretic donor diversity: `score = qf_score × (0.5 + 0.5 × diversity)`. Projects with whale-dominated funding receive up to 50% reduction while genuinely diverse support is preserved. Side-by-side simulation of 4 mechanisms with Gini coefficient comparison. | simulate, Trust-Weighted QF, mechanism comparison, Gini analysis |
+| **Open Track** ($28,308) | General best submission | Complete evaluation system: 20 CLI commands, 11-step pipeline, 9 data sources, web dashboard with SSE streaming, branded PDF reports, multi-model AI fallback (4 providers, 12 models), deployed on Hugging Face Spaces. | Everything above combined |
 
 ## License
 

@@ -32,6 +32,9 @@ epoch5_*.json
 # Build output
 frontend/dist/
 
+# Demo (internal only)
+DEMO_SCRIPT.md
+
 # OS
 .DS_Store
 Thumbs.db

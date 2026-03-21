@@ -250,8 +250,34 @@ func drawTableV2(pdf *fpdf.Fpdf, t *PDFTable) {
 
 func writeBodyV2(pdf *fpdf.Fpdf, text string) {
 	lines := strings.Split(text, "\n")
+	inCodeBlock := false
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
+
+		// Handle code fences — render content as monospace, skip badge URLs
+		if strings.HasPrefix(line, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			cleaned := sanitize(line)
+			// Skip empty lines, badge URLs, and image references in code blocks
+			if cleaned == "" || strings.Contains(cleaned, "img.shields.io") ||
+				strings.Contains(cleaned, "[![") || strings.Contains(cleaned, "](http") ||
+				strings.HasPrefix(cleaned, "[!") {
+				continue
+			}
+			pdf.SetFont("Courier", "", 7)
+			pdf.SetTextColor(80, 80, 80)
+			pdf.MultiCell(contentW, 4, cleaned, "", "L", false)
+			continue
+		}
+
+		// Skip badge/shield image markdown outside code blocks too
+		if strings.Contains(line, "img.shields.io") || strings.Contains(line, "[![") {
+			continue
+		}
+
 		cleaned := sanitize(stripMarkdown(line))
 
 		switch {
@@ -314,8 +340,13 @@ func writeBodyV2(pdf *fpdf.Fpdf, text string) {
 	}
 }
 
-// sanitize replaces Unicode chars that fpdf can't render with ASCII equivalents.
+// sanitize replaces Unicode chars that fpdf can't render with ASCII equivalents
+// and strips HTML tags and emoji.
 func sanitize(s string) string {
+	// Strip HTML tags
+	s = stripHTML(s)
+
+	// Replace known Unicode chars
 	r := strings.NewReplacer(
 		"\u2014", "--",    // em dash
 		"\u2013", "-",     // en dash
@@ -337,8 +368,49 @@ func sanitize(s string) string {
 		"\u03b1", "alpha", // alpha
 		"\u03b2", "beta",  // beta
 		"\u221e", "inf",   // infinity
+		"\u2705", "[x]",   // check mark
+		"\u274c", "[ ]",   // cross mark
+		"\u26a0", "[!]",   // warning
 	)
-	return r.Replace(s)
+	s = r.Replace(s)
+
+	// Strip remaining emoji and non-Latin1 characters that fpdf can't handle
+	s = stripNonLatin1(s)
+
+	return s
+}
+
+// stripHTML removes HTML tags from a string.
+func stripHTML(s string) string {
+	var result strings.Builder
+	inTag := false
+	for _, ch := range s {
+		if ch == '<' {
+			inTag = true
+			continue
+		}
+		if ch == '>' {
+			inTag = false
+			continue
+		}
+		if !inTag {
+			result.WriteRune(ch)
+		}
+	}
+	return result.String()
+}
+
+// stripNonLatin1 removes characters outside the Latin-1 range (0x00-0xFF)
+// that fpdf cannot render, replacing them with reasonable ASCII alternatives.
+func stripNonLatin1(s string) string {
+	var result strings.Builder
+	for _, ch := range s {
+		if ch <= 0xFF {
+			result.WriteRune(ch)
+		}
+		// Characters > 0xFF (emoji, CJK, etc.) are silently dropped
+	}
+	return result.String()
 }
 
 func stripMarkdown(s string) string {

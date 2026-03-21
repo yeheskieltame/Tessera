@@ -1167,8 +1167,72 @@ func cmdAnalyzeProject(ctx context.Context) {
 		fmt.Printf("\n[6/7] OSO signals skipped (use -n <oso-name> to enable)\n")
 	}
 
-	// Step 7: AI synthesis
-	fmt.Printf("\n[7/7] Generating AI deep evaluation...\n")
+	// Step 7a: Adaptive signal collection
+	fmt.Printf("\n[7a/9] Adaptive signal collection — assessing gaps...\n")
+	collectedSignals := &analysis.CollectedSignals{
+		Address:       address,
+		HasHistory:    len(history) > 0,
+		HistoryEpochs: len(history),
+		HasTrust:      projectTrust != nil,
+		TrustProfile:  projectTrust,
+		HasChainData:  chainSignals != nil,
+		ChainSignals:  chainSignals,
+		HasOSO:        osoMetrics != "",
+		OSOMetrics:    osoMetrics,
+		HasGitHub:     false,
+		HasAnomalies:  false,
+		AnomalyCount:  0,
+		OSOName:       osoName,
+	}
+	adaptiveResult := analysis.AdaptiveCollect(ctx, collectedSignals, 2)
+	if len(adaptiveResult.GapsFilled) > 0 {
+		fmt.Printf("  Gaps filled (%d):\n", len(adaptiveResult.GapsFilled))
+		for _, g := range adaptiveResult.GapsFilled {
+			fmt.Printf("    + %s\n", g)
+		}
+		// Update osoMetrics if discovered
+		if adaptiveResult.ExtraOSO != "" && osoMetrics == "" {
+			osoMetrics = adaptiveResult.ExtraOSO
+		}
+	}
+	if len(adaptiveResult.GapsRemaining) > 0 {
+		fmt.Printf("  Remaining gaps (%d):\n", len(adaptiveResult.GapsRemaining))
+		for _, g := range adaptiveResult.GapsRemaining {
+			fmt.Printf("    - %s\n", g)
+		}
+	}
+
+	// Step 7b: Signal reliability assessment
+	fmt.Printf("\n[7b/9] Signal reliability assessment...\n")
+	reliabilityReport := analysis.AssessReliability(
+		projectTrust, chainSignals, osoMetrics, history, collectedSignals.HasGitHub, 0,
+	)
+	fmt.Printf("  Reliability: %.0f/100 | Completeness: %.0f%% | HIGH: %d | MEDIUM: %d | LOW: %d\n",
+		reliabilityReport.OverallScore, reliabilityReport.DataCompleteness,
+		reliabilityReport.HighCount, reliabilityReport.MediumCount, reliabilityReport.LowCount)
+
+	// Step 7c: Data freshness
+	fmt.Printf("\n[7c/9] Data freshness assessment...\n")
+	freshnessReport := analysis.BuildFreshnessReport(history, chainSignals, "", "", nil)
+	fmt.Printf("  Signals: %d | Real-time: %d | Stale: %d\n",
+		len(freshnessReport.Signals), freshnessReport.RealtimeCount, freshnessReport.StaleCount)
+
+	// Step 7d: Signal corroboration
+	fmt.Printf("\n[7d/9] Signal cross-verification...\n")
+	corroborationReport := analysis.CrossVerifySignals(projectTrust, chainSignals, nil, nil, history)
+	fmt.Printf("  Corroboration: %.0f/100 | Confirmed: %d | Conflicting: %d | Partial: %d\n",
+		corroborationReport.TrustScore, corroborationReport.ConfirmedCount,
+		corroborationReport.ConflictCount, corroborationReport.PartialCount)
+
+	// Step 7e: Donor behavior profiling
+	fmt.Printf("\n[7e/9] Donor behavior profiling...\n")
+	donorReport := analysis.BuildDonorProfiles(allProjects, allAmounts, allDonors, prevDonors)
+	fmt.Printf("  Donors: %d | Diversified: %d | Whales: %d | Sybil-risk: %d | Repeat: %.1f%%\n",
+		donorReport.TotalDonors, donorReport.DiversifiedCount, donorReport.WhaleCount,
+		donorReport.SybilRiskCount, donorReport.RepeatDonorPct)
+
+	// Step 8: AI synthesis
+	fmt.Printf("\n[8/9] Generating AI deep evaluation...\n")
 
 	var contextData strings.Builder
 	contextData.WriteString(fmt.Sprintf("Project: %s\n", address))
@@ -1267,6 +1331,26 @@ func cmdAnalyzeProject(ctx context.Context) {
 			{
 				Heading: "Multi-Chain Activity",
 				Body:    chainContext,
+			},
+			{
+				Heading: "Signal Reliability Assessment",
+				Body:    analysis.FormatReliabilityReport(reliabilityReport),
+			},
+			{
+				Heading: "Adaptive Signal Collection",
+				Body:    analysis.FormatAdaptiveResult(adaptiveResult),
+			},
+			{
+				Heading: "Data Freshness Assessment",
+				Body:    analysis.FormatFreshnessReport(freshnessReport),
+			},
+			{
+				Heading: "Signal Corroboration",
+				Body:    analysis.FormatCorroborationReport(corroborationReport),
+			},
+			{
+				Heading: "Donor Behavior Profiling",
+				Body:    analysis.FormatDonorProfileReport(donorReport),
 			},
 			{
 				Heading: "AI Deep Evaluation",
@@ -1430,15 +1514,81 @@ func cmdCollectSignals(ctx context.Context) {
 		allSignals += "\n" + chainFormatted
 	}
 
+	// Octant Discourse community signals
+	fmt.Printf("\nCollecting Octant Discourse signals for: %s\n", projectName)
+	discourse := data.NewOctantDiscourseClient()
+	communitySignals := discourse.CollectCommunitySignals(ctx, projectName)
+	if communitySignals.TopicsFound > 0 {
+		formatted := communitySignals.FormatCommunitySignals()
+		fmt.Println(formatted)
+		allSignals += "\n" + formatted
+	} else {
+		fmt.Println("  No Discourse threads found.")
+	}
+
+	// Optimism RetroPGF cross-ecosystem validation
+	fmt.Printf("\nChecking Optimism RetroPGF for: %s\n", projectName)
+	retropgf := data.NewRetroPGFClient()
+	crossEco := retropgf.FindInRetroPGF(ctx, projectName, "", "")
+	if crossEco.InRetroPGF {
+		formatted := data.FormatCrossEcosystem(crossEco)
+		fmt.Println(formatted)
+		allSignals += "\n" + formatted
+	} else {
+		fmt.Println("  Not found in RetroPGF Round 3.")
+	}
+	if crossEco.OptimismDiscourse != nil && crossEco.OptimismDiscourse.TopicsFound > 0 {
+		formatted := crossEco.OptimismDiscourse.FormatCommunitySignals()
+		fmt.Println(formatted)
+		allSignals += "\n" + formatted
+	}
+
 	if allSignals == "" {
 		fmt.Println("\nNo signals found from any source.")
 		return
 	}
 
+	// Signal Reliability Assessment
+	fmt.Println("\n══════ Signal Quality Assessment ══════")
+	var ghSignals *data.GitHubSignals
+	var osoSig *data.ProjectSignals
+	if osoFormatted != "No OSO data available for this project." && osoFormatted != "" {
+		osoSig = osoSignals
+	}
+	hasGH := false
+	if strings.Contains(projectName, "/") {
+		parts := strings.SplitN(projectName, "/", 2)
+		ghClient := data.NewGitHubClient()
+		ghSignals = ghClient.CollectGitHubSignals(ctx, parts[0], parts[1])
+		hasGH = ghSignals != nil && ghSignals.Repo != nil
+	}
+
+	// Freshness
+	var githubPushedAt, githubUpdatedAt string
+	if ghSignals != nil && ghSignals.Repo != nil {
+		githubPushedAt = ghSignals.Repo.PushedAt
+		githubUpdatedAt = ghSignals.Repo.UpdatedAt
+	}
+	freshnessReport := analysis.BuildFreshnessReport(nil, nil, githubPushedAt, githubUpdatedAt, osoSig)
+	if len(freshnessReport.Signals) > 0 {
+		fmt.Println(analysis.FormatFreshnessReport(freshnessReport))
+	}
+
+	// Reliability
+	reliabilityReport := analysis.AssessReliability(nil, nil, osoFormatted, nil, hasGH, 0)
+	fmt.Printf("Reliability: %.0f/100 | Completeness: %.0f%%\n", reliabilityReport.OverallScore, reliabilityReport.DataCompleteness)
+	fmt.Printf("HIGH: %d | MEDIUM: %d | LOW: %d signals\n\n", reliabilityReport.HighCount, reliabilityReport.MediumCount, reliabilityReport.LowCount)
+
+	// Corroboration
+	corrobReport := analysis.CrossVerifySignals(nil, nil, osoSig, ghSignals, nil)
+	if len(corrobReport.Checks) > 0 {
+		fmt.Println(analysis.FormatCorroborationReport(corrobReport))
+	}
+
 	// AI analysis if available
 	ai := provider.New()
 	if ai.HasProviders() {
-		fmt.Println("\nGenerating signal analysis...")
+		fmt.Println("Generating signal analysis...")
 		prompt := fmt.Sprintf(`Analyze these development and activity signals for the project "%s":
 
 %s
@@ -1449,10 +1599,11 @@ Provide:
 3. **Funding Efficiency**: How does funding received compare to development output? (if funding data available)
 4. **Legitimacy Signals**: What signals suggest this is a legitimate public good vs. potential gaming?
 5. **Red Flags**: Any concerning patterns in the data?
+6. **Signal Quality**: Which data sources agree? Any contradictions? What's missing?
 
 Be specific and reference the numbers.`, projectName, allSignals)
 
-		result, err := ai.Complete(ctx, prompt, "You are a public goods data analyst specializing in cross-referencing GitHub activity, on-chain metrics, and funding data to assess project legitimacy.")
+		result, err := ai.Complete(ctx, prompt, "You are a public goods data analyst specializing in cross-referencing GitHub activity, on-chain metrics, and funding data to assess project legitimacy and signal quality.")
 		if err == nil {
 			fmt.Printf("\n%s\n\n[via %s/%s]\n", result.Text, result.Provider, result.Model)
 		}

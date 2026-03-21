@@ -10,6 +10,7 @@ import {
   getProviders,
   selectProvider,
   streamAnalyzeProject,
+  streamEvaluateProject,
   analyzeEpoch,
   getTrustGraph,
   getSimulation,
@@ -23,7 +24,7 @@ import {
 
 const API = "";
 
-/* ─── Step definitions for the 9-step pipeline ─── */
+/* ─── Step definitions for the 11-step pipeline ─── */
 const PIPELINE_STEPS = [
   { num: 1, label: "Funding History", icon: "H", color: "blue" },
   { num: 2, label: "Quantitative Scoring", icon: "Q", color: "teal" },
@@ -34,6 +35,17 @@ const PIPELINE_STEPS = [
   { num: 7, label: "Blockchain Scan", icon: "B", color: "emerald" },
   { num: 8, label: "OSO Signals", icon: "O", color: "cyan" },
   { num: 9, label: "AI Evaluation", icon: "AI", color: "indigo" },
+  { num: 10, label: "Adaptive Collection", icon: "AC", color: "orange" },
+  { num: 11, label: "Signal Reliability", icon: "SR", color: "lime" },
+];
+
+/* ─── Step definitions for the 5-step evaluate pipeline ─── */
+const EVAL_PIPELINE_STEPS = [
+  { num: 1, label: "Input Validation", icon: "V", color: "blue" },
+  { num: 2, label: "GitHub Signals", icon: "G", color: "teal" },
+  { num: 3, label: "AI Evaluation (8 Dim)", icon: "AI", color: "violet" },
+  { num: 4, label: "Signal Reliability", icon: "SR", color: "lime" },
+  { num: 5, label: "PDF Generation", icon: "P", color: "indigo" },
 ];
 
 /* ─── Types ─── */
@@ -289,29 +301,76 @@ export default function DashboardPage() {
     };
   }
 
-  /* ─── Evaluate Project (AI Qualitative) ─── */
+  /* ─── Evaluate Project (AI Qualitative) with Streaming ─── */
   const [evalName, setEvalName] = useState("");
   const [evalDesc, setEvalDesc] = useState("");
   const [evalGithub, setEvalGithub] = useState("");
   const [evalResult, setEvalResult] = useState<string | null>(null);
   const [evalReportPath, setEvalReportPath] = useState<string | null>(null);
   const [evalLoading, setEvalLoading] = useState(false);
+  const [evalSteps, setEvalSteps] = useState<StepState[]>(
+    EVAL_PIPELINE_STEPS.map(() => ({ status: "pending", message: "" }))
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [evalFullResult, setEvalFullResult] = useState<any>(null);
 
-  async function runEvaluate() {
+  function runEvaluate() {
     if (!evalName || !evalDesc) return;
-    setEvalLoading(true); setEvalResult(null); setEvalReportPath(null);
-    try {
-      const res = await fetch(`${API}/api/evaluate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: evalName, description: evalDesc, ...(evalGithub && { githubURL: evalGithub }) }),
-      });
-      const d = await res.json();
-      setEvalResult(d.evaluation || d.error || "No result");
-      if (d.reportPath) setEvalReportPath(d.reportPath);
-      getReports().then(setReports).catch(() => {});
-    } catch {}
-    setEvalLoading(false);
+    setEvalLoading(true);
+    setEvalResult(null);
+    setEvalReportPath(null);
+    setEvalFullResult(null);
+    setEvalSteps(EVAL_PIPELINE_STEPS.map(() => ({ status: "pending", message: "" })));
+
+    const es = streamEvaluateProject(evalName, evalDesc, evalGithub || undefined);
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+
+        if (msg.step === "done") {
+          setEvalFullResult(msg.result || msg);
+          setEvalResult(msg.result?.evaluation || null);
+          if (msg.result?.reportPath) setEvalReportPath(msg.result.reportPath);
+          setEvalLoading(false);
+          setEvalSteps(prev => prev.map(s =>
+            s.status === "pending" || s.status === "running" ? { ...s, status: "done" } : s
+          ));
+          es.close();
+          getReports().then(setReports).catch(() => {});
+          return;
+        }
+
+        if (msg.step === "error") {
+          setEvalLoading(false);
+          setEvalSteps(prev => prev.map(s =>
+            s.status === "running" ? { ...s, status: "error", message: msg.error || "Error" } : s
+          ));
+          es.close();
+          return;
+        }
+
+        const stepNum = Number(msg.step);
+        const hasData = !!msg.data;
+        if (!stepNum || stepNum < 1) return;
+
+        setEvalSteps(prev => prev.map((s, i) => {
+          const idx = i + 1;
+          if (idx < stepNum) return s.status === "done" ? s : { ...s, status: "done" };
+          if (idx === stepNum) {
+            if (hasData) return { status: "done", message: msg.message || s.message, data: msg.data };
+            return { status: "running", message: msg.message || "", data: s.data };
+          }
+          return s;
+        }));
+      } catch {}
+    };
+    es.onerror = () => {
+      setEvalLoading(false);
+      setEvalSteps(prev => prev.map(s =>
+        s.status === "running" ? { ...s, status: "error", message: "Connection lost" } : s
+      ));
+      es.close();
+    };
   }
 
   /* ─── Reports ─── */
@@ -677,10 +736,14 @@ export default function DashboardPage() {
               <span>{evalLoading ? "Running evaluation..." : "tessera evaluate"}</span>
             </button>
 
-            {evalLoading && (
-              <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-white/60 border border-violet-200/50">
-                <div className="w-5 h-5 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
-                <span className="text-xs text-violet-600">AI is evaluating across 8 dimensions...</span>
+            {/* ─── Evaluate Pipeline Progress ─── */}
+            {(evalLoading || evalSteps.some(s => s.status !== "pending")) && (
+              <div className="mt-4 p-3 rounded-xl bg-white/60 border border-violet-200/50">
+                <div className="space-y-0">
+                  {EVAL_PIPELINE_STEPS.map((step, i) => (
+                    <StepItem key={step.num} step={step} state={evalSteps[i]} isLast={i === EVAL_PIPELINE_STEPS.length - 1} />
+                  ))}
+                </div>
               </div>
             )}
 
@@ -689,6 +752,15 @@ export default function DashboardPage() {
                 <ExpandableSection title="AI Evaluation Result (8 Dimensions)" defaultOpen>
                   <pre className="text-xs whitespace-pre-wrap text-slate-700 leading-relaxed">{evalResult}</pre>
                 </ExpandableSection>
+                {evalFullResult?.reliability && (
+                  <ExpandableSection title="Signal Reliability">
+                    <div className="text-xs text-slate-700 space-y-1">
+                      <p><span className="font-semibold">Reliability Score:</span> {Number(evalFullResult.reliability.overallScore).toFixed(0)}/100</p>
+                      <p><span className="font-semibold">Data Completeness:</span> {Number(evalFullResult.reliability.dataCompleteness).toFixed(0)}%</p>
+                      <p><span className="font-semibold">Signals:</span> {evalFullResult.reliability.highCount} HIGH | {evalFullResult.reliability.mediumCount} MEDIUM | {evalFullResult.reliability.lowCount} LOW</p>
+                    </div>
+                  </ExpandableSection>
+                )}
                 {evalReportPath && (
                   <div className="flex gap-2">
                     <button onClick={() => { const f = String(evalReportPath).split("/").pop(); setViewPdf(`/api/reports/${f}`); }}
@@ -715,7 +787,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-800">Analysis Complete</h3>
-                <p className="text-xs text-slate-700">All 9 pipeline steps finished. Expand each section to explore the data.</p>
+                <p className="text-xs text-slate-700">All 11 pipeline steps finished. Expand each section to explore the data.</p>
               </div>
             </div>
 

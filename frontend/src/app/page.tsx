@@ -18,8 +18,8 @@ const NAV_LINKS = [
 
 const STATS = [
   { value: "20", label: "CLI Commands" },
-  { value: "9", label: "Pipeline Steps" },
-  { value: "7", label: "Data Sources" },
+  { value: "11", label: "Pipeline Steps" },
+  { value: "9", label: "Data Sources" },
   { value: "9", label: "EVM Chains" },
   { value: "4", label: "QF Mechanisms" },
   { value: "12", label: "AI Models" },
@@ -35,6 +35,8 @@ const PIPELINE_STEPS = [
   { num: 7, title: "Blockchain Scan", desc: "9 EVM chains concurrent scan: balance, txs, contracts, USDC/USDT/DAI via eth_call", source: "RPC", ai: false, color: "from-emerald-500 to-emerald-600" },
   { num: 8, title: "Code Signals", desc: "OSO metrics or GitHub API fallback: stars, forks, commits, contributors", source: "OSO/GitHub", ai: false, color: "from-cyan-500 to-cyan-600" },
   { num: 9, title: "AI Deep Evaluation", desc: "Evidence-grounded narrative using ALL data from steps 1-8 via LLM", source: "AI Provider", ai: true, color: "from-indigo-500 to-indigo-600" },
+  { num: 10, title: "Adaptive Collection", desc: "Detect data gaps, auto-discover OSO projects, GitHub repos, Gitcoin cross-references", source: "Multi-Source", ai: false, color: "from-orange-500 to-orange-600" },
+  { num: 11, title: "Signal Reliability", desc: "Classify every signal as HIGH/MEDIUM/LOW reliability with immutability and gameability assessment", source: "Assessment", ai: false, color: "from-lime-500 to-lime-600" },
 ];
 
 const DATA_SOURCES = [
@@ -44,7 +46,8 @@ const DATA_SOURCES = [
   { name: "GitHub", protocol: "REST", data: "Repo metrics, contributors, README content", url: "api.github.com" },
   { name: "Blockchain", protocol: "JSON-RPC", data: "Balance, txs, contracts, ERC-20 tokens (9 chains)", url: "Public RPCs" },
   { name: "Explorers", protocol: "REST", data: "Recent transactions, token transfers, contract verification", url: "Etherscan-compatible" },
-  { name: "Moltbook", protocol: "REST", data: "Social posts, heartbeats, community engagement", url: "moltbook.com" },
+  { name: "Octant Discourse", protocol: "REST", data: "Community threads, engagement, likes, team responsiveness", url: "discuss.octant.app" },
+  { name: "Optimism RetroPGF", protocol: "REST", data: "Cross-ecosystem validation, impact categories, funding sources", url: "round3.optimism.io" },
 ];
 
 const CHAINS = [
@@ -294,7 +297,7 @@ GEMINI_API_KEY=AI...`} />
 
       {/* Primary Commands */}
       <Reveal delay={300}>
-        <AccordionItem title="Full Project Intelligence (9-step pipeline)" tag="Primary">
+        <AccordionItem title="Full Project Intelligence (11-step pipeline)" tag="Primary">
           <p className="text-xs text-white/80 mb-4">The main command. Runs all 9 analysis steps against an Octant project address and generates a branded PDF report.</p>
           <CodeBlock code={`./tessera analyze-project 0x9531C059098e3d194fF87FebB587aB07B30B1306 -e 5
 
@@ -565,7 +568,7 @@ export default function LandingPage() {
                       </div>
                     ))}
                   </div>
-                  <p className="text-[9px] text-white/60 mt-2 text-center">9-step evidence pipeline</p>
+                  <p className="text-[9px] text-white/60 mt-2 text-center">11-step evidence pipeline</p>
                 </div>
               </div>
             </div>
@@ -592,7 +595,7 @@ export default function LandingPage() {
               </div>
 
               <p className="text-sm text-white/80 max-w-lg leading-relaxed mb-8 animate-[fadeIn_1s_ease-out_0.3s_both]">
-                20 CLI commands. 9-step evidence pipeline. 7 data sources. 9 EVM chains.
+                20 CLI commands. 11-step evidence pipeline. 9 data sources. 9 EVM chains.
                 Trust graph analysis, mechanism simulation, and LLM-driven evaluation
                 for the Octant and Gitcoin ecosystems.
               </p>
@@ -728,7 +731,7 @@ export default function LandingPage() {
                   <span className="text-lg font-bold text-white">Tessera</span>
                 </div>
                 <p className="text-sm text-white/90 leading-relaxed">
-                  Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources, run deterministic analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis.
+                  Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources, run deterministic analysis, scan 9 blockchains, feed evidence into an LLM for synthesis, then assess signal reliability and adaptively fill data gaps.
                   For concrete evidence, read{" "}
                   <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2 hover:text-blue-300">
                     FINDINGS.md
@@ -1009,7 +1012,7 @@ export default function LandingPage() {
           {/* Feed into Step 9 */}
           <Reveal delay={500}>
             <div className="text-center my-3">
-              <span className="text-xs text-white/70 font-mono">Steps 1-8 feed into Step 9</span>
+              <span className="text-xs text-white/70 font-mono">Steps 1-8 feed into Step 9 (AI Synthesis)</span>
               <div className="flex justify-center mt-1">
                 <svg width="40" height="20" className="text-white/50"><path d="M20 0 L20 14 M14 10 L20 16 L26 10" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
               </div>
@@ -1061,6 +1064,76 @@ export default function LandingPage() {
               </div>
             </div>
           </Reveal>
+
+          {/* Steps 10-11: Signal Quality Framework */}
+          <Reveal delay={600}>
+            <div className="text-center my-3">
+              <span className="text-xs text-white/70 font-mono">Steps 10-11: Signal Quality Framework</span>
+              <div className="flex justify-center mt-1">
+                <svg width="40" height="20" className="text-white/50"><path d="M20 0 L20 14 M14 10 L20 16 L26 10" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+              </div>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Step 10: Adaptive Collection */}
+            <Reveal delay={650}>
+              <div className="rounded-2xl bg-white/[0.02] border border-orange-500/15 overflow-hidden hover:border-orange-500/30 transition-all">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white">10</span>
+                  <span className="text-sm font-bold text-white">Adaptive Collection</span>
+                  <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-orange-500/20 text-orange-300 uppercase ml-auto">NEW</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/80 mb-3">When signals are missing, autonomously discover additional data sources</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="w-4 h-4 rounded bg-orange-500/20 flex items-center justify-center text-orange-300">1</span>
+                      <span className="text-white/70">Assess gaps in collected data</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="w-4 h-4 rounded bg-orange-500/20 flex items-center justify-center text-orange-300">2</span>
+                      <span className="text-white/70">Auto-discover: OSO projects, GitHub repos, Gitcoin rounds</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="w-4 h-4 rounded bg-orange-500/20 flex items-center justify-center text-orange-300">3</span>
+                      <span className="text-white/70">Re-assess and iterate (up to 2 rounds)</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-right"><span className="text-[9px] text-orange-400 font-mono">Multi-Source</span></div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 11: Signal Reliability */}
+            <Reveal delay={700}>
+              <div className="rounded-2xl bg-white/[0.02] border border-lime-500/15 overflow-hidden hover:border-lime-500/30 transition-all">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white">11</span>
+                  <span className="text-sm font-bold text-white">Signal Reliability</span>
+                  <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-lime-500/20 text-lime-300 uppercase ml-auto">NEW</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/80 mb-3">Classify every signal by trustworthiness — not all data is equal</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-500/20 text-green-300">HIGH</span>
+                      <span className="text-white/70">On-chain data, Shannon entropy, protocol allocations</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-yellow-500/20 text-yellow-300">MED</span>
+                      <span className="text-white/70">OSO metrics, contributor counts, commit frequency</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-300">LOW</span>
+                      <span className="text-white/70">GitHub stars, self-reported claims, proposal text</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-right"><span className="text-[9px] text-lime-400 font-mono">Assessment</span></div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 
@@ -1124,12 +1197,14 @@ export default function LandingPage() {
 
                 {[
                   { y: 228, name: "Octant", proto: "REST" },
-                  { y: 248, name: "Gitcoin", proto: "GraphQL" },
-                  { y: 268, name: "OSO", proto: "GraphQL" },
-                  { y: 288, name: "GitHub", proto: "REST" },
-                  { y: 308, name: "Blockchain", proto: "RPC" },
-                  { y: 328, name: "Explorers", proto: "REST" },
-                  { y: 348, name: "Moltbook", proto: "REST" },
+                  { y: 244, name: "Gitcoin", proto: "GraphQL" },
+                  { y: 260, name: "OSO", proto: "GraphQL" },
+                  { y: 276, name: "GitHub", proto: "REST" },
+                  { y: 292, name: "Blockchain", proto: "RPC x9" },
+                  { y: 308, name: "Explorers", proto: "REST" },
+                  { y: 324, name: "Discourse", proto: "REST" },
+                  { y: 340, name: "RetroPGF", proto: "REST" },
+                  { y: 356, name: "Optimism Gov", proto: "REST" },
                 ].map((src) => (
                   <g key={src.name}>
                     <text x="90" y={src.y} fill="#ffffff" fontSize="8" opacity="0.8">{src.name}</text>
@@ -1138,14 +1213,16 @@ export default function LandingPage() {
                 ))}
 
                 {/* Analysis Layer */}
-                <rect x="260" y="200" width="185" height="130" rx="6" fill="#8b5cf6" fillOpacity="0.08" stroke="#8b5cf6" strokeWidth="1" strokeOpacity="0.3" />
+                <rect x="260" y="200" width="185" height="135" rx="6" fill="#8b5cf6" fillOpacity="0.08" stroke="#8b5cf6" strokeWidth="1" strokeOpacity="0.3" />
                 <text x="352" y="218" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600" opacity="1">ANALYSIS LAYER</text>
 
                 {[
-                  { y: 234, name: "Quantitative", desc: "K-means, scoring" },
-                  { y: 254, name: "Trust Graph", desc: "Entropy, Jaccard" },
-                  { y: 274, name: "Mechanism", desc: "4 QF simulations" },
-                  { y: 294, name: "Qualitative", desc: "LLM evaluation" },
+                  { y: 230, name: "Quantitative", desc: "K-means, scoring" },
+                  { y: 248, name: "Trust Graph", desc: "Entropy, Jaccard" },
+                  { y: 266, name: "Mechanism", desc: "4 QF simulations" },
+                  { y: 284, name: "Signal Quality", desc: "Reliability, freshness" },
+                  { y: 302, name: "Donor Profiling", desc: "Behavior classification" },
+                  { y: 320, name: "Qualitative", desc: "LLM evaluation" },
                 ].map((mod) => (
                   <g key={mod.name}>
                     <text x="280" y={mod.y} fill="#ffffff" fontSize="8" opacity="0.8">{mod.name}</text>
@@ -1167,13 +1244,15 @@ export default function LandingPage() {
                 <text x="520" y="250" fill="#ffffff" fontSize="9" fontWeight="600" opacity="0.8">EXTERNAL APIS</text>
 
                 {[
-                  { y: 268, name: "Octant REST API", url: "backend.mainnet.octant.app" },
-                  { y: 288, name: "Gitcoin GraphQL", url: "grants-stack-indexer-v2.gitcoin.co" },
-                  { y: 308, name: "OSO GraphQL", url: "opensource.observer" },
-                  { y: 328, name: "GitHub REST", url: "api.github.com" },
-                  { y: 348, name: "9 EVM RPCs", url: "publicnode, base.org, optimism.io..." },
-                  { y: 368, name: "Claude / Gemini / OpenAI", url: "AI Provider APIs" },
-                  { y: 388, name: "Block Explorers", url: "Etherscan-compatible" },
+                  { y: 264, name: "Octant REST API", url: "backend.mainnet.octant.app" },
+                  { y: 280, name: "Gitcoin GraphQL", url: "grants-stack-indexer-v2.gitcoin.co" },
+                  { y: 296, name: "OSO GraphQL", url: "opensource.observer" },
+                  { y: 312, name: "GitHub REST", url: "api.github.com" },
+                  { y: 328, name: "9 EVM RPCs", url: "publicnode, base.org, optimism.io..." },
+                  { y: 344, name: "Octant Discourse", url: "discuss.octant.app" },
+                  { y: 360, name: "Optimism RetroPGF", url: "round3.optimism.io" },
+                  { y: 376, name: "Claude / Gemini / OpenAI", url: "AI Provider APIs" },
+                  { y: 392, name: "Block Explorers", url: "Etherscan-compatible" },
                 ].map((api) => (
                   <g key={api.name}>
                     <text x="520" y={api.y} fill="#ffffff" fontSize="8" opacity="0.8">{api.name}</text>
