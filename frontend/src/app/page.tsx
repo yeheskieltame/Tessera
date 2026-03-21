@@ -749,10 +749,10 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto relative">
           <Reveal>
-            <h2 className="text-5xl sm:text-6xl font-black text-center text-white mb-3 tracking-tight">9-STEP EVIDENCE PIPELINE</h2>
+            <h2 className="text-5xl sm:text-6xl font-black text-center text-white mb-3 tracking-tight">11-STEP EVIDENCE PIPELINE</h2>
             <div className="max-w-2xl mx-auto mb-16">
               <div className="px-5 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-center">
-                <p className="text-sm text-white/90">Each step produces structured data that accumulates. Steps 1-8 are deterministic. Step 9 feeds all evidence into an LLM.</p>
+                <p className="text-sm text-white/90">Each step produces structured data that accumulates. Steps 1-8 are deterministic. Step 9 synthesizes via AI. Steps 10-11 assess signal quality and fill gaps.</p>
               </div>
             </div>
           </Reveal>
@@ -1078,58 +1078,86 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Step 10: Adaptive Collection */}
             <Reveal delay={650}>
-              <div className="rounded-2xl bg-white/[0.02] border border-orange-500/15 overflow-hidden hover:border-orange-500/30 transition-all">
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-orange-500/20 transition-all">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
                   <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white">10</span>
                   <span className="text-sm font-bold text-white">Adaptive Collection</span>
                   <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-orange-500/20 text-orange-300 uppercase ml-auto">NEW</span>
                 </div>
                 <div className="p-4">
-                  <p className="text-[11px] text-white/80 mb-3">When signals are missing, autonomously discover additional data sources</p>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[10px]">
-                      <span className="w-4 h-4 rounded bg-orange-500/20 flex items-center justify-center text-orange-300">1</span>
-                      <span className="text-white/70">Assess gaps in collected data</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px]">
-                      <span className="w-4 h-4 rounded bg-orange-500/20 flex items-center justify-center text-orange-300">2</span>
-                      <span className="text-white/70">Auto-discover: OSO projects, GitHub repos, Gitcoin rounds</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px]">
-                      <span className="w-4 h-4 rounded bg-orange-500/20 flex items-center justify-center text-orange-300">3</span>
-                      <span className="text-white/70">Re-assess and iterate (up to 2 rounds)</span>
-                    </div>
+                  <p className="text-[11px] text-white/80 mb-3">Detect data gaps, auto-discover OSO, GitHub, Discourse, RetroPGF, Gitcoin</p>
+                  {/* SVG: Gap detection flow */}
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                    <svg viewBox="0 0 160 100" className="w-full h-full">
+                      {/* Sources as nodes */}
+                      {[
+                        { x: 25, y: 20, label: "OSO", found: true },
+                        { x: 25, y: 50, label: "GitHub", found: false },
+                        { x: 25, y: 80, label: "Gitcoin", found: false },
+                        { x: 80, y: 20, label: "Discourse", found: true },
+                        { x: 80, y: 50, label: "RetroPGF", found: true },
+                        { x: 80, y: 80, label: "Chain", found: true },
+                      ].map((s) => (
+                        <g key={s.label}>
+                          <rect x={s.x - 18} y={s.y - 8} width="36" height="16" rx="4" fill={s.found ? "#f97316" : "#ef4444"} opacity={s.found ? 0.15 : 0.08} stroke={s.found ? "#f97316" : "#ef4444"} strokeWidth="0.5" opacity-stroke={0.3} />
+                          <text x={s.x} y={s.y + 3} textAnchor="middle" fill={s.found ? "#fb923c" : "#f87171"} fontSize="7" opacity={0.8}>{s.label}</text>
+                          {s.found && <circle cx={s.x + 22} cy={s.y} r="3" fill="#22c55e" opacity="0.5" />}
+                          {!s.found && <text x={s.x + 22} y={s.y + 3} fill="#f87171" fontSize="7" opacity="0.4">?</text>}
+                        </g>
+                      ))}
+                      {/* Arrow: assess → discover */}
+                      <line x1="115" y1="30" x2="115" y2="70" stroke="#f97316" strokeWidth="1" opacity="0.3" strokeDasharray="3 2" />
+                      <text x="140" y="35" textAnchor="middle" fill="#fb923c" fontSize="6" opacity="0.5">Assess</text>
+                      <text x="140" y="55" textAnchor="middle" fill="#22c55e" fontSize="6" opacity="0.5">Fill</text>
+                      <text x="140" y="75" textAnchor="middle" fill="#fb923c" fontSize="6" opacity="0.5">Iterate</text>
+                      {/* Loop arrow */}
+                      <path d="M148 40 L148 68 L142 62" fill="none" stroke="#f97316" strokeWidth="0.8" opacity="0.3" />
+                    </svg>
                   </div>
-                  <div className="mt-3 text-right"><span className="text-[9px] text-orange-400 font-mono">Multi-Source</span></div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-orange-400 font-mono">Multi-Source</span></div>
                 </div>
               </div>
             </Reveal>
 
             {/* Step 11: Signal Reliability */}
             <Reveal delay={700}>
-              <div className="rounded-2xl bg-white/[0.02] border border-lime-500/15 overflow-hidden hover:border-lime-500/30 transition-all">
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-lime-500/20 transition-all">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
                   <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white">11</span>
                   <span className="text-sm font-bold text-white">Signal Reliability</span>
                   <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-lime-500/20 text-lime-300 uppercase ml-auto">NEW</span>
                 </div>
                 <div className="p-4">
-                  <p className="text-[11px] text-white/80 mb-3">Classify every signal by trustworthiness — not all data is equal</p>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[10px]">
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-500/20 text-green-300">HIGH</span>
-                      <span className="text-white/70">On-chain data, Shannon entropy, protocol allocations</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px]">
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-yellow-500/20 text-yellow-300">MED</span>
-                      <span className="text-white/70">OSO metrics, contributor counts, commit frequency</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px]">
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-300">LOW</span>
-                      <span className="text-white/70">GitHub stars, self-reported claims, proposal text</span>
-                    </div>
+                  <p className="text-[11px] text-white/80 mb-3">Classify every signal as HIGH/MEDIUM/LOW — cross-verify, assess freshness</p>
+                  {/* SVG: Reliability tier bars */}
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                    <svg viewBox="0 0 160 100" className="w-full h-full">
+                      {/* HIGH tier */}
+                      <rect x="10" y="10" width="85" height="22" rx="4" fill="#22c55e" opacity="0.1" stroke="#22c55e" strokeWidth="0.5" strokeOpacity="0.3" />
+                      <text x="16" y="24" fill="#4ade80" fontSize="8" fontWeight="bold" opacity="0.7">HIGH</text>
+                      <text x="52" y="24" fill="#ffffff" fontSize="6" opacity="0.5">On-chain, entropy, protocol</text>
+                      <rect x="100" y="14" width={50 * 0.89} height="14" rx="3" fill="#22c55e" opacity="0.25" />
+                      <text x={100 + 50 * 0.89 + 4} y="24" fill="#4ade80" fontSize="7" opacity="0.6">89%</text>
+
+                      {/* MEDIUM tier */}
+                      <rect x="10" y="38" width="85" height="22" rx="4" fill="#eab308" opacity="0.1" stroke="#eab308" strokeWidth="0.5" strokeOpacity="0.3" />
+                      <text x="16" y="52" fill="#facc15" fontSize="8" fontWeight="bold" opacity="0.7">MED</text>
+                      <text x="48" y="52" fill="#ffffff" fontSize="6" opacity="0.5">OSO, commits, contributors</text>
+                      <rect x="100" y="42" width={50 * 0.6} height="14" rx="3" fill="#eab308" opacity="0.25" />
+                      <text x={100 + 50 * 0.6 + 4} y="52" fill="#facc15" fontSize="7" opacity="0.6">60%</text>
+
+                      {/* LOW tier */}
+                      <rect x="10" y="66" width="85" height="22" rx="4" fill="#ef4444" opacity="0.1" stroke="#ef4444" strokeWidth="0.5" strokeOpacity="0.3" />
+                      <text x="16" y="80" fill="#f87171" fontSize="8" fontWeight="bold" opacity="0.7">LOW</text>
+                      <text x="48" y="80" fill="#ffffff" fontSize="6" opacity="0.5">Stars, self-reported claims</text>
+                      <rect x="100" y="70" width={50 * 0.2} height="14" rx="3" fill="#ef4444" opacity="0.25" />
+                      <text x={100 + 50 * 0.2 + 4} y="80" fill="#f87171" fontSize="7" opacity="0.6">20%</text>
+
+                      {/* Score */}
+                      <text x="145" y="96" textAnchor="end" fill="#84cc16" fontSize="7" opacity="0.4">Score: 89/100</text>
+                    </svg>
                   </div>
-                  <div className="mt-3 text-right"><span className="text-[9px] text-lime-400 font-mono">Assessment</span></div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-lime-400 font-mono">Assessment</span></div>
                 </div>
               </div>
             </Reveal>

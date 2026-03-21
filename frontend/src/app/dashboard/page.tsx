@@ -648,7 +648,7 @@ export default function DashboardPage() {
             <p className="text-xs text-slate-700 font-mono mb-4 ml-9">./tessera analyze-project &lt;address&gt;</p>
 
             <div className="mb-3 p-2.5 rounded-lg bg-blue-50/80 border border-blue-200/50 text-xs text-slate-800 leading-relaxed">
-              9-step pipeline: funding history, quantitative scoring, trust graph, mechanism simulation, temporal anomalies, multi-layer scoring, multi-chain blockchain scan (9 chains + USDC/USDT/DAI), OSO signals, and AI deep evaluation. Generates PDF report.
+              11-step pipeline: funding history, quantitative scoring, trust graph, mechanism simulation, temporal anomalies, multi-layer scoring, multi-chain blockchain scan (9 chains), OSO/GitHub signals, AI deep evaluation, adaptive signal collection (Discourse + RetroPGF), and signal reliability assessment. Generates branded PDF report.
             </div>
 
             <div className="mb-3">
@@ -676,7 +676,7 @@ export default function DashboardPage() {
               <span>{projectLoading ? `Running step ${currentStep}/9...` : "tessera analyze-project"}</span>
             </button>
 
-            {/* ─── 9-Step Pipeline Progress ─── */}
+            {/* ─── 11-Step Pipeline Progress ─── */}
             {pipelineActive && (
               <div className="mt-5 p-4 rounded-2xl bg-white/60 border border-slate-200/50">
                 <div className="flex items-center justify-between mb-3">
