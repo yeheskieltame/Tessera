@@ -6,13 +6,59 @@ interface Message {
   role: "user" | "assistant";
   text: string;
   model?: string;
+  command?: string;
+}
+
+/* Simple markdown-like rendering: **bold**, `code`, \n */
+function FormatText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, i) => {
+        if (!line.trim()) return <div key={i} className="h-1" />;
+
+        // Table row detection (contains |)
+        const isTableRow = line.includes("|") && line.trim().startsWith("|") || (line.split("|").length >= 3 && !line.startsWith("-"));
+        const isSeparator = /^[\s|:-]+$/.test(line);
+
+        if (isSeparator) return null;
+
+        if (isTableRow) {
+          const cells = line.split("|").map(c => c.trim()).filter(Boolean);
+          return (
+            <div key={i} className="flex gap-2 text-[11px] font-mono py-0.5 border-b border-white/5">
+              {cells.map((cell, j) => (
+                <span key={j} className={`flex-1 ${j === 0 ? "text-white/90 font-semibold" : "text-white/70"} truncate`}>{cell}</span>
+              ))}
+            </div>
+          );
+        }
+
+        // Process inline formatting
+        const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+        return (
+          <p key={i} className="text-[13px] leading-relaxed">
+            {parts.map((part, j) => {
+              if (part.startsWith("**") && part.endsWith("**")) {
+                return <strong key={j} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+              }
+              if (part.startsWith("`") && part.endsWith("`")) {
+                return <code key={j} className="px-1 py-0.5 rounded bg-white/10 text-blue-300 text-[11px] font-mono">{part.slice(1, -1)}</code>;
+              }
+              return <span key={j}>{part}</span>;
+            })}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function ChatBubble() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", text: "Hi, I'm Tessera. Ask me anything about public goods evaluation, Octant data, or how to use the analysis tools." },
+    { role: "assistant", text: "Hi, I'm Tessera Agent. I can analyze Octant epochs, detect whale concentration, run trust-graph analysis, simulate QF mechanisms, and scan blockchains.\n\nTry asking:\n**\"analyze epoch 5\"**\n**\"whale concentration\"**\n**\"simulate mechanisms\"**" },
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,7 +85,12 @@ export default function ChatBubble() {
       });
       const data = await res.json();
       if (data.reply) {
-        setMessages((prev) => [...prev, { role: "assistant", text: data.reply, model: data.model }]);
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          text: data.reply,
+          model: data.model,
+          command: data.command,
+        }]);
       } else if (data.error) {
         setMessages((prev) => [...prev, { role: "assistant", text: `Error: ${data.error}` }]);
       }
@@ -54,37 +105,72 @@ export default function ChatBubble() {
     <>
       {/* Chat Panel */}
       {open && (
-        <div className="fixed bottom-20 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-8rem)] rounded-2xl border border-white/10 bg-[#0d1117] shadow-2xl shadow-black/50 flex flex-col overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+        <div className="fixed bottom-24 right-6 z-50 w-[460px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100vh-8rem)] rounded-2xl border border-white/10 bg-[#0b0f1a]/95 backdrop-blur-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden animate-[chatOpen_0.3s_ease-out]">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-            <div className="flex items-center gap-2">
-              <img src="/tessera-icon-64.png" alt="" className="w-5 h-5" />
-              <span className="text-sm font-bold text-white">Tessera Agent</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <img src="/tessera-icon-64.png" alt="" className="w-7 h-7" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#0b0f1a]" />
+              </div>
+              <div>
+                <span className="text-sm font-bold text-white block leading-tight">Tessera Agent</span>
+                <span className="text-[10px] text-emerald-400">Online</span>
+              </div>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white text-lg leading-none">&times;</button>
+            <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-lg hover:bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed ${
+              <div key={i} className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                {/* Avatar */}
+                {msg.role === "assistant" && (
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mt-0.5">
+                    <img src="/tessera-icon-64.png" alt="" className="w-4 h-4" />
+                  </div>
+                )}
+
+                {/* Bubble */}
+                <div className={`max-w-[85%] ${
                   msg.role === "user"
-                    ? "bg-blue-500 text-white rounded-br-sm"
-                    : "bg-white/[0.06] text-white/90 border border-white/5 rounded-bl-sm"
+                    ? "bg-blue-500 rounded-2xl rounded-br-md px-4 py-2.5"
+                    : "bg-white/[0.04] border border-white/[0.08] rounded-2xl rounded-bl-md px-4 py-3"
                 }`}>
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
-                  {msg.model && (
-                    <p className="text-[9px] text-white/30 mt-1 font-mono">{msg.model}</p>
+                  {msg.command && (
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="text-[10px] font-mono text-emerald-300">executed: {msg.command}</span>
+                    </div>
+                  )}
+
+                  <div className={msg.role === "user" ? "text-white text-[13px]" : "text-white/85"}>
+                    {msg.role === "user" ? (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    ) : (
+                      <FormatText text={msg.text} />
+                    )}
+                  </div>
+
+                  {msg.model && msg.model !== "none" && (
+                    <div className="mt-2 pt-1.5 border-t border-white/5">
+                      <span className="text-[9px] text-white/30 font-mono">{msg.model}</span>
+                    </div>
                   )}
                 </div>
               </div>
             ))}
+
             {loading && (
-              <div className="flex justify-start">
-                <div className="px-3 py-2 rounded-xl bg-white/[0.06] border border-white/5 rounded-bl-sm">
-                  <div className="flex items-center gap-1">
+              <div className="flex gap-2.5">
+                <div className="flex-shrink-0 w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                  <img src="/tessera-icon-64.png" alt="" className="w-4 h-4 animate-pulse" />
+                </div>
+                <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.04] border border-white/[0.08]">
+                  <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "150ms" }} />
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -94,8 +180,23 @@ export default function ChatBubble() {
             )}
           </div>
 
+          {/* Quick actions */}
+          {messages.length <= 1 && !loading && (
+            <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+              {["Analyze epoch 5", "Whale concentration", "Trust graph", "Simulate QF"].map((q) => (
+                <button
+                  key={q}
+                  onClick={() => { setInput(q); }}
+                  className="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-[11px] text-white/60 hover:text-white hover:border-white/15 transition"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Input */}
-          <div className="px-3 py-3 border-t border-white/10 bg-white/[0.02]">
+          <div className="px-4 py-3 border-t border-white/10">
             <form
               onSubmit={(e) => { e.preventDefault(); send(); }}
               className="flex items-center gap-2"
@@ -104,45 +205,69 @@ export default function ChatBubble() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about Octant, funding analysis..."
-                className="flex-1 bg-white/[0.06] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-blue-500/50"
+                className="flex-1 bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/40 transition"
                 disabled={loading}
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="px-3 py-2 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:bg-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center hover:bg-blue-400 disabled:opacity-20 disabled:cursor-not-allowed transition"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </button>
             </form>
-            <p className="text-[9px] text-white/20 mt-1.5 text-center">
-              API: POST /api/chat {"{"}&quot;message&quot;: &quot;...&quot;{"}"}
+            <p className="text-[9px] text-white/20 mt-2 text-center font-mono">
+              API: POST /api/chat
             </p>
           </div>
         </div>
       )}
 
-      {/* Floating Bubble Button */}
+      {/* Floating Bubble */}
       <button
         onClick={() => setOpen(!open)}
-        className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-2xl shadow-blue-500/30 flex items-center justify-center transition-all duration-300 ${
-          open
-            ? "bg-white/10 backdrop-blur-xl border border-white/20 rotate-0"
-            : "bg-blue-500 hover:bg-blue-400 hover:scale-110"
-        }`}
+        className="fixed bottom-6 right-6 z-50 group"
       >
-        {open ? (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        ) : (
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+        <div className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${
+          open
+            ? "bg-white/10 backdrop-blur-xl border border-white/20 scale-90"
+            : "bg-[#0b0f1a] border-2 border-blue-500/40 hover:border-blue-400/60 hover:scale-110 shadow-2xl shadow-blue-500/20"
+        }`}>
+          <img src="/tessera-icon-64.png" alt="Chat" className={`w-8 h-8 transition-all duration-300 ${open ? "opacity-50 scale-90" : "opacity-100"}`} />
+
+          {/* Chat indicator dots */}
+          {!open && (
+            <div className="absolute -top-1 -right-1 flex items-center gap-[2px] px-1.5 py-1 rounded-full bg-blue-500 shadow-lg shadow-blue-500/40">
+              <div className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: "0ms" }} />
+              <div className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: "200ms" }} />
+              <div className="w-1 h-1 rounded-full bg-white animate-bounce" style={{ animationDelay: "400ms" }} />
+            </div>
+          )}
+
+          {/* Close X when open */}
+          {open && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* Pulse ring */}
+        {!open && (
+          <div className="absolute inset-0 w-16 h-16 rounded-full border border-blue-500/20 animate-ping" style={{ animationDuration: "3s" }} />
         )}
       </button>
+
+      <style jsx global>{`
+        @keyframes chatOpen {
+          from { opacity: 0; transform: translateY(20px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </>
   );
 }
