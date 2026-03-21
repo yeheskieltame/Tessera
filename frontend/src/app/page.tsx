@@ -294,41 +294,170 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Problem ─── */}
-      <section id="problem" className="relative py-28 px-6">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            title="The Problem"
-            subtitle="Public goods evaluators in the Ethereum ecosystem face three core challenges that Tessera solves."
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { title: "Cognitive Overload", desc: "Octant distributes millions across 30+ projects per epoch. Each has funding data, donor patterns, on-chain activity, GitHub metrics, and proposals. No human can cross-reference all of this at scale." },
-              { title: "Invisible Manipulation", desc: "Quadratic funding is vulnerable to whale dominance and coordination. A project can rank #1 while being 90% dependent on a single donor. Simple metrics hide this structural problem." },
-              { title: "Qualitative Bottleneck", desc: "Proposal quality, team credibility, and community engagement require judgment. Too slow to apply manually across dozens of projects. Cannot be automated with rules alone." },
-            ].map((p, i) => (
-              <Reveal key={p.title} delay={i * 120}>
-                <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all h-full">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-4">
-                    <span className="text-sm font-bold text-red-400">{i + 1}</span>
-                  </div>
-                  <h3 className="text-base font-bold text-white mb-3">{p.title}</h3>
-                  <p className="text-sm text-white/40 leading-relaxed">{p.desc}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal delay={400}>
-            <div className="mt-10 p-5 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center">
-              <p className="text-sm text-blue-300/70">
-                Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources,
-                run deterministic analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis.
-                For concrete evidence, read{" "}
-                <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2">
-                  FINDINGS.md
-                </a>.
-              </p>
-            </div>
+      <section id="problem" className="relative py-28 px-6 overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 50%)" }} />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
+
+        <div className="max-w-6xl mx-auto relative">
+          <Reveal>
+            <h2 className="text-5xl sm:text-6xl lg:text-7xl font-black text-center text-white mb-4 tracking-tight">THE PROBLEM</h2>
+            <p className="text-center text-white/40 text-base max-w-2xl mx-auto mb-20">
+              Public goods evaluators in the Ethereum ecosystem face three core challenges that Tessera solves.
+            </p>
           </Reveal>
+
+          {/* Three problems in scattered visual layout */}
+          <div className="relative min-h-[700px] lg:min-h-[600px]">
+
+            {/* Problem 1: Cognitive Overload - top left */}
+            <Reveal delay={100}>
+              <div className="lg:absolute lg:top-0 lg:left-0 lg:w-[340px] mb-8 lg:mb-0">
+                {/* SVG Brain illustration */}
+                <div className="w-full h-48 mb-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/10 flex items-center justify-center overflow-hidden relative">
+                  <svg viewBox="0 0 200 160" className="w-40 h-32 opacity-60">
+                    <defs>
+                      <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#60a5fa" />
+                        <stop offset="100%" stopColor="#a78bfa" />
+                      </linearGradient>
+                    </defs>
+                    {/* Brain shape */}
+                    <path d="M100 20 C60 20 30 50 30 80 C30 110 55 140 100 140 C145 140 170 110 170 80 C170 50 140 20 100 20Z" fill="none" stroke="url(#brainGrad)" strokeWidth="2" />
+                    <path d="M100 25 L100 135" stroke="url(#brainGrad)" strokeWidth="1" strokeDasharray="4 3" />
+                    <path d="M70 40 Q80 60 65 80 Q50 100 70 120" fill="none" stroke="#60a5fa" strokeWidth="1.5" opacity="0.5" />
+                    <path d="M130 40 Q120 60 135 80 Q150 100 130 120" fill="none" stroke="#a78bfa" strokeWidth="1.5" opacity="0.5" />
+                    {/* Data particles */}
+                    <circle cx="50" cy="50" r="3" fill="#60a5fa" opacity="0.6"><animate attributeName="opacity" values="0.6;0.2;0.6" dur="2s" repeatCount="indefinite" /></circle>
+                    <circle cx="150" cy="60" r="2" fill="#a78bfa" opacity="0.4"><animate attributeName="opacity" values="0.4;0.1;0.4" dur="2.5s" repeatCount="indefinite" /></circle>
+                    <circle cx="80" cy="100" r="2.5" fill="#60a5fa" opacity="0.5"><animate attributeName="opacity" values="0.5;0.15;0.5" dur="1.8s" repeatCount="indefinite" /></circle>
+                    <circle cx="120" cy="45" r="2" fill="#818cf8" opacity="0.4"><animate attributeName="opacity" values="0.4;0.1;0.4" dur="3s" repeatCount="indefinite" /></circle>
+                    {/* Overload sparks */}
+                    <line x1="40" y1="30" x2="25" y2="15" stroke="#f87171" strokeWidth="1" opacity="0.4"><animate attributeName="opacity" values="0;0.4;0" dur="1.5s" repeatCount="indefinite" /></line>
+                    <line x1="160" y1="35" x2="175" y2="20" stroke="#f87171" strokeWidth="1" opacity="0.3"><animate attributeName="opacity" values="0;0.3;0" dur="2s" repeatCount="indefinite" /></line>
+                    <line x1="45" y1="110" x2="30" y2="125" stroke="#f87171" strokeWidth="1" opacity="0.3"><animate attributeName="opacity" values="0;0.3;0" dur="1.8s" repeatCount="indefinite" /></line>
+                  </svg>
+                  {/* Floating data labels */}
+                  <div className="absolute top-3 right-3 px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-[9px] text-blue-300/60 font-mono animate-pulse">30+ projects</div>
+                  <div className="absolute bottom-3 left-3 px-2 py-1 rounded bg-violet-500/10 border border-violet-500/20 text-[9px] text-violet-300/60 font-mono" style={{ animationDelay: "1s" }}>422 donors</div>
+                </div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-wide mb-3">Cognitive Overload</h3>
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Octant distributes millions across 30+ projects per epoch. Each has funding data, donor patterns, on-chain activity, GitHub metrics, and proposals. No human can cross-reference all of this at scale.
+                </p>
+              </div>
+            </Reveal>
+
+            {/* Problem 2: Invisible Manipulation - top right */}
+            <Reveal delay={200}>
+              <div className="lg:absolute lg:top-0 lg:right-0 lg:w-[340px] mb-8 lg:mb-0">
+                {/* SVG Whale/Chart illustration */}
+                <div className="w-full h-48 mb-4 rounded-2xl bg-gradient-to-br from-violet-500/10 to-pink-500/5 border border-violet-500/10 flex items-center justify-center overflow-hidden relative">
+                  <svg viewBox="0 0 200 160" className="w-44 h-36 opacity-60">
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#8b5cf6" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    {/* Chart axes */}
+                    <line x1="30" y1="130" x2="170" y2="130" stroke="#ffffff" strokeWidth="1" opacity="0.15" />
+                    <line x1="30" y1="130" x2="30" y2="20" stroke="#ffffff" strokeWidth="1" opacity="0.15" />
+                    {/* Bar chart - one massive bar (whale) */}
+                    <rect x="45" y="30" width="20" height="100" rx="3" fill="url(#chartGrad)" opacity="0.7">
+                      <animate attributeName="opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" />
+                    </rect>
+                    {/* Small bars (other donors) */}
+                    <rect x="75" y="115" width="14" height="15" rx="2" fill="#60a5fa" opacity="0.3" />
+                    <rect x="97" y="110" width="14" height="20" rx="2" fill="#60a5fa" opacity="0.25" />
+                    <rect x="119" y="118" width="14" height="12" rx="2" fill="#60a5fa" opacity="0.2" />
+                    <rect x="141" y="120" width="14" height="10" rx="2" fill="#60a5fa" opacity="0.15" />
+                    {/* Label: "97.9%" */}
+                    <text x="55" y="25" textAnchor="middle" fill="#f87171" fontSize="11" fontWeight="bold" opacity="0.8">97.9%</text>
+                    {/* Annotation line */}
+                    <line x1="55" y1="28" x2="55" y2="30" stroke="#f87171" strokeWidth="1" opacity="0.5" />
+                  </svg>
+                  <div className="absolute top-3 left-3 px-2 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-[9px] text-rose-300/60 font-mono">Donation pattern chart</div>
+                </div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-wide mb-3">Invisible Manipulation</h3>
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Quadratic funding is vulnerable to whale dominance and coordination. A project can rank #1 while being 90% dependent on a single donor. Secret coordination patterns can be seen.
+                </p>
+              </div>
+            </Reveal>
+
+            {/* Problem 3: Qualitative Bottleneck - bottom right */}
+            <Reveal delay={300}>
+              <div className="lg:absolute lg:bottom-0 lg:right-0 lg:w-[340px] mb-8 lg:mb-0">
+                {/* SVG Hourglass/AI illustration */}
+                <div className="w-full h-48 mb-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-blue-500/5 border border-emerald-500/10 flex items-center justify-center overflow-hidden relative">
+                  <svg viewBox="0 0 200 160" className="w-36 h-28 opacity-60">
+                    <defs>
+                      <linearGradient id="hourGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="100%" stopColor="#60a5fa" />
+                      </linearGradient>
+                    </defs>
+                    {/* Hourglass */}
+                    <path d="M70 20 L130 20 L105 75 L130 130 L70 130 L95 75 Z" fill="none" stroke="url(#hourGrad)" strokeWidth="2" />
+                    {/* Sand particles falling */}
+                    <circle cx="100" cy="60" r="1.5" fill="#34d399" opacity="0.6"><animate attributeName="cy" values="60;75;90;105;120" dur="2s" repeatCount="indefinite" /><animate attributeName="opacity" values="0.6;0.3;0" dur="2s" repeatCount="indefinite" /></circle>
+                    <circle cx="97" cy="55" r="1" fill="#60a5fa" opacity="0.4"><animate attributeName="cy" values="55;70;85;100;115" dur="2.3s" repeatCount="indefinite" /><animate attributeName="opacity" values="0.4;0.2;0" dur="2.3s" repeatCount="indefinite" /></circle>
+                    <circle cx="103" cy="58" r="1" fill="#34d399" opacity="0.5"><animate attributeName="cy" values="58;73;88;103;118" dur="1.8s" repeatCount="indefinite" /><animate attributeName="opacity" values="0.5;0.25;0" dur="1.8s" repeatCount="indefinite" /></circle>
+                    {/* Checklist items on the side */}
+                    <rect x="140" y="35" width="40" height="6" rx="2" fill="#ffffff" opacity="0.08" />
+                    <rect x="140" y="48" width="35" height="6" rx="2" fill="#ffffff" opacity="0.06" />
+                    <rect x="140" y="61" width="42" height="6" rx="2" fill="#ffffff" opacity="0.04" />
+                    <rect x="140" y="74" width="30" height="6" rx="2" fill="#ffffff" opacity="0.03" />
+                    {/* Check marks (only first one) */}
+                    <path d="M136 37 L138 39.5 L142 35" stroke="#34d399" strokeWidth="1.5" fill="none" opacity="0.5" />
+                    {/* X marks (rest incomplete) */}
+                    <text x="137" y="53" fill="#f87171" fontSize="7" opacity="0.3">?</text>
+                    <text x="137" y="66" fill="#f87171" fontSize="7" opacity="0.3">?</text>
+                    <text x="137" y="79" fill="#f87171" fontSize="7" opacity="0.3">?</text>
+                  </svg>
+                  <div className="absolute bottom-3 right-3 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[9px] text-emerald-300/60 font-mono">8 dimensions to evaluate</div>
+                </div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-wide mb-3">Qualitative Bottleneck</h3>
+                <p className="text-sm text-white/40 leading-relaxed">
+                  Proposal quality, team credibility, and community engagement require real-time judgment. Too slow to apply manually across dozens of projects. Cannot be automated with rules alone.
+                </p>
+              </div>
+            </Reveal>
+
+            {/* Central solution pill */}
+            <Reveal delay={500}>
+              <div className="lg:absolute lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[380px] mt-8 lg:mt-0">
+                <div className="relative">
+                  {/* Glow effect */}
+                  <div className="absolute -inset-4 bg-blue-500/10 rounded-3xl blur-2xl" />
+                  <div className="relative p-6 rounded-2xl bg-[#0f1629]/90 backdrop-blur-xl border border-blue-500/20 shadow-2xl shadow-blue-500/10">
+                    <div className="text-center">
+                      <div className="inline-flex items-center gap-2 mb-3">
+                        <img src="/tessera-icon-64.png" alt="" className="w-6 h-6" />
+                        <span className="text-lg font-bold text-white">Tessera</span>
+                      </div>
+                      <p className="text-sm text-white/50 leading-relaxed">
+                        Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources, run deterministic analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis.
+                      </p>
+                      <p className="text-sm text-white/50 mt-3">
+                        For concrete evidence, read{" "}
+                        <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2 hover:text-blue-300">
+                          FINDINGS.md
+                        </a>.
+                      </p>
+                    </div>
+                    {/* Connecting lines (visible on lg) */}
+                    <div className="hidden lg:block absolute -left-12 top-1/4 w-12 h-px bg-gradient-to-r from-blue-500/30 to-transparent" />
+                    <div className="hidden lg:block absolute -right-12 top-1/4 w-12 h-px bg-gradient-to-l from-violet-500/30 to-transparent" />
+                    <div className="hidden lg:block absolute -right-12 bottom-1/4 w-12 h-px bg-gradient-to-l from-emerald-500/30 to-transparent" />
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+          </div>
         </div>
       </section>
 
