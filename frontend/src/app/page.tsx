@@ -1,317 +1,651 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import Link from "next/link";
 
-/* ─── Data ─── */
-const findings = [
-  { stat: "97.9%", label: "Whale Concentration", desc: "Top donors control nearly all funding in most Octant projects" },
-  { stat: "41", label: "Donor Clusters", desc: "Detected coordinated donation patterns across epochs" },
-  { stat: "3,105%", label: "Mechanism Impact", desc: "Trust-weighted QF redistributes up to 31x more to undervalued projects" },
+/* ═══════════════════════════════════════════════════════════
+   DATA
+   ═══════════════════════════════════════════════════════════ */
+
+const NAV_LINKS = [
+  { label: "Problem", id: "problem" },
+  { label: "Pipeline", id: "pipeline" },
+  { label: "Architecture", id: "architecture" },
+  { label: "Algorithms", id: "algorithms" },
+  { label: "Findings", id: "findings" },
+  { label: "Setup", id: "setup" },
 ];
 
-const features = [
-  {
-    img: "/feat-trust.png",
-    title: "Trust Graph Analysis",
-    desc: "Map donor-project relationships with Jaccard similarity, Shannon entropy, sybil detection, and whale dependency scoring. Identify coordinated donation patterns and flag suspicious behavior across the entire funding network.",
-  },
-  {
-    img: "/feat-ai.png",
-    title: "Deep AI Evaluation",
-    desc: "Claude Opus 4.6 scores projects across 8 dimensions: Impact, Team, Innovation, Sustainability, Ecosystem Fit, Transparency, Community Engagement, and Risk Assessment. Each evaluation produces actionable recommendations.",
-  },
-  {
-    img: "/feat-report.png",
-    title: "PDF Intelligence Reports",
-    desc: "Generate branded, watermarked PDF reports with executive summaries, quantitative analysis, trust graph visualizations, mechanism comparisons, and prioritized recommendations for each project.",
-  },
-  {
-    img: null,
-    title: "Mechanism Simulation",
-    desc: "Compare four QF variants side-by-side: Standard, Capped, Equal-Weight, and Trust-Weighted. Analyze Gini coefficients, top-share concentration, and fairness metrics to design better funding mechanisms.",
-  },
-];
-
-const steps = [
-  { num: "01", title: "Clone & Build", code: "git clone https://github.com/yeheskieltame/Tessera.git\ncd Tessera && go build -o tessera ./cmd/analyst/" },
-  { num: "02", title: "Setup AI", code: "# Option A: Claude Code Max plan (auto-detected)\n# Option B: Set API key\nexport ANTHROPIC_API_KEY=\"sk-ant-...\"" },
-  { num: "03", title: "Start Server", code: "./tessera serve" },
-  { num: "04", title: "Open Dashboard", code: "# Open in your browser\nhttp://localhost:8080" },
-];
-
-const stats = [
+const STATS = [
   { value: "20", label: "CLI Commands" },
+  { value: "9", label: "Pipeline Steps" },
   { value: "7", label: "Data Sources" },
+  { value: "9", label: "EVM Chains" },
   { value: "4", label: "QF Mechanisms" },
-  { value: "9-Step", label: "Pipeline" },
+  { value: "12", label: "AI Models" },
 ];
 
-/* ─── Smooth scroll helper ─── */
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+const PIPELINE_STEPS = [
+  { num: 1, title: "Funding History", desc: "Cross-epoch allocations, matched funding, donor counts from Octant REST API", source: "Octant", ai: false, color: "from-blue-500 to-blue-600" },
+  { num: 2, title: "Quantitative Scoring", desc: "K-means clustering (Lloyd's algorithm) + composite score (40% allocated + 60% matched)", source: "Analysis", ai: false, color: "from-teal-500 to-teal-600" },
+  { num: 3, title: "Trust Graph", desc: "Shannon entropy, Jaccard similarity, whale dependency ratio, union-find donor clustering", source: "Analysis", ai: false, color: "from-sky-500 to-sky-600" },
+  { num: 4, title: "Mechanism Simulation", desc: "Standard QF, Capped QF, Equal Weight, Trust-Weighted QF with Gini coefficients", source: "Analysis", ai: false, color: "from-amber-500 to-amber-600" },
+  { num: 5, title: "Temporal Anomalies", desc: "Donor surge/exodus, funding spikes, new whale entries, coordination shifts", source: "Analysis", ai: false, color: "from-rose-500 to-rose-600" },
+  { num: 6, title: "Multi-Layer Scoring", desc: "5 dimensions: Funding (25%), Efficiency (25%), Diversity (30%), Consistency (20%)", source: "Analysis", ai: false, color: "from-violet-500 to-violet-600" },
+  { num: 7, title: "Blockchain Scan", desc: "9 EVM chains concurrent scan: balance, txs, contracts, USDC/USDT/DAI via eth_call", source: "RPC", ai: false, color: "from-emerald-500 to-emerald-600" },
+  { num: 8, title: "Code Signals", desc: "OSO metrics or GitHub API fallback: stars, forks, commits, contributors", source: "OSO/GitHub", ai: false, color: "from-cyan-500 to-cyan-600" },
+  { num: 9, title: "AI Deep Evaluation", desc: "Evidence-grounded narrative using ALL data from steps 1-8 via LLM", source: "AI Provider", ai: true, color: "from-indigo-500 to-indigo-600" },
+];
+
+const DATA_SOURCES = [
+  { name: "Octant", protocol: "REST", data: "Projects, allocations, rewards, epochs, patrons, budgets", url: "backend.mainnet.octant.app" },
+  { name: "Gitcoin", protocol: "GraphQL", data: "Rounds, applications, donations, matching amounts", url: "grants-stack-indexer-v2.gitcoin.co" },
+  { name: "OSO", protocol: "GraphQL", data: "Project registry, GitHub metrics, on-chain activity", url: "opensource.observer" },
+  { name: "GitHub", protocol: "REST", data: "Repo metrics, contributors, README content", url: "api.github.com" },
+  { name: "Blockchain", protocol: "JSON-RPC", data: "Balance, txs, contracts, ERC-20 tokens (9 chains)", url: "Public RPCs" },
+  { name: "Explorers", protocol: "REST", data: "Recent transactions, token transfers, contract verification", url: "Etherscan-compatible" },
+  { name: "Moltbook", protocol: "REST", data: "Social posts, heartbeats, community engagement", url: "moltbook.com" },
+];
+
+const CHAINS = [
+  { name: "Ethereum", token: "ETH", stables: "USDC, USDT, DAI" },
+  { name: "Base", token: "ETH", stables: "USDC, DAI" },
+  { name: "Optimism", token: "ETH", stables: "USDC, USDT, DAI" },
+  { name: "Arbitrum", token: "ETH", stables: "USDC, USDT, DAI" },
+  { name: "Mantle", token: "MNT", stables: "USDC, USDT" },
+  { name: "Scroll", token: "ETH", stables: "USDC, USDT" },
+  { name: "Linea", token: "ETH", stables: "USDC, USDT" },
+  { name: "zkSync Era", token: "ETH", stables: "USDC, USDT" },
+  { name: "Monad", token: "MON", stables: "Testnet" },
+];
+
+const FINDINGS = [
+  { stat: "97.9%", label: "Whale Concentration", desc: "Top 10% of donors control nearly all funding. Structural, not episodic (92-98% across 4 epochs)." },
+  { stat: "36.6", label: "Rank #1 True Score", desc: "Project ranked #1 by composite (89.5) drops to 36.6 under multi-layer scoring. 90% whale-dependent." },
+  { stat: "41", label: "Donor Clusters", desc: "Jaccard > 0.7 overlap detected. Largest cluster: 39 donors moving in lockstep. Increasing over time." },
+  { stat: "3,105%", label: "Mechanism Impact", desc: "Equal Weight QF would increase smallest project funding by 31x. Trust-Weighted QF balances fairness vs sybil resistance." },
+  { stat: "5", label: "Whale-Controlled Projects", desc: "Single address 0x2585 controls 90-99% of 5 projects simultaneously. 17% of the ecosystem." },
+  { stat: "931%", label: "Funding Spike", desc: "Epoch 4 to 5 surge with fewer donors. Textbook whale-driven behavior flagged by temporal anomaly detection." },
+];
+
+const ALGORITHMS = [
+  {
+    name: "Composite Score",
+    formula: "(normAlloc x 0.4 + normMatch x 0.6) x 100",
+    desc: "Matched funding weighted 60% to capture breadth of support via QF amplification.",
+  },
+  {
+    name: "Shannon Entropy",
+    formula: "H = -sum(p_i x log(p_i)) / log(n)",
+    desc: "Normalized donor diversity. 0 = single donor, 1 = perfectly uniform distribution.",
+  },
+  {
+    name: "Jaccard Similarity",
+    formula: "|A intersection B| / |A union B|",
+    desc: "Donor set overlap between projects. Flagged if > 0.7 (coordinated behavior).",
+  },
+  {
+    name: "Trust-Weighted QF",
+    formula: "score = QF x (0.5 + 0.5 x diversity)",
+    desc: "Novel mechanism. Whale-dominated projects (diversity near 0) get 50% penalty. Organic support preserved.",
+  },
+  {
+    name: "Gini Coefficient",
+    formula: "sum((2r_i - n - 1) x a_i) / (n x sum(a_i))",
+    desc: "Funding inequality measure. 0 = equal distribution, 1 = all to one project.",
+  },
+  {
+    name: "Whale Dependency",
+    formula: "max(donor_amount) / total_amount",
+    desc: "Single-donor concentration. Flagged if > 0.5 (one donor provides majority).",
+  },
+];
+
+const SETUP_STEPS = [
+  { num: "01", title: "Clone & Build", code: "git clone https://github.com/yeheskieltame/Tessera.git\ncd Tessera\ngo build -o tessera ./cmd/analyst/" },
+  { num: "02", title: "Configure AI Provider", code: "# Option A: Claude Max plan (auto-detected)\nnpm i -g @anthropic-ai/claude-code && claude login\n\n# Option B: API key in .env\necho 'GEMINI_API_KEY=your-key' > .env" },
+  { num: "03", title: "Build Frontend", code: "cd frontend && npm install && npm run build && cd .." },
+  { num: "04", title: "Launch", code: "./tessera serve\n# Open http://localhost:3001" },
+];
+
+const PROVIDERS = [
+  { name: "Claude CLI", models: "opus-4-6, sonnet-4-6", auth: "Claude Code login (no key)" },
+  { name: "Claude API", models: "opus-4-6, sonnet-4-6, haiku-4-5", auth: "ANTHROPIC_API_KEY" },
+  { name: "Gemini", models: "2.5-pro, 2.5-flash, 3.1-pro, 3-flash, 2.5-flash-lite", auth: "GEMINI_API_KEY" },
+  { name: "OpenAI", models: "gpt-4o, gpt-4o-mini, o3-mini", auth: "OPENAI_API_KEY" },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION HOOK: Intersection Observer
+   ═══════════════════════════════════════════════════════════ */
+
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
 }
 
-/* ─── Code block with copy ─── */
-function MiniCode({ code }: { code: string }) {
+function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  const { ref, visible } = useInView();
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
+
+function CodeBlock({ code, label }: { code: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative group">
-      <pre className="bg-slate-900 text-slate-100 rounded-xl p-4 text-sm overflow-x-auto font-mono leading-relaxed">
+      {label && <div className="text-xs font-mono text-slate-400 mb-1.5 uppercase tracking-wider">{label}</div>}
+      <pre className="bg-[#0d1117] text-[#c9d1d9] rounded-xl p-4 text-sm overflow-x-auto font-mono leading-relaxed border border-[#30363d]">
         <code>{code}</code>
       </pre>
       <button
         onClick={() => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-        className="absolute top-3 right-3 px-2.5 py-1 text-xs font-medium rounded-md bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute top-3 right-3 px-2.5 py-1 text-xs font-medium rounded-md bg-[#21262d] text-[#8b949e] hover:text-white hover:bg-[#30363d] transition-colors opacity-0 group-hover:opacity-100"
       >
-        {copied ? "Copied!" : "Copy"}
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );
 }
 
+function SectionHeading({ title, subtitle, light = false }: { title: string; subtitle: string; light?: boolean }) {
+  return (
+    <Reveal>
+      <div className="text-center mb-16">
+        <h2 className={`text-3xl sm:text-4xl font-bold mb-4 ${light ? "text-slate-800" : "text-white"}`}>{title}</h2>
+        <p className={`max-w-2xl mx-auto text-base leading-relaxed ${light ? "text-slate-500" : "text-white/50"}`}>{subtitle}</p>
+      </div>
+    </Reveal>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE
+   ═══════════════════════════════════════════════════════════ */
+
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [activeNav, setActiveNav] = useState("");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+      const sections = NAV_LINKS.map(l => document.getElementById(l.id));
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const s = sections[i];
+        if (s && s.getBoundingClientRect().top < 200) { setActiveNav(NAV_LINKS[i].id); break; }
+      }
+    };
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  return (
-    <div className="relative overflow-hidden">
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-      {/* ─── Navbar (sticky, glass) ─── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-slate-900/80 backdrop-blur-xl border-b border-white/10 shadow-lg" : "bg-transparent"}`}>
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <img src="/tessera-icon-64.png" alt="Tessera" className="w-8 h-8" />
-              <span className="text-lg font-bold text-white tracking-tight">Tessera</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-6">
-              <button onClick={() => scrollTo("features")} className="text-sm text-white/70 hover:text-white transition">What It Does</button>
-              <button onClick={() => scrollTo("get-started")} className="text-sm text-white/70 hover:text-white transition">Get Started</button>
-              <a href="https://github.com/yeheskieltame/Tessera" target="_blank" rel="noopener noreferrer" className="text-sm text-white/70 hover:text-white transition">GitHub</a>
-            </div>
+  return (
+    <div className="relative bg-[#0a0e1a]">
+
+      {/* ─── Navbar ─── */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#0a0e1a]/90 backdrop-blur-xl border-b border-white/5" : "bg-transparent"}`}>
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5">
+            <img src="/tessera-icon-64.png" alt="" className="w-7 h-7" />
+            <span className="text-base font-bold text-white tracking-tight">Tessera</span>
+          </button>
+          <div className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map(l => (
+              <button
+                key={l.id}
+                onClick={() => scrollTo(l.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${activeNav === l.id ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80"}`}
+              >
+                {l.label}
+              </button>
+            ))}
           </div>
-          <Link href="/dashboard" className="px-5 py-2 text-sm font-semibold rounded-full bg-blue-500/80 backdrop-blur-md text-white hover:bg-blue-500/90 shadow-lg shadow-blue-500/25 transition">
+          <Link href="/dashboard" className="px-4 py-2 text-xs font-semibold rounded-full bg-blue-500 text-white hover:bg-blue-400 transition shadow-lg shadow-blue-500/20">
             Launch Dashboard
           </Link>
         </div>
       </nav>
 
-      {/* ─── Hero Section ─── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-32">
-        {/* Background */}
-        <div className="absolute inset-0 z-0">
-          <img src="/hero-bg.png" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/80 via-[#0f172a]/60 to-[#0f172a]/90" />
+      {/* ─── Hero ─── */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-32 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src="/hero-bg.png" alt="" className="w-full h-full object-cover opacity-40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/70 via-[#0a0e1a]/50 to-[#0a0e1a]" />
         </div>
 
-        <div className="relative z-10 text-center max-w-3xl mx-auto">
-          <img src="/tessera-icon-inverted-256.png" alt="Tessera" className="w-24 h-24 mx-auto mb-6 drop-shadow-2xl" />
-          <h1 className="text-7xl sm:text-8xl font-black tracking-tight mb-6 text-white">
+        {/* Animated grid lines */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+
+        <div className="relative z-10 text-center max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/60 mb-8 animate-[fadeIn_1s_ease-out]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live at yeheskieltame-tessera.hf.space
+          </div>
+
+          <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight mb-6 text-white animate-[fadeIn_0.8s_ease-out]">
             Tessera
           </h1>
-          <p className="text-xl sm:text-2xl font-semibold text-blue-200 mb-4">
+          <p className="text-lg sm:text-xl font-medium text-blue-300/80 mb-3 animate-[fadeIn_1s_ease-out_0.2s_both]">
             AI-Powered Public Goods Evaluation
           </p>
-          <p className="text-base text-white/60 max-w-xl mx-auto mb-10 leading-relaxed">
-            Automate quantitative analysis, trust graph evaluation, and mechanism simulation
-            to help evaluators make better funding decisions in the Octant and Gitcoin ecosystems.
+          <p className="text-sm text-white/40 max-w-xl mx-auto mb-10 leading-relaxed animate-[fadeIn_1s_ease-out_0.4s_both]">
+            20 CLI commands. 9-step evidence pipeline. 7 data sources. 9 EVM chains.
+            Trust graph analysis, mechanism simulation, and LLM-driven evaluation
+            for the Octant and Gitcoin ecosystems.
           </p>
 
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <a
-              href="https://github.com/yeheskieltame/Tessera"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-8 py-3.5 rounded-full font-semibold text-white border border-white/30 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200"
-            >
-              View on GitHub
-            </a>
-            <button
-              onClick={() => scrollTo("get-started")}
-              className="px-8 py-3.5 rounded-full font-semibold bg-blue-500/80 backdrop-blur-md text-white hover:bg-blue-500/90 shadow-lg shadow-blue-500/25 transition-all duration-200"
-            >
-              Get Started
-            </button>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center pt-2">
-            <div className="w-1 h-2 rounded-full bg-white/60 animate-bounce" />
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Key Findings Section ─── */}
-      <section className="relative bg-[#0f172a] py-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-white mb-4">
-            What We Found
-          </h2>
-          <p className="text-center text-white/50 mb-14 max-w-xl mx-auto">
-            Real insights from analyzing Octant&apos;s quadratic funding data across multiple epochs.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {findings.map((f) => (
-              <div key={f.label} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 text-center hover:bg-white/10 transition-all duration-300">
-                <p className="text-4xl font-black text-blue-400 mb-2">{f.stat}</p>
-                <p className="text-sm font-semibold text-white mb-2">{f.label}</p>
-                <p className="text-xs text-white/50 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── What It Does (alternating rows) ─── */}
-      <section id="features" className="relative py-24 px-6 bg-gradient-to-b from-[#0f172a] to-white">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-white mb-4">
-            What It Does
-          </h2>
-          <p className="text-center text-white/50 mb-16 max-w-xl mx-auto">
-            Four core capabilities to evaluate public goods projects at scale.
-          </p>
-
-          <div className="space-y-20">
-            {features.map((f, i) => {
-              const imgLeft = i % 2 === 0;
-              const isDark = i < 2; // first two rows are on dark bg
-
-              const imageBlock = f.img ? (
-                <div className="flex-shrink-0 w-full lg:w-[40%]">
-                  <div className={`rounded-2xl overflow-hidden ${isDark ? "bg-white/5 border border-white/10" : "bg-white/70 border border-slate-100 shadow-lg"}`}>
-                    <img src={f.img} alt={f.title} className="w-full h-auto object-cover" />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-shrink-0 w-full lg:w-[40%]">
-                  <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-blue-500 to-violet-600 aspect-square flex items-center justify-center">
-                    <svg className="w-24 h-24 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                  </div>
-                </div>
-              );
-
-              const textBlock = (
-                <div className="flex-1 flex flex-col justify-center">
-                  <h3 className={`text-2xl font-bold mb-4 ${isDark ? "text-white" : "text-slate-800"}`}>{f.title}</h3>
-                  <p className={`text-base leading-relaxed ${isDark ? "text-white/60" : "text-slate-500"}`}>{f.desc}</p>
-                </div>
-              );
-
-              return (
-                <div key={f.title} className="flex flex-col lg:flex-row items-center gap-10">
-                  {imgLeft ? <>{imageBlock}{textBlock}</> : <>{textBlock}{imageBlock}</>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Get Started Section ─── */}
-      <section id="get-started" className="relative py-24 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-slate-800 mb-4">
-            Get Started in 4 Steps
-          </h2>
-          <p className="text-center text-slate-500 mb-14 max-w-xl mx-auto">
-            From zero to a running dashboard in under 5 minutes.
-          </p>
-
-          {/* Horizontal timeline */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((s, i) => (
-              <div key={s.num} className="relative">
-                {/* Connector line */}
-                {i < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-6 left-[calc(50%+24px)] w-[calc(100%-48px)] h-0.5 bg-gradient-to-r from-blue-300 to-blue-100" style={{ left: "calc(50% + 20px)", width: "calc(100% - 10px)" }} />
-                )}
-                <div className="bg-white/70 backdrop-blur-md border border-slate-100 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow h-full">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white font-bold text-lg shadow-md mb-4">
-                    {s.num}
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800 mb-3">{s.title}</h3>
-                  <MiniCode code={s.code} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Stats Row ─── */}
-      <section className="relative py-16 px-6 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {stats.map((s) => (
-              <div key={s.label} className="bg-white/70 backdrop-blur-md border border-slate-100 rounded-2xl p-5 text-center shadow-lg">
-                <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent mb-1">{s.value}</p>
-                <p className="text-sm text-slate-500">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Call to Action ─── */}
-      <section className="relative py-24 px-6 bg-gradient-to-b from-white to-slate-50">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-slate-800 mb-4">
-            Ready to analyze?
-          </h2>
-          <p className="text-slate-500 mb-8 max-w-md mx-auto">
-            Launch the dashboard and start evaluating public goods projects with AI-powered intelligence.
-          </p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link
-              href="/dashboard"
-              className="px-10 py-4 rounded-full font-semibold text-lg bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-200"
-            >
+          <div className="flex items-center justify-center gap-3 flex-wrap animate-[fadeIn_1s_ease-out_0.6s_both]">
+            <Link href="/dashboard" className="px-7 py-3 rounded-full font-semibold text-sm bg-blue-500 text-white hover:bg-blue-400 shadow-xl shadow-blue-500/25 transition-all">
               Launch Dashboard
             </Link>
-            <a
-              href="https://github.com/yeheskieltame/Tessera"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-10 py-4 rounded-full font-semibold text-lg text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200"
-            >
-              View Documentation
+            <a href="https://github.com/yeheskieltame/Tessera" target="_blank" rel="noopener noreferrer" className="px-7 py-3 rounded-full font-semibold text-sm text-white/80 border border-white/15 hover:border-white/30 hover:bg-white/5 transition-all">
+              GitHub
+            </a>
+            <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="px-7 py-3 rounded-full font-semibold text-sm text-white/80 border border-white/15 hover:border-white/30 hover:bg-white/5 transition-all">
+              Read Findings
             </a>
           </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="relative z-10 mt-20 w-full max-w-4xl">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {STATS.map((s, i) => (
+              <Reveal key={s.label} delay={i * 80}>
+                <div className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                  <p className="text-lg font-bold text-white">{s.value}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">{s.label}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+          <div className="w-5 h-8 rounded-full border border-white/20 flex items-start justify-center pt-1.5">
+            <div className="w-0.5 h-1.5 rounded-full bg-white/40 animate-bounce" />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Problem ─── */}
+      <section id="problem" className="relative py-28 px-6">
+        <div className="max-w-5xl mx-auto">
+          <SectionHeading
+            title="The Problem"
+            subtitle="Public goods evaluators in the Ethereum ecosystem face three core challenges that Tessera solves."
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { title: "Cognitive Overload", desc: "Octant distributes millions across 30+ projects per epoch. Each has funding data, donor patterns, on-chain activity, GitHub metrics, and proposals. No human can cross-reference all of this at scale." },
+              { title: "Invisible Manipulation", desc: "Quadratic funding is vulnerable to whale dominance and coordination. A project can rank #1 while being 90% dependent on a single donor. Simple metrics hide this structural problem." },
+              { title: "Qualitative Bottleneck", desc: "Proposal quality, team credibility, and community engagement require judgment. Too slow to apply manually across dozens of projects. Cannot be automated with rules alone." },
+            ].map((p, i) => (
+              <Reveal key={p.title} delay={i * 120}>
+                <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 transition-all h-full">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mb-4">
+                    <span className="text-sm font-bold text-red-400">{i + 1}</span>
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-3">{p.title}</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">{p.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={400}>
+            <div className="mt-10 p-5 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center">
+              <p className="text-sm text-blue-300/70">
+                Tessera solves these by automating the full evaluation pipeline: collect data from 7 sources,
+                run deterministic analysis, scan 9 blockchains, then feed all evidence into an LLM for synthesis.
+                For concrete evidence, read{" "}
+                <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2">
+                  FINDINGS.md
+                </a>.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── Pipeline ─── */}
+      <section id="pipeline" className="relative py-28 px-6">
+        <div className="max-w-5xl mx-auto">
+          <SectionHeading
+            title="9-Step Evidence Pipeline"
+            subtitle="Each step produces structured data that accumulates. Steps 1-8 are deterministic. Step 9 feeds all evidence into an LLM."
+          />
+          <div className="space-y-3">
+            {PIPELINE_STEPS.map((step, i) => (
+              <Reveal key={step.num} delay={i * 60}>
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all group">
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg`}>
+                    <span className="text-sm font-bold text-white">{step.num}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-bold text-white">{step.title}</h3>
+                      {step.ai && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-indigo-500/20 text-indigo-300 uppercase">AI</span>}
+                    </div>
+                    <p className="text-xs text-white/40 leading-relaxed">{step.desc}</p>
+                  </div>
+                  <div className="flex-shrink-0 hidden sm:block">
+                    <span className="text-[10px] text-white/20 font-mono">{step.source}</span>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          {/* Flow arrow */}
+          <Reveal delay={600}>
+            <div className="mt-8 flex items-center justify-center gap-2 text-white/20">
+              <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-white/10" />
+              <span className="text-xs font-mono">Steps 1-8 feed into Step 9</span>
+              <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-white/10" />
+            </div>
+            <div className="mt-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-center">
+              <p className="text-xs text-indigo-300/60">
+                Output: Branded PDF report with funding history, trust profile, multi-layer scores, mechanism simulation,
+                temporal anomalies, blockchain activity, and AI narrative assessment.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── Architecture ─── */}
+      <section id="architecture" className="relative py-28 px-6">
+        <div className="max-w-6xl mx-auto">
+          <SectionHeading
+            title="System Architecture"
+            subtitle="Go binary (9MB) serves both CLI and HTTP API. Next.js dashboard connects via SSE streaming."
+          />
+
+          {/* Data Sources */}
+          <Reveal>
+            <h3 className="text-lg font-bold text-white mb-4">Data Sources</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
+              {DATA_SOURCES.map((s, i) => (
+                <Reveal key={s.name} delay={i * 60}>
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-white">{s.name}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 font-mono">{s.protocol}</span>
+                    </div>
+                    <p className="text-[11px] text-white/30 leading-relaxed">{s.data}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </Reveal>
+
+          {/* Blockchain Chains */}
+          <Reveal>
+            <h3 className="text-lg font-bold text-white mb-4">Multi-Chain Blockchain Scanner</h3>
+            <p className="text-sm text-white/40 mb-6">Scans addresses across 9 EVM chains concurrently via goroutines. No API keys needed. Typical scan: 2-3 seconds.</p>
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 mb-12">
+              {CHAINS.map((c, i) => (
+                <Reveal key={c.name} delay={i * 40}>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center hover:border-emerald-500/20 transition-all">
+                    <p className="text-xs font-bold text-white mb-0.5">{c.name}</p>
+                    <p className="text-[10px] text-white/30">{c.token}</p>
+                    <p className="text-[9px] text-white/15 mt-1">{c.stables}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </Reveal>
+
+          {/* AI Providers */}
+          <Reveal>
+            <h3 className="text-lg font-bold text-white mb-4">AI Provider Fallback Chain</h3>
+            <p className="text-sm text-white/40 mb-6">Providers tried in order. If preferred fails, auto-fallback to next. 120s timeout per request.</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {PROVIDERS.map((p, i) => (
+                <Reveal key={p.name} delay={i * 100} className="flex-1">
+                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 h-full relative">
+                    {i === 0 && <div className="absolute -top-2 left-3 px-2 py-0.5 bg-blue-500 text-[9px] font-bold text-white rounded-full uppercase">Primary</div>}
+                    <h4 className="text-xs font-bold text-white mb-2 mt-1">{p.name}</h4>
+                    <p className="text-[10px] text-white/30 font-mono mb-1">{p.models}</p>
+                    <p className="text-[10px] text-white/20">{p.auth}</p>
+                    {i < PROVIDERS.length - 1 && (
+                      <div className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-5 h-5 rounded-full bg-[#0a0e1a] border border-white/10 items-center justify-center">
+                        <span className="text-[10px] text-white/30">&rarr;</span>
+                      </div>
+                    )}
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── Algorithms ─── */}
+      <section id="algorithms" className="relative py-28 px-6">
+        <div className="max-w-5xl mx-auto">
+          <SectionHeading
+            title="Analysis Algorithms"
+            subtitle="Deterministic, reproducible analysis using established mathematical methods."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ALGORITHMS.map((a, i) => (
+              <Reveal key={a.name} delay={i * 80}>
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-violet-500/15 transition-all h-full">
+                  <h3 className="text-sm font-bold text-white mb-2">{a.name}</h3>
+                  <div className="px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5 mb-3">
+                    <code className="text-xs text-violet-300/80 font-mono">{a.formula}</code>
+                  </div>
+                  <p className="text-xs text-white/35 leading-relaxed">{a.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Findings ─── */}
+      <section id="findings" className="relative py-28 px-6">
+        <div className="max-w-5xl mx-auto">
+          <SectionHeading
+            title="Key Findings from Real Data"
+            subtitle="Octant Epoch 5: 30 projects, 1,902 donations, 422 unique donors. All findings reproducible via CLI."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FINDINGS.map((f, i) => (
+              <Reveal key={f.label} delay={i * 80}>
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-blue-500/15 transition-all h-full">
+                  <p className="text-3xl font-black text-blue-400 mb-1">{f.stat}</p>
+                  <p className="text-xs font-bold text-white mb-2 uppercase tracking-wider">{f.label}</p>
+                  <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={500}>
+            <div className="mt-8 text-center">
+              <a
+                href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-blue-400 border border-blue-500/20 hover:bg-blue-500/5 transition-all"
+              >
+                Read Full Analysis in FINDINGS.md
+                <span>&rarr;</span>
+              </a>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── Setup ─── */}
+      <section id="setup" className="relative py-28 px-6">
+        <div className="max-w-4xl mx-auto">
+          <SectionHeading
+            title="Get Started"
+            subtitle="From zero to a running dashboard. Or try the live demo instantly."
+          />
+
+          <Reveal>
+            <div className="mb-10 p-5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center">
+              <p className="text-sm text-emerald-300/70 mb-3">Skip setup and try it now:</p>
+              <a
+                href="https://yeheskieltame-tessera.hf.space"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-400 transition shadow-lg shadow-emerald-500/20"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                Open Live Demo
+              </a>
+            </div>
+          </Reveal>
+
+          <div className="space-y-4">
+            {SETUP_STEPS.map((s, i) => (
+              <Reveal key={s.num} delay={i * 100}>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center shadow-lg">
+                    <span className="text-sm font-bold text-white">{s.num}</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-white mb-2">{s.title}</h3>
+                    <CodeBlock code={s.code} />
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Team ─── */}
+      <section className="relative py-28 px-6">
+        <div className="max-w-4xl mx-auto">
+          <SectionHeading
+            title="Team"
+            subtitle="Built for The Synthesis hackathon. Human and Agent collaborating as equals."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Reveal>
+              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5">
+                <div className="text-[10px] text-white/20 uppercase tracking-wider mb-3">Human</div>
+                <h3 className="text-lg font-bold text-white mb-1">Yeheskiel Yunus Tame</h3>
+                <a href="https://x.com/YeheskielTame" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400">@YeheskielTame</a>
+                <p className="text-xs text-white/30 mt-3">Direction, domain context, decision-making, GitHub repo management.</p>
+              </div>
+            </Reveal>
+            <Reveal delay={100}>
+              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5">
+                <div className="text-[10px] text-white/20 uppercase tracking-wider mb-3">Agent</div>
+                <h3 className="text-lg font-bold text-white mb-1">Synthesis Agent <span className="text-white/30 font-mono text-sm">#32417</span></h3>
+                <p className="text-xs text-blue-400">Claude Opus 4.6 via Claude Code</p>
+                <p className="text-xs text-white/30 mt-3">Architecture, algorithms, implementation, documentation, deployment.</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-[10px] text-white/15 font-mono">ERC-8004 on Base</span>
+                  <a href="https://basescan.org/tx/0x2ef2402a1528f7841e880fd90b2246fbee688e0ab2e922f4163c7b291891451b" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400/50 hover:text-blue-400 underline underline-offset-2">
+                    View TX
+                  </a>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          <Reveal delay={200}>
+            <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Tracks", value: "4" },
+                { label: "Prize Pool", value: "$31,308" },
+                { label: "Commits", value: "69+" },
+                { label: "Phases", value: "48" },
+              ].map(s => (
+                <div key={s.label} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+                  <p className="text-lg font-bold text-white">{s.value}</p>
+                  <p className="text-[10px] text-white/25 uppercase tracking-wider">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ─── CTA ─── */}
+      <section className="relative py-28 px-6">
+        <div className="max-w-3xl mx-auto text-center">
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to evaluate?</h2>
+            <p className="text-sm text-white/40 mb-8 max-w-md mx-auto">
+              Launch the dashboard, enter a project address, and get a full intelligence report in minutes.
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <Link href="/dashboard" className="px-8 py-3.5 rounded-full font-semibold text-sm bg-blue-500 text-white hover:bg-blue-400 shadow-xl shadow-blue-500/25 transition-all">
+                Launch Dashboard
+              </Link>
+              <a href="https://yeheskieltame-tessera.hf.space" target="_blank" rel="noopener noreferrer" className="px-8 py-3.5 rounded-full font-semibold text-sm text-white/70 border border-white/15 hover:border-white/30 transition-all">
+                Live Demo
+              </a>
+              <a href="https://github.com/yeheskieltame/Tessera" target="_blank" rel="noopener noreferrer" className="px-8 py-3.5 rounded-full font-semibold text-sm text-white/70 border border-white/15 hover:border-white/30 transition-all">
+                GitHub
+              </a>
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ─── Footer ─── */}
-      <footer className="border-t border-slate-100 py-12 px-6 bg-slate-50">
+      <footer className="border-t border-white/5 py-12 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <img src="/tessera-icon-64.png" alt="Tessera" className="w-6 h-6" />
-            <span className="text-sm font-bold text-slate-700">Tessera</span>
+            <img src="/tessera-icon-64.png" alt="" className="w-5 h-5 opacity-50" />
+            <span className="text-sm font-bold text-white/50">Tessera</span>
           </div>
-          <p className="text-sm text-slate-600">
-            Built by{" "}
-            <span className="font-semibold text-slate-800">Yeheskiel Yunus Tame</span>
-            {" "}+{" "}
-            <span className="font-semibold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Claude Opus 4.6</span>
+          <p className="text-xs text-white/25">
+            Built by Yeheskiel Yunus Tame + Synthesis Agent #32417 (Claude Opus 4.6)
           </p>
-          <p className="text-xs text-slate-400 mt-2">
-            The Synthesis Hackathon &middot;{" "}
-            <a href="https://github.com/yeheskieltame/Tessera" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-              GitHub
-            </a>
+          <p className="text-xs text-white/15 mt-2">
+            The Synthesis Hackathon
+            {" | "}
+            <a href="https://github.com/yeheskieltame/Tessera" target="_blank" rel="noopener noreferrer" className="text-blue-400/40 hover:text-blue-400">GitHub</a>
+            {" | "}
+            <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="text-blue-400/40 hover:text-blue-400">Findings</a>
+            {" | "}
+            <a href="https://github.com/yeheskieltame/Tessera/blob/main/CONVERSATION_LOG.md" target="_blank" rel="noopener noreferrer" className="text-blue-400/40 hover:text-blue-400">Collaboration Log</a>
           </p>
         </div>
       </footer>
+
+      {/* ─── CSS Animations ─── */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
