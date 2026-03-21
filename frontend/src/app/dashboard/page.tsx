@@ -73,7 +73,7 @@ function ExpandableSection({ title, children, defaultOpen }: { title: string; ch
               Full screen
             </span>
           )}
-          <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className={`w-4 h-4 text-slate-800 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
@@ -86,7 +86,7 @@ function ExpandableSection({ title, children, defaultOpen }: { title: string; ch
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-semibold text-slate-800">{title}</h3>
-              <button onClick={() => setFullscreen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+              <button onClick={() => setFullscreen(false)} className="text-slate-800 hover:text-slate-800 text-2xl leading-none">&times;</button>
             </div>
             <div className="flex-1 overflow-auto p-6 text-slate-700">{children}</div>
           </div>
@@ -100,7 +100,7 @@ function ExpandableSection({ title, children, defaultOpen }: { title: string; ch
 /* ─── Step Progress Item ─── */
 function StepItem({ step, state, isLast }: { step: typeof PIPELINE_STEPS[0]; state: StepState; isLast: boolean }) {
   const statusIcon = {
-    pending: <div className="w-7 h-7 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center text-xs font-bold text-slate-300">{step.num}</div>,
+    pending: <div className="w-7 h-7 rounded-full border-2 border-slate-200 bg-white flex items-center justify-center text-xs font-bold text-slate-500">{step.num}</div>,
     running: <div className="w-7 h-7 rounded-full border-2 border-blue-400 border-t-transparent bg-white animate-spin" />,
     done: <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center"><svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>,
     error: <div className="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">!</div>,
@@ -118,7 +118,7 @@ function StepItem({ step, state, isLast }: { step: typeof PIPELINE_STEPS[0]; sta
       {/* Content */}
       <div className={`flex-1 pb-4 ${isLast ? "" : ""}`}>
         <div className="flex items-center gap-2">
-          <span className={`text-sm font-semibold ${state.status === "done" ? "text-slate-800" : state.status === "running" ? "text-blue-600" : "text-slate-400"}`}>
+          <span className={`text-sm font-semibold ${state.status === "done" ? "text-slate-800" : state.status === "running" ? "text-blue-600" : "text-slate-800"}`}>
             {step.label}
           </span>
           {state.status === "running" && (
@@ -126,7 +126,7 @@ function StepItem({ step, state, isLast }: { step: typeof PIPELINE_STEPS[0]; sta
           )}
         </div>
         {state.message && state.status !== "pending" && (
-          <p className={`text-xs mt-0.5 ${state.status === "done" ? "text-slate-500" : state.status === "running" ? "text-blue-500" : "text-red-500"}`}>
+          <p className={`text-xs mt-0.5 ${state.status === "done" ? "text-slate-700" : state.status === "running" ? "text-blue-500" : "text-red-500"}`}>
             {state.message}
           </p>
         )}
@@ -343,7 +343,7 @@ export default function DashboardPage() {
               <img src="/tessera-icon-64.png" alt="Tessera" className="w-7 h-7" />
               <span className="text-lg font-bold bg-gradient-to-r from-blue-700 to-violet-600 bg-clip-text text-transparent tracking-tight">Tessera</span>
             </a>
-            <span className="text-xs font-medium text-slate-600 border-l border-slate-300 pl-3">Dashboard</span>
+            <span className="text-xs font-medium text-slate-800 border-l border-slate-300 pl-3">Dashboard</span>
           </div>
           <div className="flex items-center gap-4">
             {loading ? (
@@ -358,12 +358,15 @@ export default function DashboardPage() {
                   <div key={label} className="flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full ${svc?.status === "ok" ? "bg-green-400" : "bg-red-400"}`} />
                     <span className="text-xs font-medium text-slate-700">{label}</span>
-                    {svc?.detail && <span className="text-xs text-slate-400 hidden sm:inline">({svc.detail})</span>}
+                    {svc?.detail && <span className="text-xs text-slate-800 hidden sm:inline">({svc.detail})</span>}
                   </div>
                 ))}
-                <span className="text-xs font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
+                <span className="text-xs font-mono text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">Epoch {currentEpoch || "---"}</span>
               </>
             )}
+            <a href="/" className="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 border border-slate-200 hover:bg-slate-100 transition">
+              Home
+            </a>
           </div>
         </div>
       </header>
@@ -399,7 +402,7 @@ export default function DashboardPage() {
                     </optgroup>
                   ))}
                 </select>
-                <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-800 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </div>
               {providerSwitching && <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
             </div>
@@ -416,7 +419,7 @@ export default function DashboardPage() {
               <div className="flex gap-1">
                 {[3, 4, 5, 6].map((e) => (
                   <button key={e} onClick={() => setSelectedEpoch(e)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${selectedEpoch === e ? "bg-blue-500 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600"}`}>
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${selectedEpoch === e ? "bg-blue-500 text-white shadow-sm" : "bg-slate-100 text-slate-800 hover:bg-blue-50 hover:text-blue-600"}`}>
                     {e}
                   </button>
                 ))}
@@ -446,7 +449,7 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            <span className="text-xs text-slate-400 hidden md:inline">Click a project address to use it in analyze-project</span>
+            <span className="text-xs text-slate-800 font-medium hidden md:inline">Click a project address to use it in analyze-project</span>
           </div>
 
           {/* ─── Epoch Tool Results ─── */}
@@ -457,7 +460,7 @@ export default function DashboardPage() {
               <ExpandableSection title={`Epoch ${epochData.epoch} — ${epochData.projects?.length ?? 0} Projects (click to select)`} defaultOpen>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="bg-slate-100 text-slate-500 uppercase text-xs">
+                    <thead><tr className="bg-slate-100 text-slate-700 uppercase text-xs">
                       <th className="px-3 py-2 text-left">#</th>
                       <th className="px-3 py-2 text-left">Address</th>
                       <th className="px-3 py-2 text-right">Allocated (ETH)</th>
@@ -468,7 +471,7 @@ export default function DashboardPage() {
                     <tbody>
                       {epochData.projects?.map((p, i) => (
                         <tr key={p.address} className="border-t border-slate-100 hover:bg-blue-50 cursor-pointer transition-colors" onClick={() => selectProjectFromTable(p.address)}>
-                          <td className="px-3 py-2 font-medium text-slate-500">{i + 1}</td>
+                          <td className="px-3 py-2 font-medium text-slate-700">{i + 1}</td>
                           <td className="px-3 py-2 font-mono text-xs text-blue-600 hover:text-blue-800">{p.address}</td>
                           <td className="px-3 py-2 text-right font-mono">{p.allocated?.toFixed(4)}</td>
                           <td className="px-3 py-2 text-right font-mono">{p.matched?.toFixed(4)}</td>
@@ -490,7 +493,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
                   {Object.entries(anomalyData).filter(([k]) => k !== "flags").map(([k, v]) => (
                     <div key={k} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
+                      <p className="text-xs text-slate-700 capitalize">{k.replace(/([A-Z])/g, " $1")}</p>
                       <p className="text-base font-bold text-slate-800">{typeof v === "number" ? (k.includes("oncentration") ? `${(Number(v) * 100).toFixed(1)}%` : Number(v).toFixed(v as number > 100 ? 0 : 4)) : String(v)}</p>
                     </div>
                   ))}
@@ -513,7 +516,7 @@ export default function DashboardPage() {
               <ExpandableSection title={`Trust Graph — Epoch ${trustData.epoch} — ${trustData.profiles?.length ?? 0} Projects (click to select)`} defaultOpen>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="bg-slate-100 text-slate-500 uppercase text-xs">
+                    <thead><tr className="bg-slate-100 text-slate-700 uppercase text-xs">
                       <th className="px-3 py-2 text-left">Address</th>
                       <th className="px-3 py-2 text-right">Donors</th>
                       <th className="px-3 py-2 text-right">Diversity</th>
@@ -549,7 +552,7 @@ export default function DashboardPage() {
               <ExpandableSection title={`Mechanism Simulation — Epoch ${simData.epoch} — ${simData.mechanisms?.length} Mechanisms`} defaultOpen>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="bg-slate-100 text-slate-500 uppercase text-xs">
+                    <thead><tr className="bg-slate-100 text-slate-700 uppercase text-xs">
                       <th className="px-3 py-2 text-left">Mechanism</th>
                       <th className="px-3 py-2 text-right">Gini</th>
                       <th className="px-3 py-2 text-right">Top Share</th>
@@ -583,18 +586,18 @@ export default function DashboardPage() {
               <img src="/tessera-icon-64.png" alt="" className="w-6 h-6" />
               <h3 className="text-base font-bold text-slate-800">Full Project Intelligence</h3>
             </div>
-            <p className="text-xs text-slate-500 font-mono mb-4 ml-9">./tessera analyze-project &lt;address&gt;</p>
+            <p className="text-xs text-slate-700 font-mono mb-4 ml-9">./tessera analyze-project &lt;address&gt;</p>
 
-            <div className="mb-3 p-2.5 rounded-lg bg-blue-50/80 border border-blue-200/50 text-xs text-slate-600 leading-relaxed">
+            <div className="mb-3 p-2.5 rounded-lg bg-blue-50/80 border border-blue-200/50 text-xs text-slate-800 leading-relaxed">
               9-step pipeline: funding history, quantitative scoring, trust graph, mechanism simulation, temporal anomalies, multi-layer scoring, multi-chain blockchain scan (9 chains + USDC/USDT/DAI), OSO signals, and AI deep evaluation. Generates PDF report.
             </div>
 
             <div className="mb-3">
               <label className="block text-xs font-semibold text-slate-700 mb-1">Octant Project Address</label>
               <input placeholder="0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" value={projectAddr} onChange={(e) => setProjectAddr(e.target.value)}
-                className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400" />
+                className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-700" />
               <div className="flex gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-slate-500">Quick:</span>
+                <span className="text-xs text-slate-700">Quick:</span>
                 {[
                   { label: "#1, 7ep, 90% whale", addr: "0x9531C059098e3d194fF87FebB587aB07B30B1306" },
                   { label: "#5, 99% whale", addr: "0x02Cb3C150BEdca124d0aE8CcCb72fefbe705c953" },
@@ -619,7 +622,7 @@ export default function DashboardPage() {
               <div className="mt-5 p-4 rounded-2xl bg-white/60 border border-slate-200/50">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Pipeline Progress</h4>
-                  <span className="text-xs font-semibold text-slate-500">{completedSteps}/{PIPELINE_STEPS.length} steps</span>
+                  <span className="text-xs font-semibold text-slate-700">{completedSteps}/{PIPELINE_STEPS.length} steps</span>
                 </div>
                 {/* Progress bar */}
                 <div className="w-full h-2 rounded-full bg-slate-200 mb-4">
@@ -644,9 +647,9 @@ export default function DashboardPage() {
               <img src="/tessera-icon-64.png" alt="" className="w-6 h-6" />
               <h3 className="text-base font-bold text-slate-800">AI Project Evaluation</h3>
             </div>
-            <p className="text-xs text-slate-500 font-mono mb-4 ml-9">./tessera evaluate &quot;Name&quot; -d &quot;Desc&quot; [-g github-url]</p>
+            <p className="text-xs text-slate-700 font-mono mb-4 ml-9">./tessera evaluate &quot;Name&quot; -d &quot;Desc&quot; [-g github-url]</p>
 
-            <div className="mb-3 p-2.5 rounded-lg bg-violet-50/80 border border-violet-200/50 text-xs text-slate-600 leading-relaxed">
+            <div className="mb-3 p-2.5 rounded-lg bg-violet-50/80 border border-violet-200/50 text-xs text-slate-800 leading-relaxed">
               Evaluate any public goods project across 8 dimensions: Impact, Team, Innovation, Sustainability, Ecosystem, Transparency, Community, Risk. Add GitHub URL for README + repo metrics enrichment. Generates PDF report.
             </div>
 
@@ -654,17 +657,17 @@ export default function DashboardPage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Project Name</label>
                 <input placeholder="e.g. Octant, Gitcoin Grants, Protocol Guild" value={evalName} onChange={(e) => setEvalName(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-400" />
+                  className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-700" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Project Description</label>
                 <textarea placeholder="e.g. Octant is a public goods funding platform by Golem Foundation..." value={evalDesc} onChange={(e) => setEvalDesc(e.target.value)} rows={3}
-                  className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-400" />
+                  className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-700" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">GitHub URL <span className="font-normal text-slate-400">(optional)</span></label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">GitHub URL <span className="font-normal text-slate-800">(optional)</span></label>
                 <input placeholder="e.g. https://github.com/golemfoundation/octant" value={evalGithub} onChange={(e) => setEvalGithub(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-400" />
+                  className="w-full rounded-lg border border-slate-200/80 bg-white/70 text-slate-800 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-slate-700" />
               </div>
             </div>
 
@@ -693,7 +696,7 @@ export default function DashboardPage() {
                       View PDF Report
                     </button>
                     <a href={`/api/reports/${String(evalReportPath).split("/").pop()}`} download
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg px-4 py-2 transition">
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium rounded-lg px-4 py-2 transition">
                       Download PDF
                     </a>
                   </div>
@@ -712,7 +715,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-800">Analysis Complete</h3>
-                <p className="text-xs text-slate-500">All 9 pipeline steps finished. Expand each section to explore the data.</p>
+                <p className="text-xs text-slate-700">All 9 pipeline steps finished. Expand each section to explore the data.</p>
               </div>
             </div>
 
@@ -727,7 +730,7 @@ export default function DashboardPage() {
                 { label: "Chains Active", value: projectResult.blockchain ? `${projectResult.blockchain.totalChainsActive}/${projectResult.blockchain.chains?.length}` : "?", color: "text-emerald-600" },
               ].map((card) => (
                 <div key={card.label} className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/50">
-                  <p className="text-xs text-slate-500 mb-0.5">{card.label}</p>
+                  <p className="text-xs text-slate-700 mb-0.5">{card.label}</p>
                   <p className={`text-xl font-bold ${card.color}`}>{card.value}</p>
                 </div>
               ))}
@@ -756,7 +759,7 @@ export default function DashboardPage() {
                           <div className="w-full h-1.5 rounded-full bg-slate-200 mt-2">
                             <div className={`h-full rounded-full transition-all duration-500 ${isOverall ? "bg-blue-500" : val > 50 ? "bg-green-500" : val > 25 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${val}%` }} />
                           </div>
-                          <p className="text-xs text-slate-400 mt-1">{dim.desc}</p>
+                          <p className="text-xs text-slate-800 mt-1">{dim.desc}</p>
                         </div>
                       );
                     })}
@@ -775,7 +778,7 @@ export default function DashboardPage() {
                       { label: "Has Stablecoins", value: projectResult.blockchain.hasStablecoins ? "Yes" : "No" },
                     ].map((s) => (
                       <div key={s.label} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <p className="text-xs text-slate-500">{s.label}</p>
+                        <p className="text-xs text-slate-700">{s.label}</p>
                         <p className="text-sm font-bold text-slate-800">{s.value}</p>
                       </div>
                     ))}
@@ -792,7 +795,7 @@ export default function DashboardPage() {
                   )}
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="bg-slate-100 text-slate-500 uppercase text-xs">
+                      <thead><tr className="bg-slate-100 text-slate-700 uppercase text-xs">
                         <th className="px-3 py-2 text-left">Chain</th>
                         <th className="px-3 py-2 text-right">Balance</th>
                         <th className="px-3 py-2 text-right">Transactions</th>
@@ -802,11 +805,11 @@ export default function DashboardPage() {
                       <tbody>
                         {projectResult.blockchain.chains?.map((c: { chain: string; balance: number; nativeToken: string; txCount: number; isContract: boolean; contractVerified: boolean; tokenBalances?: { symbol: string; balance: number }[]; error?: string; isTestnet?: boolean }) => (
                           <tr key={c.chain} className="border-t border-slate-100 hover:bg-slate-50">
-                            <td className="px-3 py-2 font-medium">{c.chain}{c.isTestnet ? <span className="ml-1 text-xs text-slate-400">(testnet)</span> : ""}</td>
-                            <td className="px-3 py-2 text-right font-mono text-xs">{c.error ? <span className="text-red-400">error</span> : c.balance > 0 ? `${c.balance.toFixed(6)} ${c.nativeToken}` : <span className="text-slate-300">-</span>}</td>
-                            <td className="px-3 py-2 text-right">{c.error ? "-" : c.txCount > 0 ? c.txCount : <span className="text-slate-300">-</span>}</td>
-                            <td className="px-3 py-2 text-center">{c.error ? "-" : c.isContract ? <span className="px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-xs font-medium">{c.contractVerified ? "Contract (verified)" : "Contract"}</span> : c.balance > 0 || c.txCount > 0 ? <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">EOA</span> : <span className="text-slate-300">-</span>}</td>
-                            <td className="px-3 py-2 text-right">{c.tokenBalances?.length ? c.tokenBalances.map((t: { symbol: string; balance: number }) => <span key={t.symbol} className="inline-block mr-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">${t.balance.toFixed(2)} {t.symbol}</span>) : <span className="text-slate-300">-</span>}</td>
+                            <td className="px-3 py-2 font-medium">{c.chain}{c.isTestnet ? <span className="ml-1 text-xs text-slate-800">(testnet)</span> : ""}</td>
+                            <td className="px-3 py-2 text-right font-mono text-xs">{c.error ? <span className="text-red-400">error</span> : c.balance > 0 ? `${c.balance.toFixed(6)} ${c.nativeToken}` : <span className="text-slate-500">-</span>}</td>
+                            <td className="px-3 py-2 text-right">{c.error ? "-" : c.txCount > 0 ? c.txCount : <span className="text-slate-500">-</span>}</td>
+                            <td className="px-3 py-2 text-center">{c.error ? "-" : c.isContract ? <span className="px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-xs font-medium">{c.contractVerified ? "Contract (verified)" : "Contract"}</span> : c.balance > 0 || c.txCount > 0 ? <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">EOA</span> : <span className="text-slate-500">-</span>}</td>
+                            <td className="px-3 py-2 text-right">{c.tokenBalances?.length ? c.tokenBalances.map((t: { symbol: string; balance: number }) => <span key={t.symbol} className="inline-block mr-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">${t.balance.toFixed(2)} {t.symbol}</span>) : <span className="text-slate-500">-</span>}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -820,7 +823,7 @@ export default function DashboardPage() {
                 <ExpandableSection title="Mechanism Simulation (4 QF Variants)">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="bg-slate-100 text-slate-500 uppercase text-xs">
+                      <thead><tr className="bg-slate-100 text-slate-700 uppercase text-xs">
                         <th className="px-3 py-2 text-left">Mechanism</th>
                         <th className="px-3 py-2 text-right">Allocated</th>
                         <th className="px-3 py-2 text-right">Change vs Standard</th>
@@ -831,7 +834,7 @@ export default function DashboardPage() {
                             <td className="px-3 py-2 font-medium">{m.name}</td>
                             <td className="px-3 py-2 text-right font-mono">{m.allocated.toFixed(4)} ETH</td>
                             <td className="px-3 py-2 text-right">
-                              <span className={`font-bold ${m.change > 0 ? "text-green-600" : m.change < 0 ? "text-red-600" : "text-slate-500"}`}>
+                              <span className={`font-bold ${m.change > 0 ? "text-green-600" : m.change < 0 ? "text-red-600" : "text-slate-700"}`}>
                                 {m.change > 0 ? "+" : ""}{m.change.toFixed(1)}%
                               </span>
                             </td>
@@ -856,12 +859,12 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`w-2 h-2 rounded-full ${a.severity === "high" ? "bg-red-500" : a.severity === "medium" ? "bg-amber-500" : "bg-blue-500"}`} />
                           <span className={`text-sm font-semibold capitalize ${a.severity === "high" ? "text-red-700" : a.severity === "medium" ? "text-amber-700" : "text-blue-700"}`}>{a.type?.replace(/_/g, " ")}</span>
-                          <span className="text-xs text-slate-500">Epoch {a.epoch}</span>
+                          <span className="text-xs text-slate-700">Epoch {a.epoch}</span>
                           <span className={`ml-auto text-xs font-bold uppercase px-2 py-0.5 rounded-full ${
                             a.severity === "high" ? "bg-red-100 text-red-600" : a.severity === "medium" ? "bg-amber-100 text-amber-600" : "bg-blue-100 text-blue-600"
                           }`}>{a.severity}</span>
                         </div>
-                        <p className="text-xs text-slate-600">{a.description}</p>
+                        <p className="text-xs text-slate-800">{a.description}</p>
                       </div>
                     ))}
                   </div>
@@ -873,7 +876,7 @@ export default function DashboardPage() {
                 <ExpandableSection title={`Cross-Epoch Funding History (${projectResult.history.length} epochs)`}>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="bg-slate-100 text-slate-500 uppercase text-xs">
+                      <thead><tr className="bg-slate-100 text-slate-700 uppercase text-xs">
                         <th className="px-3 py-2 text-left">Epoch</th>
                         <th className="px-3 py-2 text-right">Allocated (ETH)</th>
                         <th className="px-3 py-2 text-right">Matched (ETH)</th>
@@ -931,7 +934,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-base font-bold text-slate-800 mb-1">PDF Reports</h3>
-              <p className="text-xs text-slate-500">Generated intelligence reports</p>
+              <p className="text-xs text-slate-700">Generated intelligence reports</p>
             </div>
             <button onClick={() => getReports().then(setReports).catch(() => {})}
               className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg px-4 py-2 transition">
@@ -944,20 +947,20 @@ export default function DashboardPage() {
                 <div key={r.name} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-200/50">
                   <div className="min-w-0 mr-3">
                     <p className="text-xs font-medium text-slate-700 font-mono truncate">{r.name}</p>
-                    <p className="text-xs text-slate-400">{r.modTime} -- {(r.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-xs text-slate-800">{r.modTime} -- {(r.size / 1024).toFixed(1)} KB</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
                     {r.name.endsWith(".pdf") && (
                       <button onClick={() => setViewPdf(getReportUrl(r.name))}
                         className="text-xs px-2.5 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 transition">View</button>
                     )}
-                    <a href={getReportUrl(r.name)} download className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Download</a>
+                    <a href={getReportUrl(r.name)} download className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 hover:bg-slate-200 transition">Download</a>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-500">No reports yet. Run analyze-project or evaluate to generate PDF reports.</p>
+            <p className="text-xs text-slate-700">No reports yet. Run analyze-project or evaluate to generate PDF reports.</p>
           )}
         </div>
       </main>
@@ -967,18 +970,18 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setViewPdf(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-slate-600">Report Viewer</h3>
-              <button onClick={() => setViewPdf(null)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+              <h3 className="font-semibold text-slate-800">Report Viewer</h3>
+              <button onClick={() => setViewPdf(null)} className="text-slate-800 hover:text-slate-800 text-2xl leading-none">&times;</button>
             </div>
             <iframe src={viewPdf} className="flex-1 w-full rounded-b-2xl" />
           </div>
         </div>
       )}
 
-      <footer className="text-center py-8 text-xs text-slate-500 border-t border-slate-200/50">
+      <footer className="text-center py-8 text-xs text-slate-700 border-t border-slate-200/50">
         <div className="flex items-center justify-center gap-2 mb-2">
           <img src="/tessera-icon-64.png" alt="Tessera" className="w-5 h-5" />
-          <span className="font-semibold text-slate-600">Tessera</span>
+          <span className="font-semibold text-slate-800">Tessera</span>
         </div>
         Built by Yeheskiel Yunus Tame + Claude Opus 4.6 | The Synthesis Hackathon |{" "}
         <a href="https://github.com/yeheskieltame/Tessera" className="text-blue-500 hover:underline">GitHub</a>
