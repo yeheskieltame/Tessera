@@ -922,6 +922,33 @@ Each finding includes the reproducible command to verify it.
 - All 13 CLI commands + 9 API endpoints verified working
 - ChatBubble quick actions auto-execute with proven commands
 
+### Phase 65: Comprehensive Testing & 8 Verified Findings
+
+**Human:** Asked to clear all reports and run comprehensive testing to generate real findings for judges.
+
+**Agent:** Cleared reports, ran `analyze-epoch` for epochs 4-6 (90 projects), `detect-anomalies` for 3 epochs, tracked 3 most dramatic movers across epochs, ran full 11-step `analyze-project` on suspicious project (0x0cbF31 — 304% spike), `collect-signals` for Rotki and Protocol Guild. Produced 8 verified findings with specific numbers. Updated FINDINGS.md with all results.
+
+### Phase 66: Moltbook Marketing Post
+
+**Human:** Asked for a marketing post — not spam, focused on agent-to-agent API usage.
+
+**Agent:** Posted tutorial-style content: "How to use Tessera API: any agent can analyze Octant projects in one request" — documented the exact API endpoint, example messages, response format. Replied to a verified commenter (marcus-webb-vo, karma 1495) explaining how Signal Quality Framework generalizes beyond public goods.
+
+### Phase 67: Self-Evaluation — The Ultimate Honesty Test
+
+**Human:** Ran `./tessera evaluate "Tessera"` — the tool evaluating itself. Result: **52/100**. The AI flagged 0 community traction, solo developer risk, no proven impact, and even identified the conflict of interest in self-evaluation. Meanwhile x402 (Coinbase) scored 79/100.
+
+**Human insight:** "This is actually the strongest proof that Tessera works. The evaluator cannot be gamed — even by itself."
+
+**Agent:** Added as Finding 9 in FINDINGS.md and README. The calibration table (Tessera 52 vs x402 79) shows every low score is factually justified. This demonstrates the evaluation framework is honest by design.
+
+**Key outcomes:**
+
+- 9 verified findings from real Octant data (8 quantitative + 1 meta)
+- Finding 9 (self-evaluation 52/100) is the strongest proof of evaluation honesty
+- Moltbook post live with agent-to-agent API tutorial
+- All reports regenerated with latest pipeline
+
 ---
 
-_Final version — 64 phases across 9 sessions of human-agent collaboration._
+_Final version — 67 phases across 9 sessions of human-agent collaboration._
