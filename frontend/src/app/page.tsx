@@ -1193,21 +1193,53 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Algorithms ─── */}
-      <section id="algorithms" className="relative py-28 px-6">
-        <div className="max-w-5xl mx-auto">
+      <section id="algorithms" className="relative py-28 px-6 overflow-hidden">
+        {/* Subtle background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-violet-500/[0.03] rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/[0.03] rounded-full blur-[100px]" />
+        </div>
+
+        <div className="max-w-6xl mx-auto relative">
           <SectionHeading
             title="Analysis Algorithms"
-            subtitle="Deterministic, reproducible analysis using established mathematical methods."
+            subtitle="Deterministic, reproducible analysis using established mathematical methods. Every formula is transparent and auditable."
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ALGORITHMS.map((a, i) => (
-              <Reveal key={a.name} delay={i * 80}>
-                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-violet-500/15 transition-all h-full">
-                  <h3 className="text-sm font-bold text-white mb-2">{a.name}</h3>
-                  <div className="px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5 mb-3">
-                    <code className="text-xs text-violet-300/80 font-mono">{a.formula}</code>
+
+          {/* Top row: 2 large cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+            {ALGORITHMS.slice(0, 2).map((a, i) => (
+              <Reveal key={a.name} delay={i * 100}>
+                <div className="group p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-violet-500/10 transition-all h-full relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/[0.03] rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-bold text-white">{a.name}</h3>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full border border-violet-500/15 text-violet-400/40 font-mono">formula</span>
+                    </div>
+                    <div className="px-4 py-3 rounded-xl bg-[#0d1117] border border-[#30363d] mb-4 font-mono">
+                      <code className="text-sm text-violet-300/90 leading-relaxed">{a.formula}</code>
+                    </div>
+                    <p className="text-sm text-white/40 leading-relaxed">{a.desc}</p>
                   </div>
-                  <p className="text-xs text-white/35 leading-relaxed">{a.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          {/* Bottom row: 4 compact cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {ALGORITHMS.slice(2).map((a, i) => (
+              <Reveal key={a.name} delay={(i + 2) * 100}>
+                <div className="group p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-violet-500/10 transition-all h-full relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-violet-500/[0.03] rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <h3 className="text-sm font-bold text-white mb-3">{a.name}</h3>
+                    <div className="px-3 py-2 rounded-lg bg-[#0d1117] border border-[#30363d] mb-3 font-mono">
+                      <code className="text-[11px] text-violet-300/80 leading-relaxed">{a.formula}</code>
+                    </div>
+                    <p className="text-[11px] text-white/35 leading-relaxed">{a.desc}</p>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -1216,33 +1248,74 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Findings ─── */}
-      <section id="findings" className="relative py-28 px-6">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            title="Key Findings from Real Data"
-            subtitle="Octant Epoch 5: 30 projects, 1,902 donations, 422 unique donors. All findings reproducible via CLI."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FINDINGS.map((f, i) => (
-              <Reveal key={f.label} delay={i * 80}>
-                <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-blue-500/15 transition-all h-full">
-                  <p className="text-3xl font-black text-blue-400 mb-1">{f.stat}</p>
-                  <p className="text-xs font-bold text-white mb-2 uppercase tracking-wider">{f.label}</p>
-                  <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
+      <section id="findings" className="relative py-28 px-6 overflow-hidden">
+        {/* Animated background glow */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-blue-500/[0.04] rounded-full blur-[150px]" />
+        </div>
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+
+        <div className="max-w-6xl mx-auto relative">
+          <Reveal>
+            <h2 className="text-5xl sm:text-6xl font-black text-center text-white mb-4 tracking-tight">KEY FINDINGS</h2>
+            <p className="text-center text-white/40 text-base max-w-2xl mx-auto mb-6">
+              Real insights from Octant Epoch 5: 30 projects, 1,902 donations, 422 unique donors.
+            </p>
+            <p className="text-center text-white/25 text-sm max-w-xl mx-auto mb-16">
+              All findings are reproducible by running Tessera CLI commands. For full methodology and interpretation, read{" "}
+              <a href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 underline underline-offset-2 hover:text-blue-400">
+                FINDINGS.md
+              </a>.
+            </p>
+          </Reveal>
+
+          {/* Top: 2 hero findings */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+            {FINDINGS.slice(0, 2).map((f, i) => (
+              <Reveal key={f.label} delay={i * 100}>
+                <div className="group relative p-6 rounded-2xl border border-white/5 hover:border-blue-500/15 transition-all overflow-hidden h-full">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative flex items-start gap-5">
+                    <div className="flex-shrink-0">
+                      <p className="text-5xl font-black bg-gradient-to-b from-blue-400 to-blue-600 bg-clip-text text-transparent leading-none">{f.stat}</p>
+                    </div>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <p className="text-xs font-bold text-white/70 uppercase tracking-wider mb-2">{f.label}</p>
+                      <p className="text-sm text-white/35 leading-relaxed">{f.desc}</p>
+                    </div>
+                  </div>
                 </div>
               </Reveal>
             ))}
           </div>
+
+          {/* Bottom: 4 compact findings */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            {FINDINGS.slice(2).map((f, i) => (
+              <Reveal key={f.label} delay={(i + 2) * 80}>
+                <div className="group relative p-5 rounded-2xl border border-white/5 hover:border-blue-500/15 transition-all overflow-hidden h-full">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative">
+                    <p className="text-3xl font-black bg-gradient-to-b from-blue-400 to-blue-500 bg-clip-text text-transparent mb-2 leading-none">{f.stat}</p>
+                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-wider mb-2">{f.label}</p>
+                    <p className="text-[11px] text-white/30 leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          {/* CTA to FINDINGS.md */}
           <Reveal delay={500}>
-            <div className="mt-8 text-center">
+            <div className="text-center">
               <a
                 href="https://github.com/yeheskieltame/Tessera/blob/main/FINDINGS.md"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-blue-400 border border-blue-500/20 hover:bg-blue-500/5 transition-all"
+                className="group inline-flex items-center gap-3 px-8 py-3.5 rounded-full text-sm font-semibold text-white/70 border border-white/10 hover:border-blue-500/25 hover:text-blue-400 transition-all"
               >
                 Read Full Analysis in FINDINGS.md
-                <span>&rarr;</span>
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
               </a>
             </div>
           </Reveal>
