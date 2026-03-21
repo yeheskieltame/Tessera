@@ -572,10 +572,11 @@ export default function LandingPage() {
 
       {/* ─── Problem ─── */}
       <section id="problem" className="relative py-28 px-6 overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 80% 70%, #8b5cf6 0%, transparent 50%)" }} />
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
+        {/* Background: dashboard-bg with heavy overlay */}
+        <div className="absolute inset-0">
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-[0.07]" />
+          <div className="absolute inset-0 bg-[#0a0e1a]/90" />
+        </div>
 
         <div className="max-w-6xl mx-auto relative">
           <Reveal>
@@ -1194,11 +1195,8 @@ export default function LandingPage() {
 
       {/* ─── Algorithms ─── */}
       <section id="algorithms" className="relative py-28 px-6 overflow-hidden">
-        {/* Subtle background */}
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-violet-500/[0.03] rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-blue-500/[0.03] rounded-full blur-[100px]" />
-        </div>
+        {/* Background: grid lines */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
 
         <div className="max-w-6xl mx-auto relative">
           <SectionHeading
@@ -1249,11 +1247,11 @@ export default function LandingPage() {
 
       {/* ─── Findings ─── */}
       <section id="findings" className="relative py-28 px-6 overflow-hidden">
-        {/* Animated background glow */}
+        {/* Background: dashboard-bg with heavy overlay */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-blue-500/[0.04] rounded-full blur-[150px]" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-[0.05]" style={{ objectPosition: "center 40%" }} />
+          <div className="absolute inset-0 bg-[#0a0e1a]/92" />
         </div>
-        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
         <div className="max-w-6xl mx-auto relative">
           <Reveal>
@@ -1323,7 +1321,8 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Setup ─── */}
-      <section id="setup" className="relative py-28 px-6">
+      <section id="setup" className="relative py-28 px-6 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
         <div className="max-w-4xl mx-auto">
           <SectionHeading
             title="Get Started"
@@ -1350,7 +1349,11 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Team ─── */}
-      <section className="relative py-28 px-6">
+      <section className="relative py-28 px-6 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-[0.06]" style={{ objectPosition: "center 60%" }} />
+          <div className="absolute inset-0 bg-[#0a0e1a]/90" />
+        </div>
         <div className="max-w-4xl mx-auto">
           <SectionHeading
             title="Team"
