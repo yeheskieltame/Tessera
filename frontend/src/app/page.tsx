@@ -429,7 +429,7 @@ export default function LandingPage() {
             <Reveal delay={50}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-blue-500/20 transition-all group">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">1</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">1</span>
                   <span className="text-sm font-bold text-white">Funding History</span>
                 </div>
                 <div className="p-4">
@@ -453,7 +453,7 @@ export default function LandingPage() {
             <Reveal delay={100}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-teal-500/20 transition-all group">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">2</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">2</span>
                   <span className="text-sm font-bold text-white">Quantitative Scoring</span>
                 </div>
                 <div className="p-4">
@@ -489,7 +489,7 @@ export default function LandingPage() {
             <Reveal delay={150}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-sky-500/20 transition-all group">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">3</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">3</span>
                   <span className="text-sm font-bold text-white">Trust Graph</span>
                 </div>
                 <div className="p-4">
@@ -526,7 +526,7 @@ export default function LandingPage() {
             <Reveal delay={200}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-amber-500/20 transition-all group">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">4</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">4</span>
                   <span className="text-sm font-bold text-white">Mechanism Simulation</span>
                 </div>
                 <div className="p-4">
@@ -568,7 +568,7 @@ export default function LandingPage() {
             <Reveal delay={300}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-rose-500/20 transition-all">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">5</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">5</span>
                   <span className="text-sm font-bold text-white">Temporal Anomalies</span>
                 </div>
                 <div className="p-4">
@@ -590,7 +590,7 @@ export default function LandingPage() {
             <Reveal delay={350}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-violet-500/20 transition-all">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">6</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">6</span>
                   <span className="text-sm font-bold text-white">Multi-Layer Scoring</span>
                 </div>
                 <div className="p-4">
@@ -619,7 +619,7 @@ export default function LandingPage() {
             <Reveal delay={400}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-emerald-500/20 transition-all">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">7</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">7</span>
                   <span className="text-sm font-bold text-white">Blockchain Scan</span>
                 </div>
                 <div className="p-4">
@@ -648,7 +648,7 @@ export default function LandingPage() {
             <Reveal delay={450}>
               <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-cyan-500/20 transition-all">
                 <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">8</span>
+                  <span className="w-7 h-7 rounded-full border border-white/15 flex items-center justify-center text-xs font-medium text-white/60">8</span>
                   <span className="text-sm font-bold text-white">Code Signals</span>
                 </div>
                 <div className="p-4">
@@ -693,7 +693,7 @@ export default function LandingPage() {
                 <div className="flex flex-col lg:flex-row gap-6 items-center">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">9</span>
+                      <span className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center text-sm font-medium text-white/70">9</span>
                       <div>
                         <h3 className="text-lg font-bold text-white">AI Deep Evaluation</h3>
                         <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-indigo-500/20 text-indigo-300 uppercase">AI Required</span>
@@ -885,7 +885,7 @@ export default function LandingPage() {
             {SETUP_STEPS.map((s, i) => (
               <Reveal key={s.num} delay={i * 100}>
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center shadow-lg">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full border border-white/15 flex items-center justify-center">
                     <span className="text-sm font-bold text-white">{s.num}</span>
                   </div>
                   <div className="flex-1">
