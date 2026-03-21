@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import ChatBubble from "@/components/ChatBubble";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,7 +34,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <ChatBubble />
+      </body>
     </html>
   );
 }
