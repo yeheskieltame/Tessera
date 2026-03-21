@@ -410,46 +410,324 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Pipeline ─── */}
-      <section id="pipeline" className="relative py-28 px-6">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeading
-            title="9-Step Evidence Pipeline"
-            subtitle="Each step produces structured data that accumulates. Steps 1-8 are deterministic. Step 9 feeds all evidence into an LLM."
-          />
-          <div className="space-y-3">
-            {PIPELINE_STEPS.map((step, i) => (
-              <Reveal key={step.num} delay={i * 60}>
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 hover:bg-white/[0.04] transition-all group">
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg`}>
-                    <span className="text-sm font-bold text-white">{step.num}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-bold text-white">{step.title}</h3>
-                      {step.ai && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-indigo-500/20 text-indigo-300 uppercase">AI</span>}
-                    </div>
-                    <p className="text-xs text-white/40 leading-relaxed">{step.desc}</p>
-                  </div>
-                  <div className="flex-shrink-0 hidden sm:block">
-                    <span className="text-[10px] text-white/20 font-mono">{step.source}</span>
-                  </div>
+      <section id="pipeline" className="relative py-28 px-6 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+
+        <div className="max-w-7xl mx-auto relative">
+          <Reveal>
+            <h2 className="text-5xl sm:text-6xl font-black text-center text-white mb-3 tracking-tight">9-STEP EVIDENCE PIPELINE</h2>
+            <div className="max-w-2xl mx-auto mb-16">
+              <div className="px-5 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-center">
+                <p className="text-sm text-white/50">Each step produces structured data that accumulates. Steps 1-8 are deterministic. Step 9 feeds all evidence into an LLM.</p>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Row 1: Steps 1-4 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* Step 1: Funding History */}
+            <Reveal delay={50}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-blue-500/20 transition-all group">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">1</span>
+                  <span className="text-sm font-bold text-white">Funding History</span>
                 </div>
-              </Reveal>
-            ))}
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">Cross-epoch allocations, matched funding, donor counts from Octant REST API</p>
+                  {/* SVG: Funding bars */}
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 flex items-end justify-center gap-2 px-4 pb-3 pt-2 relative">
+                    <div className="absolute top-2 left-2 text-[8px] text-white/20 font-mono">ETH</div>
+                    {[40, 65, 30, 55, 80, 45].map((h, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full rounded-t bg-gradient-to-t from-blue-500/40 to-blue-400/60 transition-all duration-500 group-hover:from-blue-500/60 group-hover:to-blue-400/80" style={{ height: `${h}%` }} />
+                        <span className="text-[7px] text-white/20">E{i + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-blue-400/40 font-mono">Octant</span></div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 2: Quantitative Scoring */}
+            <Reveal delay={100}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-teal-500/20 transition-all group">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">2</span>
+                  <span className="text-sm font-bold text-white">Quantitative Scoring</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">K-means clustering (Lloyd&apos;s algorithm). Composite score: 40% allocated + 60% matched</p>
+                  {/* SVG: Scatter plot with clusters */}
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                    <svg viewBox="0 0 160 100" className="w-full h-full">
+                      {/* Cluster 1 */}
+                      <circle cx="35" cy="30" r="15" fill="#14b8a6" opacity="0.08" />
+                      <circle cx="30" cy="28" r="2.5" fill="#14b8a6" opacity="0.6"><animate attributeName="opacity" values="0.4;0.7;0.4" dur="2s" repeatCount="indefinite" /></circle>
+                      <circle cx="38" cy="35" r="2" fill="#14b8a6" opacity="0.5" />
+                      <circle cx="33" cy="22" r="1.5" fill="#14b8a6" opacity="0.4" />
+                      {/* Cluster 2 */}
+                      <circle cx="90" cy="55" r="18" fill="#60a5fa" opacity="0.06" />
+                      <circle cx="85" cy="50" r="2.5" fill="#60a5fa" opacity="0.6"><animate attributeName="opacity" values="0.5;0.8;0.5" dur="2.5s" repeatCount="indefinite" /></circle>
+                      <circle cx="95" cy="58" r="2" fill="#60a5fa" opacity="0.5" />
+                      <circle cx="88" cy="62" r="1.5" fill="#60a5fa" opacity="0.4" />
+                      <circle cx="92" cy="48" r="2" fill="#60a5fa" opacity="0.45" />
+                      {/* Cluster 3 */}
+                      <circle cx="130" cy="25" r="12" fill="#a78bfa" opacity="0.06" />
+                      <circle cx="128" cy="22" r="2" fill="#a78bfa" opacity="0.5" />
+                      <circle cx="135" cy="28" r="1.5" fill="#a78bfa" opacity="0.4" />
+                      {/* Label */}
+                      <text x="80" y="92" textAnchor="middle" fill="#ffffff" fontSize="7" opacity="0.15">Composite Score</text>
+                    </svg>
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-teal-400/40 font-mono">Analysis</span></div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 3: Trust Graph */}
+            <Reveal delay={150}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-sky-500/20 transition-all group">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">3</span>
+                  <span className="text-sm font-bold text-white">Trust Graph</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">Shannon entropy, Jaccard similarity, and union-find donor clustering</p>
+                  {/* SVG: Network graph */}
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                    <svg viewBox="0 0 160 100" className="w-full h-full">
+                      {/* Nodes */}
+                      <circle cx="80" cy="50" r="6" fill="#0ea5e9" opacity="0.5"><animate attributeName="r" values="5;7;5" dur="3s" repeatCount="indefinite" /></circle>
+                      <circle cx="40" cy="30" r="4" fill="#38bdf8" opacity="0.4" />
+                      <circle cx="120" cy="25" r="4" fill="#38bdf8" opacity="0.4" />
+                      <circle cx="30" cy="70" r="3.5" fill="#7dd3fc" opacity="0.35" />
+                      <circle cx="130" cy="75" r="3.5" fill="#7dd3fc" opacity="0.35" />
+                      <circle cx="60" cy="80" r="3" fill="#bae6fd" opacity="0.3" />
+                      <circle cx="110" cy="45" r="3" fill="#bae6fd" opacity="0.3" />
+                      {/* Edges */}
+                      <line x1="80" y1="50" x2="40" y2="30" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.2" />
+                      <line x1="80" y1="50" x2="120" y2="25" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.2" />
+                      <line x1="80" y1="50" x2="30" y2="70" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.15" />
+                      <line x1="80" y1="50" x2="130" y2="75" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.15" />
+                      <line x1="80" y1="50" x2="60" y2="80" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.1" />
+                      <line x1="80" y1="50" x2="110" y2="45" stroke="#0ea5e9" strokeWidth="0.8" opacity="0.1" />
+                      <line x1="40" y1="30" x2="30" y2="70" stroke="#f87171" strokeWidth="0.8" opacity="0.2" strokeDasharray="2 2" />
+                      {/* Labels */}
+                      <text x="80" y="14" textAnchor="middle" fill="#ffffff" fontSize="6" opacity="0.2">Entropy</text>
+                    </svg>
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-sky-400/40 font-mono">Analysis</span></div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 4: Mechanism Simulation */}
+            <Reveal delay={200}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-amber-500/20 transition-all group">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">4</span>
+                  <span className="text-sm font-bold text-white">Mechanism Simulation</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">Standard QF, Capped QF, Equal-Weight, Trust-Weighted QF with Gini coefficients</p>
+                  {/* SVG: 4 bar groups */}
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 flex items-end justify-around px-3 pb-3 pt-2">
+                    {[
+                      { label: "Std", heights: [70, 30, 15], color: "#f59e0b" },
+                      { label: "Cap", heights: [50, 35, 25], color: "#fb923c" },
+                      { label: "Equal", heights: [33, 33, 33], color: "#34d399" },
+                      { label: "Trust", heights: [45, 35, 28], color: "#a78bfa" },
+                    ].map((m) => (
+                      <div key={m.label} className="flex flex-col items-center gap-0.5 flex-1">
+                        <div className="flex items-end gap-[2px] h-16">
+                          {m.heights.map((h, j) => (
+                            <div key={j} className="w-2 rounded-t transition-all duration-500" style={{ height: `${h}%`, backgroundColor: m.color, opacity: 0.3 + j * 0.15 }} />
+                          ))}
+                        </div>
+                        <span className="text-[7px] text-white/25 mt-1">{m.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-amber-400/40 font-mono">Analysis</span></div>
+                </div>
+              </div>
+            </Reveal>
           </div>
 
-          {/* Flow arrow */}
-          <Reveal delay={600}>
-            <div className="mt-8 flex items-center justify-center gap-2 text-white/20">
-              <div className="h-px flex-1 max-w-[100px] bg-gradient-to-r from-transparent to-white/10" />
-              <span className="text-xs font-mono">Steps 1-8 feed into Step 9</span>
-              <div className="h-px flex-1 max-w-[100px] bg-gradient-to-l from-transparent to-white/10" />
+          {/* Connector arrow */}
+          <Reveal delay={250}>
+            <div className="flex justify-center my-2">
+              <svg width="40" height="20" className="text-white/10"><path d="M20 0 L20 14 M14 10 L20 16 L26 10" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
             </div>
-            <div className="mt-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-center">
-              <p className="text-xs text-indigo-300/60">
-                Output: Branded PDF report with funding history, trust profile, multi-layer scores, mechanism simulation,
-                temporal anomalies, blockchain activity, and AI narrative assessment.
-              </p>
+          </Reveal>
+
+          {/* Row 2: Steps 5-8 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* Step 5: Temporal Anomalies */}
+            <Reveal delay={300}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-rose-500/20 transition-all">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">5</span>
+                  <span className="text-sm font-bold text-white">Temporal Anomalies</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">Donor surge/exodus, funding spikes, new whale entries, coordination shifts</p>
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                    <svg viewBox="0 0 160 100" className="w-full h-full">
+                      <polyline points="10,70 30,65 50,60 70,55 85,20 100,50 120,48 140,45 155,42" fill="none" stroke="#f87171" strokeWidth="1.5" opacity="0.4" />
+                      <circle cx="85" cy="20" r="4" fill="#f87171" opacity="0.3"><animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" /></circle>
+                      <text x="85" y="14" textAnchor="middle" fill="#f87171" fontSize="6" opacity="0.5">931%</text>
+                      <text x="82" y="95" fill="#ffffff" fontSize="6" opacity="0.12">Whale entry</text>
+                    </svg>
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-rose-400/40 font-mono">Analysis</span></div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 6: Multi-Layer Scoring */}
+            <Reveal delay={350}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-violet-500/20 transition-all">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">6</span>
+                  <span className="text-sm font-bold text-white">Multi-Layer Scoring</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">5 dimensions: Funding (25%), Efficiency (25%), Diversity (30%), Consistency (20%)</p>
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 flex items-end justify-center gap-3 px-4 pb-3">
+                    {[
+                      { label: "Fund", h: 87, color: "#8b5cf6" },
+                      { label: "Eff", h: 6, color: "#a78bfa" },
+                      { label: "Div", h: 11, color: "#c4b5fd" },
+                      { label: "Con", h: 50, color: "#ddd6fe" },
+                      { label: "ALL", h: 37, color: "#f87171" },
+                    ].map((d) => (
+                      <div key={d.label} className="flex flex-col items-center gap-1 flex-1">
+                        <span className="text-[7px] font-mono" style={{ color: d.color, opacity: 0.6 }}>{d.h}</span>
+                        <div className="w-full rounded-t" style={{ height: `${d.h}%`, backgroundColor: d.color, opacity: 0.35 }} />
+                        <span className="text-[7px] text-white/20">{d.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-violet-400/40 font-mono">Analysis</span></div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 7: Blockchain Scan */}
+            <Reveal delay={400}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-emerald-500/20 transition-all">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">7</span>
+                  <span className="text-sm font-bold text-white">Blockchain Scan</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">9 EVM chains concurrent scan: balance, transactions, via eth_call</p>
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 p-2">
+                    <div className="grid grid-cols-3 gap-1 h-full">
+                      {["ETH", "Base", "OP", "Arb", "Mantle", "Scroll", "Linea", "zkSync", "Monad"].map((c, i) => (
+                        <div key={c} className="rounded bg-emerald-500/10 border border-emerald-500/10 flex items-center justify-center">
+                          <span className="text-[8px] text-emerald-300/50 font-mono">{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <span className="text-[8px] text-emerald-400/30 font-mono">$ balance</span>
+                      <span className="text-[8px] text-emerald-400/30 font-mono">33 txs</span>
+                    </div>
+                    <span className="text-[9px] text-emerald-400/40 font-mono">RPC</span>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Step 8: Code Signals */}
+            <Reveal delay={450}>
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 overflow-hidden hover:border-cyan-500/20 transition-all">
+                <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-xs font-bold text-white shadow-lg">8</span>
+                  <span className="text-sm font-bold text-white">Code Signals</span>
+                </div>
+                <div className="p-4">
+                  <p className="text-[11px] text-white/35 mb-3">OSO metrics or GitHub API fallback: commits, contributors</p>
+                  <div className="h-28 rounded-lg bg-white/[0.02] border border-white/5 relative overflow-hidden p-3">
+                    <svg viewBox="0 0 160 90" className="w-full h-full">
+                      {/* Contribution heatmap */}
+                      {Array.from({ length: 7 }).map((_, row) =>
+                        Array.from({ length: 12 }).map((_, col) => {
+                          const intensity = Math.random();
+                          return <rect key={`${row}-${col}`} x={10 + col * 12} y={5 + row * 11} width="9" height="9" rx="2" fill="#06b6d4" opacity={intensity * 0.3 + 0.03} />;
+                        })
+                      )}
+                      {/* Stats */}
+                      <text x="155" y="25" textAnchor="end" fill="#06b6d4" fontSize="9" fontWeight="bold" opacity="0.4">23.5</text>
+                      <text x="155" y="35" textAnchor="end" fill="#ffffff" fontSize="6" opacity="0.15">Commit count</text>
+                      <text x="155" y="60" textAnchor="end" fill="#06b6d4" fontSize="9" fontWeight="bold" opacity="0.4">17</text>
+                      <text x="155" y="70" textAnchor="end" fill="#ffffff" fontSize="6" opacity="0.15">Contributors</text>
+                    </svg>
+                  </div>
+                  <div className="mt-2 text-right"><span className="text-[9px] text-cyan-400/40 font-mono">OSO/GitHub</span></div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Feed into Step 9 */}
+          <Reveal delay={500}>
+            <div className="text-center my-3">
+              <span className="text-xs text-white/20 font-mono">Steps 1-8 feed into Step 9</span>
+              <div className="flex justify-center mt-1">
+                <svg width="40" height="20" className="text-white/10"><path d="M20 0 L20 14 M14 10 L20 16 L26 10" stroke="currentColor" strokeWidth="1.5" fill="none" /></svg>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Step 9: AI Deep Evaluation - full width */}
+          <Reveal delay={550}>
+            <div className="rounded-2xl bg-white/[0.02] border border-indigo-500/15 overflow-hidden hover:border-indigo-500/30 transition-all relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-transparent to-violet-500/5" />
+              <div className="relative p-6">
+                <div className="flex flex-col lg:flex-row gap-6 items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">9</span>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">AI Deep Evaluation</h3>
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-indigo-500/20 text-indigo-300 uppercase">AI Required</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-white/40 leading-relaxed mb-4">
+                      Evidence-grounded narrative using ALL data from steps 1-8 via LLM. Produces trajectory analysis, organic vs gaming assessment, counterfactual impact, and confidence-rated recommendation.
+                    </p>
+                    {/* Provider indicators */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {["Claude", "Gemini", "OpenAI"].map((p) => (
+                        <span key={p} className="px-2 py-1 text-[9px] rounded bg-white/[0.03] border border-white/5 text-white/25 font-mono">{p}</span>
+                      ))}
+                      <span className="text-[9px] text-white/15 font-mono ml-1">AI Provider</span>
+                    </div>
+                  </div>
+                  {/* Output: PDF Report */}
+                  <div className="flex-shrink-0 w-40">
+                    <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 text-center relative">
+                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                      </div>
+                      <img src="/tessera-icon-64.png" alt="" className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-xs font-bold text-white/60">Tessera Report</p>
+                      <p className="text-[9px] text-white/25 mt-1">Branded PDF</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <p className="text-[11px] text-white/25">
+                    Output: Branded PDF report with funding history, trust profile, multi-layer scores, mechanism simulation, temporal anomalies, blockchain activity, and AI narrative assessment.
+                  </p>
+                </div>
+              </div>
             </div>
           </Reveal>
         </div>
