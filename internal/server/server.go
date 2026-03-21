@@ -1841,6 +1841,12 @@ func chatDetectIntent(msg string) (cmd string, epoch int, addr string) {
 		cmd = "trust-graph"
 	case strings.Contains(lower, "simulat") || strings.Contains(lower, "mechanism") || strings.Contains(lower, "quadratic") || strings.Contains(lower, "qf"):
 		cmd = "simulate"
+	case strings.Contains(lower, "analyze project") || strings.Contains(lower, "analyze-project") || strings.Contains(lower, "full intelligence") || strings.Contains(lower, "full analysis"):
+		if addr != "" {
+			cmd = "analyze-project"
+		}
+	case strings.Contains(lower, "evaluate") || strings.Contains(lower, "evaluation"):
+		cmd = "evaluate"
 	case (strings.Contains(lower, "scan") && strings.Contains(lower, "chain")) || strings.Contains(lower, "blockchain") || strings.Contains(lower, "balance"):
 		if addr != "" {
 			cmd = "scan-chain"
@@ -1851,13 +1857,33 @@ func chatDetectIntent(msg string) (cmd string, epoch int, addr string) {
 	return
 }
 
-func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (string, error) {
+// chatExtractEvalParams extracts project name and description from natural language for evaluate command.
+func chatExtractEvalParams(msg string) (name, desc, github string) {
+	// Try to find quoted strings for name
+	parts := strings.SplitN(msg, "\"", 5)
+	if len(parts) >= 3 {
+		name = parts[1]
+		if len(parts) >= 5 {
+			desc = parts[3]
+		}
+	}
+	// Find GitHub URL
+	for _, word := range strings.Fields(msg) {
+		if strings.Contains(word, "github.com/") {
+			github = word
+			break
+		}
+	}
+	return
+}
+
+func chatFetchData(ctx context.Context, cmd string, epoch int, addr string, userMsg string) (string, string, error) {
 	octant := data.NewOctantClient()
 	switch cmd {
 	case "analyze-epoch":
 		rewards, err := octant.GetProjectRewards(ctx, epoch)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		metrics := make([]analysis.ProjectMetrics, len(rewards))
 		for i, r := range rewards {
@@ -1877,11 +1903,11 @@ func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (str
 				break
 			}
 		}
-		return sb.String(), nil
+		return sb.String(), "", nil
 	case "detect-anomalies":
 		allocs, err := octant.GetAllocations(ctx, epoch)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		donors := make([]string, len(allocs))
 		amounts := make([]float64, len(allocs))
@@ -1892,11 +1918,11 @@ func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (str
 		report := analysis.DetectAnomalies(donors, amounts)
 		return fmt.Sprintf("Anomaly Report Epoch %d:\nDonations: %d, Unique donors: %d\nTotal: %.4f ETH, Whale concentration: %.1f%%\nMean: %.6f, Median: %.6f, Max: %.4f\nFlags: %v",
 			epoch, report.TotalDonations, report.UniqueDonors, report.TotalAmount,
-			report.WhaleConcentration*100, report.MeanDonation, report.MedianDonation, report.MaxDonation, report.Flags), nil
+			report.WhaleConcentration*100, report.MeanDonation, report.MedianDonation, report.MaxDonation, report.Flags), "", nil
 	case "trust-graph":
 		allocs, err := octant.GetAllocations(ctx, epoch)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		projects := make([]string, len(allocs))
 		tgDonors := make([]string, len(allocs))
@@ -1914,11 +1940,11 @@ func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (str
 			sb.WriteString(fmt.Sprintf("%s | %d | %.3f | %.3f | %.3f | %v\n",
 				p.Address, p.UniqueDonors, p.DonorDiversity, p.WhaleDepRatio, p.CoordinationRisk, p.Flags))
 		}
-		return sb.String(), nil
+		return sb.String(), "", nil
 	case "simulate":
 		allocs, err := octant.GetAllocations(ctx, epoch)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		simProjects := make([]string, len(allocs))
 		simDonors := make([]string, len(allocs))
@@ -1946,10 +1972,10 @@ func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (str
 			sb.WriteString(fmt.Sprintf("%s: Gini=%.3f, TopShare=%.1f%%, AboveThreshold=%d\n",
 				m.Name, m.GiniCoeff, m.TopShare*100, m.AboveThreshold))
 		}
-		return sb.String(), nil
+		return sb.String(), "", nil
 	case "scan-chain":
 		if addr == "" {
-			return "", fmt.Errorf("address required")
+			return "", "", fmt.Errorf("address required")
 		}
 		bc := data.NewBlockchainClient()
 		signals := bc.ScanAddress(ctx, addr)
@@ -1961,23 +1987,130 @@ func chatFetchData(ctx context.Context, cmd string, epoch int, addr string) (str
 				sb.WriteString(fmt.Sprintf("%s: %.6f %s, %d txs\n", c.Chain, c.Balance, c.NativeToken, c.TxCount))
 			}
 		}
-		return sb.String(), nil
+		return sb.String(), "", nil
 	case "track-project":
 		if addr == "" {
-			return "", fmt.Errorf("address required")
+			return "", "", fmt.Errorf("address required")
 		}
 		history, err := octant.GetProjectHistory(ctx, addr, 1, 10)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("Project %s history:\n", addr))
 		for _, h := range history {
 			sb.WriteString(fmt.Sprintf("E%d: %.4f alloc, %.4f matched, %d donors\n", h.Epoch, h.Allocated, h.Matched, h.Donors))
 		}
-		return sb.String(), nil
+		return sb.String(), "", nil
+	case "evaluate":
+		name, desc, githubURL := chatExtractEvalParams(userMsg)
+		if name == "" || desc == "" {
+			return "To evaluate a project, use this format:\nevaluate \"Project Name\" \"Description of what it does\"\n\nOptionally include a GitHub URL.", "", nil
+		}
+		ai := provider.New()
+		if !ai.HasProviders() {
+			return "", "", fmt.Errorf("no AI provider for evaluation")
+		}
+		result, err := analysis.EvaluateProject(ctx, ai, name, desc, "", githubURL)
+		if err != nil {
+			return "", "", err
+		}
+		// Generate PDF
+		sections := []report.PDFSection{
+			{Heading: "Project Description", Body: desc},
+			{Heading: "AI Evaluation", Body: result.Evaluation},
+		}
+		pdfReport := &report.PDFReport{
+			Title:    fmt.Sprintf("Project Evaluation: %s", name),
+			Subtitle: "AI-Powered Qualitative Assessment (via Chat)",
+			Model:    result.Model,
+			Provider: result.Provider,
+			Metadata: map[string]string{"Project": name},
+			Sections: sections,
+		}
+		reportPath := ""
+		if p, err := report.GeneratePDF(pdfReport); err == nil {
+			reportPath = p
+		}
+		summary := fmt.Sprintf("Evaluation of **%s** completed.\n\n%s", name, result.Evaluation)
+		return summary, reportPath, nil
+	case "analyze-project":
+		if addr == "" {
+			return "Please provide an Octant project address (0x...) to analyze.", "", nil
+		}
+		// Run the 9-step pipeline data collection (without full SSE, synchronous)
+		var sb strings.Builder
+		sb.WriteString(fmt.Sprintf("Full Intelligence Report for %s\n\n", addr))
+
+		// Step 1: Funding history
+		history, _ := octant.GetProjectHistory(ctx, addr, 1, 10)
+		if len(history) > 0 {
+			sb.WriteString("**Funding History:**\n")
+			for _, h := range history {
+				sb.WriteString(fmt.Sprintf("E%d: %.4f alloc, %.4f matched, %d donors\n", h.Epoch, h.Allocated, h.Matched, h.Donors))
+			}
+			sb.WriteString("\n")
+		}
+
+		// Step 2-3: Quantitative + Trust (for latest epoch)
+		latestEpoch := epoch
+		if len(history) > 0 {
+			latestEpoch = history[len(history)-1].Epoch
+		}
+		allocs, allocErr := octant.GetAllocations(ctx, latestEpoch)
+		if allocErr == nil && len(allocs) > 0 {
+			projects := make([]string, len(allocs))
+			aDonors := make([]string, len(allocs))
+			aAmounts := make([]float64, len(allocs))
+			for i, a := range allocs {
+				projects[i] = a.Project
+				aDonors[i] = a.Donor
+				aAmounts[i] = weiToEth(a.Amount)
+			}
+			profiles := analysis.BuildTrustProfiles(projects, aAmounts, aDonors, nil)
+			for _, p := range profiles {
+				if strings.EqualFold(p.Address, addr) {
+					sb.WriteString(fmt.Sprintf("**Trust Profile:**\nDonors: %d | Diversity: %.3f | Whale Dep: %.3f | Coord Risk: %.3f\nFlags: %v\n\n",
+						p.UniqueDonors, p.DonorDiversity, p.WhaleDepRatio, p.CoordinationRisk, p.Flags))
+					break
+				}
+			}
+		}
+
+		// Step 7: Blockchain scan
+		bc := data.NewBlockchainClient()
+		signals := bc.ScanAddress(ctx, addr)
+		if signals.TotalChainsActive > 0 {
+			sb.WriteString(fmt.Sprintf("**Blockchain Scan:**\nActive chains: %d | Balance: %.6f | Txs: %d | Multichain: %v\n\n",
+				signals.TotalChainsActive, signals.TotalBalance, signals.TotalTxCount, signals.IsMultichain))
+		}
+
+		// Step 9: AI evaluation
+		ai := provider.New()
+		if ai.HasProviders() {
+			evalResult, evalErr := ai.CompleteChat(ctx, fmt.Sprintf("Analyze this Octant project at address %s based on the following data and provide a brief assessment:\n\n%s", addr, sb.String()), chatSystemPrompt)
+			if evalErr == nil {
+				sb.WriteString(fmt.Sprintf("**AI Assessment:**\n%s\n", evalResult.Text))
+			}
+		}
+
+		// Generate PDF
+		pdfReport := &report.PDFReport{
+			Title:    fmt.Sprintf("Intelligence Report: %s", addr[:10]+"..."),
+			Subtitle: "Full Analysis (via Chat)",
+			Metadata: map[string]string{"Address": addr},
+			Sections: []report.PDFSection{
+				{Heading: "Analysis Summary", Body: sb.String()},
+			},
+		}
+		reportPath := ""
+		if p, err := report.GeneratePDF(pdfReport); err == nil {
+			reportPath = p
+		}
+
+		return sb.String(), reportPath, nil
 	}
-	return "", nil
+	return "", "", nil
 }
 
 func handleChat(w http.ResponseWriter, r *http.Request) {
@@ -1998,19 +2131,35 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 
 	cmd, epoch, addr := chatDetectIntent(body.Message)
 	var dataContext string
+	var reportPath string
 	if cmd != "" {
-		fetched, err := chatFetchData(ctx, cmd, epoch, addr)
+		fetched, rp, err := chatFetchData(ctx, cmd, epoch, addr, body.Message)
 		if err != nil {
 			dataContext = fmt.Sprintf("Error: %s", err.Error())
 		} else {
 			dataContext = fetched
+			reportPath = rp
 		}
+	}
+
+	// If we already have a full evaluation/analysis with AI narrative, return directly
+	if (cmd == "evaluate" || cmd == "analyze-project") && dataContext != "" {
+		result := map[string]any{"reply": dataContext, "model": "embedded", "provider": "tessera", "command": cmd}
+		if reportPath != "" {
+			result["reportPath"] = reportPath
+		}
+		jsonOK(w, result)
+		return
 	}
 
 	ai := provider.New()
 	if !ai.HasProviders() {
 		if dataContext != "" {
-			jsonOK(w, map[string]any{"reply": dataContext, "model": "none", "provider": "direct-data"})
+			result := map[string]any{"reply": dataContext, "model": "none", "provider": "direct-data"}
+			if reportPath != "" {
+				result["reportPath"] = reportPath
+			}
+			jsonOK(w, result)
 			return
 		}
 		jsonError(w, "no AI provider configured", http.StatusServiceUnavailable)
@@ -2039,6 +2188,9 @@ func handleChat(w http.ResponseWriter, r *http.Request) {
 	if cmd != "" {
 		result["command"] = cmd
 	}
+	if reportPath != "" {
+		result["reportPath"] = reportPath
+	}
 	jsonOK(w, result)
 }
 
@@ -2065,7 +2217,7 @@ func handleChatStream(w http.ResponseWriter, r *http.Request) {
 	var dataContext string
 	if cmd != "" {
 		sse.sendStep(1, 3, fmt.Sprintf("Running %s...", cmd), map[string]any{"command": cmd, "epoch": epoch})
-		fetched, err := chatFetchData(ctx, cmd, epoch, addr)
+		fetched, _, err := chatFetchData(ctx, cmd, epoch, addr, body.Message)
 		if err != nil {
 			dataContext = "Error: " + err.Error()
 		} else {

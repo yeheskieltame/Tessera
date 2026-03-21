@@ -7,6 +7,7 @@ interface Message {
   text: string;
   model?: string;
   command?: string;
+  reportPath?: string;
 }
 
 /* Simple markdown-like rendering: **bold**, `code`, \n */
@@ -90,6 +91,7 @@ export default function ChatBubble() {
           text: data.reply,
           model: data.model,
           command: data.command,
+          reportPath: data.reportPath,
         }]);
       } else if (data.error) {
         setMessages((prev) => [...prev, { role: "assistant", text: `Error: ${data.error}` }]);
@@ -155,7 +157,21 @@ export default function ChatBubble() {
                     )}
                   </div>
 
-                  {msg.model && msg.model !== "none" && (
+                  {msg.reportPath && (
+                    <div className="mt-2.5 pt-2 border-t border-white/5">
+                      <a
+                        href={`/api/reports/${msg.reportPath.split("/").pop()}`}
+                        download
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/15 border border-blue-500/20 text-blue-300 text-xs font-semibold hover:bg-blue-500/25 transition"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF Report
+                      </a>
+                    </div>
+                  )}
+                  {msg.model && msg.model !== "none" && !msg.reportPath && (
                     <div className="mt-2 pt-1.5 border-t border-white/5">
                       <span className="text-[9px] text-white/30 font-mono">{msg.model}</span>
                     </div>
@@ -183,7 +199,7 @@ export default function ChatBubble() {
           {/* Quick actions */}
           {messages.length <= 1 && !loading && (
             <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-              {["Analyze epoch 5", "Whale concentration", "Trust graph", "Simulate QF"].map((q) => (
+              {["Analyze epoch 5", "Whale concentration", "Trust graph", "Simulate QF", "Analyze project 0x9531C059098e3d194fF87FebB587aB07B30B1306"].map((q) => (
                 <button
                   key={q}
                   onClick={() => { setInput(q); }}
