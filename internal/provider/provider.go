@@ -231,6 +231,44 @@ func (c *Chain) Complete(ctx context.Context, prompt, system string) (*Response,
 	return nil, fmt.Errorf("all AI providers failed:\n%s", joinLines(errs))
 }
 
+// CompleteChat sends a prompt using the fastest available model (flash/haiku/mini).
+// Skips heavy models (opus, pro) to avoid timeouts in interactive chat.
+func (c *Chain) CompleteChat(ctx context.Context, prompt, system string) (*Response, error) {
+	if len(c.backends) == 0 {
+		return nil, fmt.Errorf("no AI providers configured")
+	}
+
+	// Prefer fast models for chat
+	fastModels := map[string]bool{
+		"gemini-2.5-flash": true, "gemini-2.5-flash-lite": true, "gemini-3-flash-preview": true,
+		"claude-sonnet-4-6": true, "claude-haiku-4-5": true,
+		"gpt-4o-mini": true, "o3-mini": true,
+	}
+
+	var fast, fallback []backend
+	for _, b := range c.backends {
+		if fastModels[b.Model] {
+			fast = append(fast, b)
+		} else {
+			fallback = append(fallback, b)
+		}
+	}
+
+	// Try fast models first, then heavy as last resort
+	ordered := append(fast, fallback...)
+
+	var errs []string
+	for _, b := range ordered {
+		text, err := b.Call(ctx, prompt, system, b.Model)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s/%s: %v", b.Name, b.Model, err))
+			continue
+		}
+		return &Response{Text: text, Model: b.Model, Provider: b.Name}, nil
+	}
+	return nil, fmt.Errorf("all AI providers failed:\n%s", joinLines(errs))
+}
+
 // --- Claude API ---
 
 // parseClaudeResponse extracts text from Claude API response,
