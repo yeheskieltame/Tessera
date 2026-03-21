@@ -572,10 +572,9 @@ export default function LandingPage() {
 
       {/* ─── Problem ─── */}
       <section id="problem" className="relative py-28 px-6 overflow-hidden">
-        {/* Background: dashboard-bg with heavy overlay */}
         <div className="absolute inset-0">
-          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-30" />
-          <div className="absolute inset-0 bg-[#0a0e1a]/40" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/70 via-[#0a0e1a]/50 to-[#0a0e1a]" />
         </div>
 
         <div className="max-w-6xl mx-auto relative">
@@ -1247,10 +1246,9 @@ export default function LandingPage() {
 
       {/* ─── Findings ─── */}
       <section id="findings" className="relative py-28 px-6 overflow-hidden">
-        {/* Background: dashboard-bg with heavy overlay */}
         <div className="absolute inset-0">
-          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-30" style={{ objectPosition: "center 40%" }} />
-          <div className="absolute inset-0 bg-[#0a0e1a]/40" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-40" style={{ objectPosition: "center 40%" }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/70 via-[#0a0e1a]/50 to-[#0a0e1a]" />
         </div>
 
         <div className="max-w-6xl mx-auto relative">
@@ -1351,10 +1349,10 @@ export default function LandingPage() {
       {/* ─── Team ─── */}
       <section className="relative py-28 px-6 overflow-hidden">
         <div className="absolute inset-0">
-          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-30" style={{ objectPosition: "center 60%" }} />
-          <div className="absolute inset-0 bg-[#0a0e1a]/40" />
+          <img src="/dashboard-bg.png" alt="" className="w-full h-full object-cover opacity-40" style={{ objectPosition: "center 60%" }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0e1a]/70 via-[#0a0e1a]/50 to-[#0a0e1a]" />
         </div>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto relative">
           <SectionHeading
             title="Team"
             subtitle="Built for The Synthesis hackathon. Human and Agent collaborating as equals."
