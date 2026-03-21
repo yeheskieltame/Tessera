@@ -108,6 +108,48 @@ Quantitative commands and blockchain scanning work without any AI provider.
 ./tessera serve                     # Web dashboard at http://localhost:8080
 ```
 
+### Chat Agent (Human-to-Agent and Agent-to-Agent)
+
+The agent can be interacted with via natural language chat, both from the web UI (floating bubble on all pages) and programmatically via API.
+
+**Human-to-Agent:** Open the chat bubble on any page, type a question or command.
+
+**Agent-to-Agent (API):**
+
+```bash
+# Basic query
+curl -X POST https://yeheskieltame-tessera.hf.space/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "analyze epoch 5"}'
+
+# Structured JSON response
+curl -X POST https://yeheskieltame-tessera.hf.space/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "whale concentration epoch 5", "format": "json"}'
+
+# Full analysis with PDF report
+curl -X POST https://yeheskieltame-tessera.hf.space/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "analyze project 0x9531C059098e3d194fF87FebB587aB07B30B1306"}'
+
+# Download generated PDF
+curl -O https://yeheskieltame-tessera.hf.space/api/reports/intelligence_report__0x9531c0.pdf
+```
+
+**Response format:**
+
+```json
+{
+  "reply": "analysis text with real data...",
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "command": "analyze-epoch",
+  "reportPath": "reports/intelligence_report__0x9531c0.pdf"
+}
+```
+
+The agent detects intent from natural language, executes commands internally (fetches real data from Octant API, blockchain RPCs, analysis engine), and returns narrated results. If AI is unavailable, raw data is returned with `"provider": "direct-data"`.
+
 ## AI Provider Chain
 
 | Priority | Provider | Activation |

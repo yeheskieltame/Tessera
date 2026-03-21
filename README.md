@@ -21,9 +21,10 @@ Repository: https://github.com/yeheskieltame/Tessera
 8. [HTTP API Reference](#http-api-reference)
 9. [CLI Command Reference](#cli-command-reference)
 10. [Web Dashboard](#web-dashboard)
-11. [Multi-Chain Blockchain Scanner](#multi-chain-blockchain-scanner)
-12. [PDF Report Generation](#pdf-report-generation)
-13. [Deployment](#deployment)
+11. [Chat Agent](#chat-agent)
+12. [Multi-Chain Blockchain Scanner](#multi-chain-blockchain-scanner)
+13. [PDF Report Generation](#pdf-report-generation)
+14. [Deployment](#deployment)
 14. [Project Structure](#project-structure)
 15. [Environment Variables](#environment-variables)
 16. [Quick Start](#quick-start)
@@ -619,6 +620,17 @@ These endpoints return Server-Sent Events. Each event contains a JSON payload wi
 | /api/simulate/stream | epoch | 4 | Mechanism simulations + AI comparison |
 | /api/report-epoch/stream | epoch | 4 | Full epoch report (quantitative + anomalies + trust + mechanisms) |
 
+### Chat Agent
+
+| Endpoint | Method | Body | Response |
+|----------|--------|------|----------|
+| /api/chat | POST | `{ message, format? }` | `{ reply, model, provider, command?, reportPath? }` |
+| /api/chat/stream | POST | `{ message }` | SSE stream with progress steps and final result |
+
+The chat agent detects user intent from natural language and executes the appropriate command internally. It fetches real data from Octant, blockchain RPCs, and analysis functions, then uses the AI provider to narrate the results. If `format: "json"` is set, the response is structured JSON for agent-to-agent communication.
+
+Supported intents: analyze-epoch, detect-anomalies, trust-graph, simulate, scan-chain, track-project, analyze-project, evaluate. When analyze-project or evaluate is executed, a PDF report is generated and `reportPath` is included in the response.
+
 ### Reports
 
 | Endpoint | Method | Description |
@@ -732,6 +744,92 @@ data: {"step": "error", "error": "Provider timeout after 120s"}
 ```
 
 The dashboard renders each step as a vertical timeline with status icons (pending, spinning, checkmark, error) and expandable data sections.
+
+## Chat Agent
+
+Tessera includes a conversational chat agent accessible from a floating bubble on all pages and via HTTP API. The agent understands natural language, detects intent, executes commands internally, and returns real data with AI narration.
+
+### How It Works
+
+```
+User message
+    |
+    v
+Intent Detection (keyword matching)
+    |
+    v
+Data Fetching (Octant API, blockchain RPC, analysis functions)
+    |
+    v
+AI Narration (fast model: flash/sonnet/mini)
+    |
+    v
+Response with real data + optional PDF report
+```
+
+The agent uses `CompleteChat()` which prioritizes fast models (gemini-2.5-flash, claude-sonnet-4-6, gpt-4o-mini) to keep response times interactive. Heavy models (opus, pro) are used only as last resort.
+
+### Supported Intents
+
+| Intent | Trigger Phrases | What It Executes |
+|--------|----------------|------------------|
+| analyze-epoch | "analyze epoch 5", "top project", "ranking" | K-means clustering + composite scoring |
+| detect-anomalies | "whale concentration", "anomalies" | Whale detection + coordination patterns |
+| trust-graph | "trust graph", "donor diversity", "entropy" | Shannon entropy + Jaccard similarity |
+| simulate | "simulate mechanisms", "quadratic funding" | 4 QF mechanism comparison |
+| scan-chain | "scan chain 0x..." | 9 EVM chain concurrent scan |
+| track-project | "track project 0x..." | Cross-epoch timeline + anomalies |
+| analyze-project | "analyze project 0x..." | Full 9-step pipeline + PDF report |
+| evaluate | evaluate "Name" "Description" | 8-dimension AI evaluation + PDF report |
+
+### Human-to-Agent (Frontend)
+
+The floating chat bubble appears on all pages (landing page and dashboard). Click to open, type a question or command in natural language.
+
+### Agent-to-Agent (API)
+
+Other agents can interact with Tessera programmatically via the `/api/chat` endpoint.
+
+**Basic request:**
+
+```bash
+curl -X POST https://yeheskieltame-tessera.hf.space/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "analyze epoch 5"}'
+```
+
+**Response:**
+
+```json
+{
+  "reply": "Epoch 5 Analysis (30 projects):\nRank 1 | 0x9531... | Score: 89.5\n...",
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "command": "analyze-epoch"
+}
+```
+
+**Structured JSON response (for agent-to-agent):**
+
+```bash
+curl -X POST https://yeheskieltame-tessera.hf.space/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "whale concentration epoch 5", "format": "json"}'
+```
+
+**With PDF report generation:**
+
+```bash
+curl -X POST https://yeheskieltame-tessera.hf.space/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "analyze project 0x9531C059098e3d194fF87FebB587aB07B30B1306"}'
+```
+
+The response includes `reportPath` when a PDF is generated. Download it via `GET /api/reports/{filename}`.
+
+### Fallback Behavior
+
+If the AI provider is unavailable but data was fetched successfully, the raw data is returned directly with `"provider": "direct-data"`. This ensures the agent always returns real data regardless of AI availability.
 
 ## Multi-Chain Blockchain Scanner
 
