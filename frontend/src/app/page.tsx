@@ -1011,69 +1011,183 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Architecture ─── */}
-      <section id="architecture" className="relative py-28 px-6">
-        <div className="max-w-6xl mx-auto">
+      <section id="architecture" className="relative py-28 px-6 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
+
+        <div className="max-w-7xl mx-auto relative">
           <SectionHeading
             title="System Architecture"
-            subtitle="Go binary (9MB) serves both CLI and HTTP API. Next.js dashboard connects via SSE streaming."
+            subtitle="Go binary (9MB) serves CLI + HTTP API + static frontend. Single process, zero dependencies."
           />
 
-          {/* Data Sources */}
+          {/* Main architecture diagram as SVG flowchart */}
           <Reveal>
-            <h3 className="text-lg font-bold text-white mb-4">Data Sources</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
-              {DATA_SOURCES.map((s, i) => (
-                <Reveal key={s.name} delay={i * 60}>
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 h-full">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold text-white">{s.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/30 font-mono">{s.protocol}</span>
-                    </div>
-                    <p className="text-[11px] text-white/30 leading-relaxed">{s.data}</p>
-                  </div>
-                </Reveal>
-              ))}
+            <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-6 sm:p-8 mb-10 overflow-x-auto">
+              <svg viewBox="0 0 900 420" className="w-full min-w-[700px]" style={{ maxHeight: "480px" }}>
+                <defs>
+                  <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#8b5cf6" /></linearGradient>
+                  <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#10b981" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient>
+                  <marker id="arrowHead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ffffff" opacity="0.15" /></marker>
+                </defs>
+
+                {/* === USER === */}
+                <rect x="380" y="10" width="140" height="40" rx="20" fill="none" stroke="#ffffff" strokeWidth="1" opacity="0.15" />
+                <text x="450" y="35" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="600" opacity="0.5">User</text>
+
+                {/* Arrows from User */}
+                <line x1="420" y1="50" x2="200" y2="90" stroke="#ffffff" strokeWidth="0.8" opacity="0.1" markerEnd="url(#arrowHead)" />
+                <line x1="480" y1="50" x2="700" y2="90" stroke="#ffffff" strokeWidth="0.8" opacity="0.1" markerEnd="url(#arrowHead)" />
+
+                {/* === CLI === */}
+                <rect x="100" y="90" width="200" height="50" rx="8" fill="#3b82f6" fillOpacity="0.08" stroke="#3b82f6" strokeWidth="1" strokeOpacity="0.2" />
+                <text x="200" y="113" textAnchor="middle" fill="#60a5fa" fontSize="11" fontWeight="700">CLI (20 commands)</text>
+                <text x="200" y="128" textAnchor="middle" fill="#ffffff" fontSize="8" opacity="0.25">cmd/analyst/main.go</text>
+
+                {/* === Dashboard === */}
+                <rect x="600" y="90" width="200" height="50" rx="8" fill="#8b5cf6" fillOpacity="0.08" stroke="#8b5cf6" strokeWidth="1" strokeOpacity="0.2" />
+                <text x="700" y="113" textAnchor="middle" fill="#a78bfa" fontSize="11" fontWeight="700">Next.js Dashboard</text>
+                <text x="700" y="128" textAnchor="middle" fill="#ffffff" fontSize="8" opacity="0.25">SSE Streaming + PDF Viewer</text>
+
+                {/* Arrow: Dashboard -> Server */}
+                <line x1="700" y1="140" x2="700" y2="170" stroke="#8b5cf6" strokeWidth="0.8" opacity="0.2" markerEnd="url(#arrowHead)" />
+                <text x="720" y="160" fill="#ffffff" fontSize="7" opacity="0.15">HTTP/SSE</text>
+
+                {/* Arrow: CLI -> modules */}
+                <line x1="200" y1="140" x2="200" y2="170" stroke="#3b82f6" strokeWidth="0.8" opacity="0.2" markerEnd="url(#arrowHead)" />
+
+                {/* === HTTP SERVER === */}
+                <rect x="500" y="170" width="300" height="45" rx="8" fill="#ffffff" fillOpacity="0.02" stroke="#ffffff" strokeWidth="0.8" strokeOpacity="0.1" />
+                <text x="650" y="193" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="600" opacity="0.4">HTTP Server (19 endpoints + 4 SSE)</text>
+                <text x="650" y="206" textAnchor="middle" fill="#ffffff" fontSize="7" opacity="0.15">internal/server/server.go</text>
+
+                {/* === TESSERA CORE (big box) === */}
+                <rect x="50" y="170" width="410" height="230" rx="10" fill="#ffffff" fillOpacity="0.015" stroke="#ffffff" strokeWidth="0.8" strokeOpacity="0.08" strokeDasharray="4 2" />
+                <text x="70" y="192" fill="#ffffff" fontSize="9" fontWeight="600" opacity="0.2">TESSERA BINARY</text>
+
+                {/* Data Layer */}
+                <rect x="70" y="200" width="170" height="185" rx="6" fill="#10b981" fillOpacity="0.04" stroke="#10b981" strokeWidth="0.6" strokeOpacity="0.12" />
+                <text x="155" y="218" textAnchor="middle" fill="#34d399" fontSize="9" fontWeight="600" opacity="0.5">DATA LAYER</text>
+
+                {[
+                  { y: 228, name: "Octant", proto: "REST" },
+                  { y: 248, name: "Gitcoin", proto: "GraphQL" },
+                  { y: 268, name: "OSO", proto: "GraphQL" },
+                  { y: 288, name: "GitHub", proto: "REST" },
+                  { y: 308, name: "Blockchain", proto: "RPC" },
+                  { y: 328, name: "Explorers", proto: "REST" },
+                  { y: 348, name: "Moltbook", proto: "REST" },
+                ].map((src) => (
+                  <g key={src.name}>
+                    <text x="90" y={src.y} fill="#ffffff" fontSize="8" opacity="0.3">{src.name}</text>
+                    <text x="220" y={src.y} textAnchor="end" fill="#34d399" fontSize="7" opacity="0.25" fontFamily="monospace">{src.proto}</text>
+                  </g>
+                ))}
+
+                {/* Analysis Layer */}
+                <rect x="260" y="200" width="185" height="130" rx="6" fill="#8b5cf6" fillOpacity="0.04" stroke="#8b5cf6" strokeWidth="0.6" strokeOpacity="0.12" />
+                <text x="352" y="218" textAnchor="middle" fill="#a78bfa" fontSize="9" fontWeight="600" opacity="0.5">ANALYSIS LAYER</text>
+
+                {[
+                  { y: 234, name: "Quantitative", desc: "K-means, scoring" },
+                  { y: 254, name: "Trust Graph", desc: "Entropy, Jaccard" },
+                  { y: 274, name: "Mechanism", desc: "4 QF simulations" },
+                  { y: 294, name: "Qualitative", desc: "LLM evaluation" },
+                ].map((mod) => (
+                  <g key={mod.name}>
+                    <text x="280" y={mod.y} fill="#ffffff" fontSize="8" opacity="0.35">{mod.name}</text>
+                    <text x="428" y={mod.y} textAnchor="end" fill="#a78bfa" fontSize="7" opacity="0.2" fontFamily="monospace">{mod.desc}</text>
+                  </g>
+                ))}
+
+                {/* Provider + Report */}
+                <rect x="260" y="340" width="90" height="45" rx="6" fill="#f59e0b" fillOpacity="0.04" stroke="#f59e0b" strokeWidth="0.6" strokeOpacity="0.12" />
+                <text x="305" y="358" textAnchor="middle" fill="#fbbf24" fontSize="8" fontWeight="600" opacity="0.4">AI Provider</text>
+                <text x="305" y="372" textAnchor="middle" fill="#ffffff" fontSize="7" opacity="0.15">4 providers</text>
+
+                <rect x="360" y="340" width="85" height="45" rx="6" fill="#ec4899" fillOpacity="0.04" stroke="#ec4899" strokeWidth="0.6" strokeOpacity="0.12" />
+                <text x="402" y="358" textAnchor="middle" fill="#f472b6" fontSize="8" fontWeight="600" opacity="0.4">PDF Report</text>
+                <text x="402" y="372" textAnchor="middle" fill="#ffffff" fontSize="7" opacity="0.15">go-pdf/fpdf</text>
+
+                {/* === EXTERNAL APIS === */}
+                <rect x="500" y="230" width="300" height="175" rx="10" fill="#ffffff" fillOpacity="0.01" stroke="#ffffff" strokeWidth="0.6" strokeOpacity="0.06" strokeDasharray="4 2" />
+                <text x="520" y="250" fill="#ffffff" fontSize="9" fontWeight="600" opacity="0.2">EXTERNAL APIS</text>
+
+                {[
+                  { y: 268, name: "Octant REST API", url: "backend.mainnet.octant.app" },
+                  { y: 288, name: "Gitcoin GraphQL", url: "grants-stack-indexer-v2.gitcoin.co" },
+                  { y: 308, name: "OSO GraphQL", url: "opensource.observer" },
+                  { y: 328, name: "GitHub REST", url: "api.github.com" },
+                  { y: 348, name: "9 EVM RPCs", url: "publicnode, base.org, optimism.io..." },
+                  { y: 368, name: "Claude / Gemini / OpenAI", url: "AI Provider APIs" },
+                  { y: 388, name: "Block Explorers", url: "Etherscan-compatible" },
+                ].map((api) => (
+                  <g key={api.name}>
+                    <text x="520" y={api.y} fill="#ffffff" fontSize="8" opacity="0.3">{api.name}</text>
+                    <text x="780" y={api.y} textAnchor="end" fill="#ffffff" fontSize="6" opacity="0.12" fontFamily="monospace">{api.url}</text>
+                  </g>
+                ))}
+
+                {/* Flow arrows: Data -> External */}
+                <line x1="240" y1="300" x2="500" y2="300" stroke="url(#greenGrad)" strokeWidth="0.8" opacity="0.15" markerEnd="url(#arrowHead)" />
+                <line x1="500" y1="300" x2="240" y2="300" stroke="url(#greenGrad)" strokeWidth="0.8" opacity="0.1" strokeDasharray="3 3" />
+
+                {/* Flow: Server -> Core */}
+                <line x1="500" y1="195" x2="460" y2="195" stroke="#ffffff" strokeWidth="0.6" opacity="0.08" markerEnd="url(#arrowHead)" />
+
+                {/* Animated data pulse */}
+                <circle r="3" fill="#3b82f6" opacity="0.4">
+                  <animateMotion dur="4s" repeatCount="indefinite" path="M240,300 L500,300" />
+                  <animate attributeName="opacity" values="0.5;0.1;0.5" dur="4s" repeatCount="indefinite" />
+                </circle>
+                <circle r="2" fill="#10b981" opacity="0.3">
+                  <animateMotion dur="5s" repeatCount="indefinite" path="M500,300 L240,300" />
+                  <animate attributeName="opacity" values="0.4;0.1;0.4" dur="5s" repeatCount="indefinite" />
+                </circle>
+              </svg>
             </div>
           </Reveal>
 
-          {/* Blockchain Chains */}
+          {/* Blockchain Chains row */}
           <Reveal>
-            <h3 className="text-lg font-bold text-white mb-4">Multi-Chain Blockchain Scanner</h3>
-            <p className="text-sm text-white/40 mb-6">Scans addresses across 9 EVM chains concurrently via goroutines. No API keys needed. Typical scan: 2-3 seconds.</p>
-            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 mb-12">
+            <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">Multi-Chain Scanner (9 EVM Chains)</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2 mb-10">
               {CHAINS.map((c, i) => (
-                <Reveal key={c.name} delay={i * 40}>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center hover:border-emerald-500/20 transition-all">
-                    <p className="text-xs font-bold text-white mb-0.5">{c.name}</p>
-                    <p className="text-[10px] text-white/30">{c.token}</p>
-                    <p className="text-[9px] text-white/15 mt-1">{c.stables}</p>
+                <Reveal key={c.name} delay={i * 30}>
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center hover:border-emerald-500/15 transition-all">
+                    <p className="text-[11px] font-semibold text-white/60">{c.name}</p>
+                    <p className="text-[9px] text-white/20 mt-0.5">{c.token}</p>
+                    <p className="text-[8px] text-white/10 mt-0.5">{c.stables}</p>
                   </div>
                 </Reveal>
               ))}
             </div>
           </Reveal>
 
-          {/* AI Providers */}
+          {/* AI Provider fallback */}
           <Reveal>
-            <h3 className="text-lg font-bold text-white mb-4">AI Provider Fallback Chain</h3>
-            <p className="text-sm text-white/40 mb-6">Providers tried in order. If preferred fails, auto-fallback to next. 120s timeout per request.</p>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">AI Provider Fallback Chain</h3>
+            <div className="flex flex-col sm:flex-row items-stretch gap-0">
               {PROVIDERS.map((p, i) => (
-                <Reveal key={p.name} delay={i * 100} className="flex-1">
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 h-full relative">
-                    {i === 0 && <div className="absolute -top-2 left-3 px-2 py-0.5 bg-blue-500 text-[9px] font-bold text-white rounded-full uppercase">Primary</div>}
-                    <h4 className="text-xs font-bold text-white mb-2 mt-1">{p.name}</h4>
-                    <p className="text-[10px] text-white/30 font-mono mb-1">{p.models}</p>
-                    <p className="text-[10px] text-white/20">{p.auth}</p>
+                <Reveal key={p.name} delay={i * 80} className="flex-1 flex">
+                  <div className="flex-1 flex items-center">
+                    <div className={`flex-1 p-4 rounded-xl bg-white/[0.02] border border-white/5 ${i === 0 ? "border-blue-500/15" : ""}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-white/60">{p.name}</span>
+                        {i === 0 && <span className="text-[8px] px-1.5 py-0.5 rounded-full border border-blue-500/20 text-blue-400/50">primary</span>}
+                      </div>
+                      <p className="text-[10px] text-white/20 font-mono">{p.models}</p>
+                      <p className="text-[9px] text-white/12 mt-1">{p.auth}</p>
+                    </div>
                     {i < PROVIDERS.length - 1 && (
-                      <div className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-5 h-5 rounded-full bg-[#0a0e1a] border border-white/10 items-center justify-center">
-                        <span className="text-[10px] text-white/30">&rarr;</span>
+                      <div className="hidden sm:flex w-6 items-center justify-center flex-shrink-0">
+                        <svg width="16" height="12" className="text-white/15"><path d="M0 6 L10 6 M7 3 L11 6 L7 9" stroke="currentColor" strokeWidth="1" fill="none" /></svg>
                       </div>
                     )}
                   </div>
                 </Reveal>
               ))}
             </div>
+            <p className="text-[10px] text-white/15 mt-3 text-center">120s timeout per request. If preferred provider fails, next is tried automatically.</p>
           </Reveal>
         </div>
       </section>
