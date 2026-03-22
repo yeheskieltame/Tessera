@@ -1,3 +1,14 @@
+---
+title: Tessera
+emoji: "\U0001F537"
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+license: mit
+short_description: AI-Powered Public Goods Evaluation for Ethereum
+---
+
 # Tessera
 
 <p align="center">
