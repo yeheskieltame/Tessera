@@ -1355,8 +1355,15 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 
 	// Step 9: AI deep evaluation (evidence-grounded with ALL collected data)
 	aiEvalText := ""
-	aiModel := "N/A"
-	aiProvider := "N/A"
+	prefProv, prefMod := provider.GetPreferred()
+	aiModel := prefMod
+	aiProvider := prefProv
+	if aiModel == "" {
+		aiModel = "N/A"
+	}
+	if aiProvider == "" {
+		aiProvider = "N/A"
+	}
 	if !ai.HasProviders() {
 		sse.sendStep(9, totalSteps, "AI evaluation skipped (no providers configured)", nil)
 	} else {
