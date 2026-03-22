@@ -187,12 +187,15 @@ export default function DashboardPage() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   useEffect(() => {
-    detectBridge().then((s) => {
+    detectBridge().then(async (s) => {
       if (s) {
         setBridgeStatus(s);
-        connectBridgeToServer("http://localhost:9877")
-          .then(() => getProviders().then(setProvidersData).catch(() => {}))
-          .catch(() => {});
+        try {
+          await connectBridgeToServer("http://localhost:9877");
+        } catch {}
+        try {
+          setProvidersData(await getProviders());
+        } catch {}
       }
     });
   }, []);
@@ -203,8 +206,13 @@ export default function DashboardPage() {
       const s = await detectBridge(bridgeUrl);
       if (s) {
         setBridgeStatus(s);
-        await connectBridgeToServer(bridgeUrl);
-        setProvidersData(await getProviders());
+        try {
+          await connectBridgeToServer(bridgeUrl);
+        } catch {}
+        // Always refresh providers after bridge connect attempt
+        try {
+          setProvidersData(await getProviders());
+        } catch {}
         setShowBridgeModal(false);
       } else {
         alert("Could not detect tessera-bridge at " + bridgeUrl + ". Make sure it is running.");

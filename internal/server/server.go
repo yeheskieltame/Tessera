@@ -206,15 +206,8 @@ func handleBridge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Verify bridge is reachable
-		client := &http.Client{Timeout: 3 * time.Second}
-		resp, err := client.Get(req.BridgeUrl + "/api/status")
-		if err != nil {
-			jsonError(w, "Cannot reach bridge at "+req.BridgeUrl+": "+err.Error(), http.StatusBadGateway)
-			return
-		}
-		defer resp.Body.Close()
-
+		// Skip server-side verification: the bridge runs on the user's machine,
+		// not on this server. The frontend already verified reachability from the browser.
 		provider.SetBridgeURL(req.BridgeUrl)
 		provider.SetPreferred("claude-local", "claude-sonnet-4-6")
 		jsonOK(w, map[string]any{"status": "connected", "bridgeUrl": req.BridgeUrl})
