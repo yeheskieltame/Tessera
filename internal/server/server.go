@@ -189,6 +189,12 @@ func handleSelectProvider(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleBridge(w http.ResponseWriter, r *http.Request) {
+	// Bridge feature (tessera-bridge / claude-local) is Coming Soon / In Development.
+	// All methods return a "coming soon" message. Original code preserved below for re-enablement.
+	jsonOK(w, map[string]any{"status": "coming_soon", "message": "Claude CLI via Bridge is coming soon. This feature is currently in development."})
+	return
+
+	// --- Original bridge handler (disabled) ---
 	switch r.Method {
 	case http.MethodPost:
 		body, err := io.ReadAll(r.Body)

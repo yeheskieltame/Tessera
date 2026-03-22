@@ -21,11 +21,12 @@ type modelEntry struct {
 }
 
 // providerOrder defines display/fallback ordering of providers.
-var providerOrder = []string{"claude-local", "claude-cli", "claude-api", "gemini", "openai"}
+// NOTE: "claude-local" (tessera-bridge) is disabled / Coming Soon. Kept for future re-enablement.
+var providerOrder = []string{/* "claude-local", */ "claude-cli", "claude-api", "gemini", "openai"}
 
 // modelCatalog lists all supported models per provider.
 var modelCatalog = map[string][]string{
-	"claude-local": {"claude-opus-4-6", "claude-sonnet-4-6"},
+	// "claude-local": {"claude-opus-4-6", "claude-sonnet-4-6"}, // Coming Soon — tessera-bridge disabled
 	"claude-cli":   {"claude-opus-4-6", "claude-sonnet-4-6"},
 	"claude-api":   {"claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"},
 	"gemini":       {"gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-3-flash-preview", "gemini-3.1-pro-preview"},
@@ -34,7 +35,7 @@ var modelCatalog = map[string][]string{
 
 // providerReadyCheck maps provider name to the env var / check needed.
 var providerReasons = map[string]string{
-	"claude-local": "Run npx tessera-bridge locally, then click Connect Local Claude (for production dashboard)",
+	// "claude-local": "Coming Soon — tessera-bridge feature is in development",
 	"claude-cli":   "claude binary not found on server — only available when running Tessera locally",
 	"claude-api":   "Set ANTHROPIC_API_KEY in .env",
 	"gemini":       "Set GEMINI_API_KEY in .env",
@@ -122,14 +123,14 @@ func New() *Chain {
 }
 
 func (c *Chain) buildChain() {
-	// Claude Local Bridge — user's local Claude CLI via tessera-bridge
-	if globalBridgeURL != "" {
-		c.ready["claude-local"] = true
-		for _, model := range modelCatalog["claude-local"] {
-			m := model
-			c.backends = append(c.backends, backend{Name: "claude-local", Model: m, Call: c.callBridge})
-		}
-	}
+	// Claude Local Bridge — DISABLED / Coming Soon (tessera-bridge)
+	// if globalBridgeURL != "" {
+	// 	c.ready["claude-local"] = true
+	// 	for _, model := range modelCatalog["claude-local"] {
+	// 		m := model
+	// 		c.backends = append(c.backends, backend{Name: "claude-local", Model: m, Call: c.callBridge})
+	// 	}
+	// }
 
 	// Claude CLI — works with Claude Code / Max plan, no API key needed
 	if claudeCLIAvailable() {

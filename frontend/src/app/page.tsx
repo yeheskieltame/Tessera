@@ -226,19 +226,19 @@ function SetupAccordion() {
       {/* Quick Start: Live Dashboard */}
       <Reveal delay={25}>
         <AccordionItem title="Use Live Dashboard (no install needed)" tag="Quick Start" defaultOpen={true}>
-          <p className="text-xs text-white/80 mb-4">Try Tessera instantly from your browser. Connect your local Claude CLI for AI-powered analysis.</p>
+          <p className="text-xs text-white/80 mb-4">Try Tessera instantly from your browser.</p>
           <div className="space-y-3">
             <div>
               <p className="text-[11px] text-white/70 uppercase tracking-wider mb-2">1. Open the live dashboard</p>
               <CodeBlock code={`https://yeheskieltame-tessera.hf.space/dashboard`} label="Browser" />
             </div>
-            <div>
-              <p className="text-[11px] text-white/70 uppercase tracking-wider mb-2">2. Connect your Claude CLI (optional, for AI features)</p>
+            <div className="opacity-50">
+              <p className="text-[11px] text-white/70 uppercase tracking-wider mb-2">2. Connect your Claude CLI (optional) <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase">Coming Soon</span></p>
               <CodeBlock code={`npx tessera-bridge`} label="Terminal" />
             </div>
           </div>
-          <div className="mt-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
-            <p className="text-[11px] text-white/70">tessera-bridge starts a local proxy that routes AI prompts from the dashboard to your Claude CLI. No API key needed if you have Claude Code with Max plan. Click &quot;Connect Local Claude&quot; in the dashboard after starting the bridge.</p>
+          <div className="mt-3 p-3 rounded-lg bg-amber-500/[0.08] border border-amber-400/20">
+            <p className="text-[11px] text-amber-300/90"><span className="font-bold">In Development:</span> The tessera-bridge feature (local Claude CLI proxy) is currently being developed. For now, use the Self-Host option below or configure an API key in the dashboard.</p>
           </div>
         </AccordionItem>
       </Reveal>
