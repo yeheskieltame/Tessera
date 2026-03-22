@@ -495,8 +495,8 @@ export default function DashboardPage() {
             : (() => { const first = providersData.providers.find((p) => p.ready && p.default); return first ? `${first.name}|${first.model}` : ""; })();
           const groups: { name: string; label: string; icon: string; items: typeof providersData.providers }[] = [];
           const provMeta: Record<string, { label: string; icon: string }> = {
-            "claude-local": { label: "Claude Local (Your CLI)", icon: "CL" },
-            "claude-cli":   { label: "Claude CLI (Max Plan)", icon: "CC" },
+            "claude-local": { label: "Claude CLI via Bridge (Prod + Local CLI)", icon: "BR" },
+            "claude-cli":   { label: "Claude CLI (Localhost Full)", icon: "CC" },
             "claude-api":   { label: "Claude API", icon: "CA" },
             "gemini":       { label: "Google Gemini", icon: "G" },
             "openai":       { label: "OpenAI", icon: "O" },

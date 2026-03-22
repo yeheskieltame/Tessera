@@ -34,8 +34,8 @@ var modelCatalog = map[string][]string{
 
 // providerReadyCheck maps provider name to the env var / check needed.
 var providerReasons = map[string]string{
-	"claude-local": "Run npx tessera-bridge locally, then click Connect Local Claude",
-	"claude-cli":   "claude binary not found — install Claude Code (npm i -g @anthropic-ai/claude-code)",
+	"claude-local": "Run npx tessera-bridge locally, then click Connect Local Claude (for production dashboard)",
+	"claude-cli":   "claude binary not found on server — only available when running Tessera locally",
 	"claude-api":   "Set ANTHROPIC_API_KEY in .env",
 	"gemini":       "Set GEMINI_API_KEY in .env",
 	"openai":       "Set OPENAI_API_KEY in .env",
