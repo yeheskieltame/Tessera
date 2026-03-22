@@ -14,12 +14,16 @@ import {
   analyzeEpoch,
   getTrustGraph,
   getSimulation,
+  detectBridge,
+  connectBridgeToServer,
+  disconnectBridge,
   type StatusResponse,
   type ReportsResponse,
   type ProvidersResponse,
   type AnalyzeEpochResponse,
   type TrustGraphResponse,
   type SimulateResponse,
+  type BridgeStatus,
 } from "@/lib/api";
 
 const API = "";
@@ -172,6 +176,47 @@ export default function DashboardPage() {
     setProviderSwitching(true);
     try { await selectProvider(provName, modelName); setProvidersData(await getProviders()); } catch {}
     setProviderSwitching(false);
+  }
+
+  /* ─── Local Claude Bridge ─── */
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus | null>(null);
+  const [bridgeConnecting, setBridgeConnecting] = useState(false);
+  const [bridgeUrl, setBridgeUrl] = useState("http://localhost:9877");
+  const [showBridgeModal, setShowBridgeModal] = useState(false);
+
+  useEffect(() => {
+    detectBridge().then((s) => {
+      if (s) {
+        setBridgeStatus(s);
+        connectBridgeToServer("http://localhost:9877")
+          .then(() => getProviders().then(setProvidersData).catch(() => {}))
+          .catch(() => {});
+      }
+    });
+  }, []);
+
+  async function handleConnectBridge() {
+    setBridgeConnecting(true);
+    try {
+      const s = await detectBridge(bridgeUrl);
+      if (s) {
+        setBridgeStatus(s);
+        await connectBridgeToServer(bridgeUrl);
+        setProvidersData(await getProviders());
+        setShowBridgeModal(false);
+      } else {
+        alert("Could not detect tessera-bridge at " + bridgeUrl + ". Make sure it is running.");
+      }
+    } catch { alert("Failed to connect bridge."); }
+    setBridgeConnecting(false);
+  }
+
+  async function handleDisconnectBridge() {
+    try {
+      await disconnectBridge();
+      setBridgeStatus(null);
+      setProvidersData(await getProviders());
+    } catch {}
   }
 
   /* ─── Epoch Tools (quick actions) ─── */
@@ -439,7 +484,7 @@ export default function DashboardPage() {
             ? `${providersData.preferred}|${providersData.preferredModel}`
             : (() => { const first = providersData.providers.find((p) => p.ready && p.default); return first ? `${first.name}|${first.model}` : ""; })();
           const groups: { name: string; label: string; items: typeof providersData.providers }[] = [];
-          const provLabels: Record<string, string> = { "claude-cli": "Claude CLI (Max Plan)", "claude-api": "Claude API", "gemini": "Google Gemini", "openai": "OpenAI" };
+          const provLabels: Record<string, string> = { "claude-local": "Claude Local (Your CLI)", "claude-cli": "Claude CLI (Max Plan)", "claude-api": "Claude API", "gemini": "Google Gemini", "openai": "OpenAI" };
           let currentGroup = "";
           for (const p of providersData.providers) {
             if (p.name !== currentGroup) { currentGroup = p.name; groups.push({ name: p.name, label: provLabels[p.name] || p.name, items: [] }); }
@@ -464,9 +509,70 @@ export default function DashboardPage() {
                 <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-800 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </div>
               {providerSwitching && <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
+              <div className="sm:ml-auto flex items-center gap-2">
+                {bridgeStatus ? (
+                  <>
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1.5 rounded-lg">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      Local Claude Connected (v{bridgeStatus.version})
+                    </span>
+                    <button onClick={handleDisconnectBridge} className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1.5 rounded-lg hover:bg-red-50 transition">
+                      Disconnect
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => setShowBridgeModal(true)}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    Connect Local Claude
+                  </button>
+                )}
+              </div>
             </div>
           );
         })()}
+
+        {/* Bridge Connection Modal */}
+        {showBridgeModal && createPortal(
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBridgeModal(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-1">Connect Local Claude CLI</h3>
+                <p className="text-sm text-slate-500 mb-4">Use your own Claude Code installation for AI analysis. No API key needed.</p>
+
+                <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Step 1: Run in your terminal</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-slate-900 text-green-400 px-3 py-2 rounded-lg text-sm font-mono">npx tessera-bridge</code>
+                    <button onClick={() => navigator.clipboard.writeText("npx tessera-bridge")}
+                      className="px-2 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition text-xs">
+                      Copy
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">Requires Claude Code installed: npm i -g @anthropic-ai/claude-code</p>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Step 2: Connect</p>
+                  <div className="flex gap-2">
+                    <input type="text" value={bridgeUrl} onChange={(e) => setBridgeUrl(e.target.value)}
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="http://localhost:9877" />
+                    <button onClick={handleConnectBridge} disabled={bridgeConnecting}
+                      className="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 transition">
+                      {bridgeConnecting ? "Connecting..." : "Connect"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-3">
+                  <p className="text-xs text-slate-400">Your prompts are sent directly from this browser to your local machine. Nothing passes through our server.</p>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
         {/* ═══════ EPOCH TOOLS BAR ═══════ */}
         <div className="mb-6 bg-white/70 backdrop-blur-2xl rounded-2xl border border-slate-200/60 shadow-sm p-3 sm:p-4">

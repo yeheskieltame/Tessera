@@ -180,3 +180,61 @@ export function streamEvaluateProject(
   }
   return new EventSource(url);
 }
+
+/* ─── Local Claude Bridge ─── */
+
+const BRIDGE_DEFAULT_URL = "http://localhost:9877";
+
+export interface BridgeStatus {
+  ok: boolean;
+  version: string;
+  models: string[];
+}
+
+export async function detectBridge(url?: string): Promise<BridgeStatus | null> {
+  const base = url || BRIDGE_DEFAULT_URL;
+  try {
+    const res = await fetch(`${base}/api/status`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ok ? data as BridgeStatus : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function bridgePrompt(
+  prompt: string,
+  system?: string,
+  model?: string,
+  url?: string
+): Promise<string> {
+  const base = url || BRIDGE_DEFAULT_URL;
+  const res = await fetch(`${base}/api/prompt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, system, model }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Bridge error" }));
+    throw new Error(err.error || `Bridge error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.text;
+}
+
+export async function connectBridgeToServer(bridgeUrl: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/providers/bridge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bridgeUrl }),
+  });
+  if (!res.ok) throw new Error(`Failed to connect bridge: ${res.status}`);
+}
+
+export async function disconnectBridge(): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/providers/bridge`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`Failed to disconnect bridge: ${res.status}`);
+}

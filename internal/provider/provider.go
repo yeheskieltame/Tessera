@@ -21,22 +21,43 @@ type modelEntry struct {
 }
 
 // providerOrder defines display/fallback ordering of providers.
-var providerOrder = []string{"claude-cli", "claude-api", "gemini", "openai"}
+var providerOrder = []string{"claude-local", "claude-cli", "claude-api", "gemini", "openai"}
 
 // modelCatalog lists all supported models per provider.
 var modelCatalog = map[string][]string{
-	"claude-cli":  {"claude-opus-4-6", "claude-sonnet-4-6"},
-	"claude-api":  {"claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"},
-	"gemini":      {"gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-3-flash-preview", "gemini-3.1-pro-preview"},
-	"openai":      {"gpt-4o", "gpt-4o-mini", "o3-mini"},
+	"claude-local": {"claude-opus-4-6", "claude-sonnet-4-6"},
+	"claude-cli":   {"claude-opus-4-6", "claude-sonnet-4-6"},
+	"claude-api":   {"claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"},
+	"gemini":       {"gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-3-flash-preview", "gemini-3.1-pro-preview"},
+	"openai":       {"gpt-4o", "gpt-4o-mini", "o3-mini"},
 }
 
 // providerReadyCheck maps provider name to the env var / check needed.
 var providerReasons = map[string]string{
-	"claude-cli":  "claude binary not found — install Claude Code (npm i -g @anthropic-ai/claude-code)",
-	"claude-api":  "Set ANTHROPIC_API_KEY in .env",
-	"gemini":      "Set GEMINI_API_KEY in .env",
-	"openai":      "Set OPENAI_API_KEY in .env",
+	"claude-local": "Run npx tessera-bridge locally, then click Connect Local Claude",
+	"claude-cli":   "claude binary not found — install Claude Code (npm i -g @anthropic-ai/claude-code)",
+	"claude-api":   "Set ANTHROPIC_API_KEY in .env",
+	"gemini":       "Set GEMINI_API_KEY in .env",
+	"openai":       "Set OPENAI_API_KEY in .env",
+}
+
+// --- Bridge (remote Claude CLI via tessera-bridge) ---
+
+var globalBridgeURL string
+
+// SetBridgeURL sets the URL of a remote tessera-bridge instance.
+func SetBridgeURL(url string) {
+	globalBridgeURL = url
+}
+
+// GetBridgeURL returns the current bridge URL.
+func GetBridgeURL() string {
+	return globalBridgeURL
+}
+
+// ClearBridge disconnects the bridge.
+func ClearBridge() {
+	globalBridgeURL = ""
 }
 
 // --- Types ---
@@ -98,6 +119,15 @@ func New() *Chain {
 }
 
 func (c *Chain) buildChain() {
+	// Claude Local Bridge — user's local Claude CLI via tessera-bridge
+	if globalBridgeURL != "" {
+		c.ready["claude-local"] = true
+		for _, model := range modelCatalog["claude-local"] {
+			m := model
+			c.backends = append(c.backends, backend{Name: "claude-local", Model: m, Call: c.callBridge})
+		}
+	}
+
 	// Claude CLI — works with Claude Code / Max plan, no API key needed
 	if claudeCLIAvailable() {
 		c.ready["claude-cli"] = true
@@ -359,6 +389,58 @@ func callClaudeCLI(ctx context.Context, prompt, system, model string) (string, e
 	text := strings.TrimSpace(stdout.String())
 	if text == "" {
 		return "", fmt.Errorf("empty response from claude-cli")
+	}
+	return text, nil
+}
+
+// --- Claude Local Bridge (tessera-bridge) ---
+
+func (c *Chain) callBridge(ctx context.Context, prompt, system, model string) (string, error) {
+	bridgeURL := GetBridgeURL()
+	if bridgeURL == "" {
+		return "", fmt.Errorf("bridge not connected")
+	}
+
+	reqBody := map[string]string{
+		"prompt": prompt,
+		"system": system,
+		"model":  model,
+	}
+	bodyBytes, _ := json.Marshal(reqBody)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", bridgeURL+"/api/prompt", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return "", fmt.Errorf("bridge request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("bridge connection failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("bridge read: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		var errResp struct{ Error string `json:"error"` }
+		json.Unmarshal(respBody, &errResp)
+		if errResp.Error != "" {
+			return "", fmt.Errorf("bridge: %s", errResp.Error)
+		}
+		return "", fmt.Errorf("bridge error: status %d", resp.StatusCode)
+	}
+
+	var result struct{ Text string `json:"text"` }
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return "", fmt.Errorf("bridge parse: %w", err)
+	}
+	text := strings.TrimSpace(result.Text)
+	if text == "" {
+		return "", fmt.Errorf("empty response from bridge")
 	}
 	return text, nil
 }

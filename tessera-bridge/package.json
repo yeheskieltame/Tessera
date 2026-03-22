@@ -1,0 +1,16 @@
+{
+  "name": "tessera-bridge",
+  "version": "1.0.0",
+  "description": "Local HTTP bridge to the Claude CLI for browser-based tools",
+  "main": "index.js",
+  "bin": {
+    "tessera-bridge": "index.js"
+  },
+  "keywords": [
+    "claude",
+    "cli",
+    "bridge",
+    "api"
+  ],
+  "license": "MIT"
+}

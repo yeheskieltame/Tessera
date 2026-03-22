@@ -188,6 +188,54 @@ func handleSelectProvider(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]any{"preferred": req.Provider, "preferredModel": req.Model, "status": "ok"})
 }
 
+func handleBridge(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			jsonError(w, "failed to read body", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		var req struct {
+			BridgeUrl string `json:"bridgeUrl"`
+		}
+		if err := json.Unmarshal(body, &req); err != nil || req.BridgeUrl == "" {
+			jsonError(w, "invalid JSON or missing bridgeUrl", http.StatusBadRequest)
+			return
+		}
+
+		// Verify bridge is reachable
+		client := &http.Client{Timeout: 3 * time.Second}
+		resp, err := client.Get(req.BridgeUrl + "/api/status")
+		if err != nil {
+			jsonError(w, "Cannot reach bridge at "+req.BridgeUrl+": "+err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+
+		provider.SetBridgeURL(req.BridgeUrl)
+		provider.SetPreferred("claude-local", "claude-sonnet-4-6")
+		jsonOK(w, map[string]any{"status": "connected", "bridgeUrl": req.BridgeUrl})
+
+	case http.MethodDelete:
+		provider.ClearBridge()
+		// Reset to first available provider
+		ai := provider.New()
+		if ai.HasProviders() {
+			provs := ai.Providers()
+			if len(provs) > 0 {
+				provider.SetPreferred(provs[0].Name, provs[0].Model)
+			}
+		}
+		jsonOK(w, map[string]any{"status": "disconnected"})
+
+	default:
+		jsonError(w, "POST or DELETE required", http.StatusMethodNotAllowed)
+	}
+}
+
 func handleCurrentEpoch(w http.ResponseWriter, r *http.Request) {
 	octant := data.NewOctantClient()
 	ep, err := octant.GetCurrentEpoch(r.Context())
@@ -2571,6 +2619,7 @@ func loadRoutes() {
 	handle("/api/status", handleStatus)
 	handle("/api/providers", handleProviders)
 	handle("/api/providers/select", handleSelectProvider)
+	handle("/api/providers/bridge", handleBridge)
 	handle("/api/epochs/current", handleCurrentEpoch)
 	handle("/api/projects", handleProjects)
 	handle("/api/analyze-epoch", handleAnalyzeEpoch)
