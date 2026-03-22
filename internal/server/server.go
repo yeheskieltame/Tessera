@@ -1025,6 +1025,12 @@ func handleEvaluateStream(w http.ResponseWriter, r *http.Request) {
 		sse.sendError(fmt.Sprintf("evaluation failed: %v", err))
 		return
 	}
+	if result.Fallback {
+		sse.sendStep(3, totalSteps, fmt.Sprintf("AI provider fallback: %s", result.FallbackReason), map[string]any{
+			"fallback":       true,
+			"fallbackReason": result.FallbackReason,
+		})
+	}
 	sse.sendStep(3, totalSteps, fmt.Sprintf("AI evaluation complete (via %s/%s)", result.Provider, result.Model), map[string]any{
 		"evaluation": result.Evaluation,
 		"model":      result.Model,
@@ -1355,15 +1361,8 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 
 	// Step 9: AI deep evaluation (evidence-grounded with ALL collected data)
 	aiEvalText := ""
-	prefProv, prefMod := provider.GetPreferred()
-	aiModel := prefMod
-	aiProvider := prefProv
-	if aiModel == "" {
-		aiModel = "N/A"
-	}
-	if aiProvider == "" {
-		aiProvider = "N/A"
-	}
+	aiModel := "N/A"
+	aiProvider := "N/A"
 	if !ai.HasProviders() {
 		sse.sendStep(9, totalSteps, "AI evaluation skipped (no providers configured)", nil)
 	} else {
@@ -1404,7 +1403,13 @@ func handleAnalyzeProjectStream(w http.ResponseWriter, r *http.Request) {
 			aiEvalText = evalResult.Evaluation
 			aiModel = evalResult.Model
 			aiProvider = evalResult.Provider
-			sse.sendStep(9, totalSteps, "AI deep evaluation complete", map[string]any{
+			if evalResult.Fallback {
+				sse.sendStep(9, totalSteps, fmt.Sprintf("AI provider fallback: %s", evalResult.FallbackReason), map[string]any{
+					"fallback":       true,
+					"fallbackReason": evalResult.FallbackReason,
+				})
+			}
+			sse.sendStep(9, totalSteps, fmt.Sprintf("AI deep evaluation complete (via %s/%s)", aiProvider, aiModel), map[string]any{
 				"evaluation": aiEvalText,
 				"model":      aiModel,
 				"provider":   aiProvider,

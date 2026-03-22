@@ -24,10 +24,12 @@ You assess projects across these dimensions:
 Provide structured, evidence-based assessments. Be specific and cite data when possible.`
 
 type EvaluationResult struct {
-	Project    string
-	Evaluation string
-	Model      string
-	Provider   string
+	Project        string
+	Evaluation     string
+	Model          string
+	Provider       string
+	Fallback       bool
+	FallbackReason string
 }
 
 func EvaluateProject(ctx context.Context, ai *provider.Chain, name, description, extra string, githubURL string) (*EvaluationResult, error) {
@@ -92,10 +94,12 @@ RECOMMENDATION:
 		return nil, err
 	}
 	return &EvaluationResult{
-		Project:    name,
-		Evaluation: resp.Text,
-		Model:      resp.Model,
-		Provider:   resp.Provider,
+		Project:        name,
+		Evaluation:     resp.Text,
+		Model:          resp.Model,
+		Provider:       resp.Provider,
+		Fallback:       resp.Fallback,
+		FallbackReason: resp.FallbackReason,
 	}, nil
 }
 
@@ -151,9 +155,11 @@ Also flag any metrics that seem implausible or need verification.`, text)
 		return nil, err
 	}
 	return &EvaluationResult{
-		Evaluation: resp.Text,
-		Model:      resp.Model,
-		Provider:   resp.Provider,
+		Evaluation:     resp.Text,
+		Model:          resp.Model,
+		Provider:       resp.Provider,
+		Fallback:       resp.Fallback,
+		FallbackReason: resp.FallbackReason,
 	}, nil
 }
 
@@ -207,10 +213,12 @@ Be specific: reference project addresses and cite the numerical data.`, epoch, s
 		return nil, err
 	}
 	return &EvaluationResult{
-		Project:    fmt.Sprintf("Trust Graph — Epoch %d", epoch),
-		Evaluation: resp.Text,
-		Model:      resp.Model,
-		Provider:   resp.Provider,
+		Project:        fmt.Sprintf("Trust Graph — Epoch %d", epoch),
+		Evaluation:     resp.Text,
+		Model:          resp.Model,
+		Provider:       resp.Provider,
+		Fallback:       resp.Fallback,
+		FallbackReason: resp.FallbackReason,
 	}, nil
 }
 
@@ -254,10 +262,12 @@ Provide concrete, data-driven analysis referencing the numbers above.`, epoch, t
 		return nil, err
 	}
 	return &EvaluationResult{
-		Project:    fmt.Sprintf("Mechanism Analysis (Epoch %d)", epoch),
-		Evaluation: resp.Text,
-		Model:      resp.Model,
-		Provider:   resp.Provider,
+		Project:        fmt.Sprintf("Mechanism Analysis (Epoch %d)", epoch),
+		Evaluation:     resp.Text,
+		Model:          resp.Model,
+		Provider:       resp.Provider,
+		Fallback:       resp.Fallback,
+		FallbackReason: resp.FallbackReason,
 	}, nil
 }
 
@@ -288,10 +298,12 @@ Provide:
 		return nil, err
 	}
 	return &EvaluationResult{
-		Project:    projectName,
-		Evaluation: resp.Text,
-		Model:      resp.Model,
-		Provider:   resp.Provider,
+		Project:        projectName,
+		Evaluation:     resp.Text,
+		Model:          resp.Model,
+		Provider:       resp.Provider,
+		Fallback:       resp.Fallback,
+		FallbackReason: resp.FallbackReason,
 	}, nil
 }
 
@@ -399,10 +411,12 @@ Provide a final recommendation with confidence rating:
 		return nil, err
 	}
 	return &EvaluationResult{
-		Project:    address,
-		Evaluation: resp.Text,
-		Model:      resp.Model,
-		Provider:   resp.Provider,
+		Project:        address,
+		Evaluation:     resp.Text,
+		Model:          resp.Model,
+		Provider:       resp.Provider,
+		Fallback:       resp.Fallback,
+		FallbackReason: resp.FallbackReason,
 	}, nil
 }
 
@@ -511,9 +525,11 @@ A brief paragraph on the overall trustworthiness of this proposal based on the v
 
 	// Use the model/provider from pass 2 as the primary attribution
 	return &EvaluationResult{
-		Project:    name,
-		Evaluation: combined,
-		Model:      pass2Resp.Model,
-		Provider:   pass2Resp.Provider,
+		Project:        name,
+		Evaluation:     combined,
+		Model:          pass2Resp.Model,
+		Provider:       pass2Resp.Provider,
+		Fallback:       pass2Resp.Fallback,
+		FallbackReason: pass2Resp.FallbackReason,
 	}, nil
 }

@@ -63,9 +63,11 @@ func ClearBridge() {
 // --- Types ---
 
 type Response struct {
-	Text     string `json:"text"`
-	Model    string `json:"model"`
-	Provider string `json:"provider"`
+	Text           string `json:"text"`
+	Model          string `json:"model"`
+	Provider       string `json:"provider"`
+	Fallback       bool   `json:"fallback,omitempty"`
+	FallbackReason string `json:"fallback_reason,omitempty"`
 }
 
 type backend struct {
@@ -215,8 +217,9 @@ func (c *Chain) AllProviders() []ProviderInfo {
 }
 
 // Complete sends a prompt to AI providers.
-// If a preferred provider+model is set and available, ONLY uses that provider (no silent fallback).
-// If no preference is set, falls back through all available providers in order.
+// If a preferred provider+model is set, tries that first. If it fails, falls back
+// to the next available provider and reports the fallback in the Response.
+// If no preference is set, tries all providers in order.
 func (c *Chain) Complete(ctx context.Context, prompt, system string) (*Response, error) {
 	if len(c.backends) == 0 {
 		return nil, fmt.Errorf("no AI providers configured — set at least one API key")
@@ -224,18 +227,42 @@ func (c *Chain) Complete(ctx context.Context, prompt, system string) (*Response,
 
 	prefProvider, prefModel := GetPreferred()
 
-	// If user explicitly selected a provider, use ONLY that provider (no fallback)
+	// If user explicitly selected a provider, try it first
 	if prefProvider != "" && prefModel != "" {
+		// Try the preferred provider
 		for _, b := range c.backends {
 			if b.Name == prefProvider && b.Model == prefModel {
 				text, err := b.Call(ctx, prompt, system, b.Model)
-				if err != nil {
-					return nil, fmt.Errorf("%s/%s failed: %v", b.Name, b.Model, err)
+				if err == nil {
+					return &Response{Text: text, Model: b.Model, Provider: b.Name}, nil
 				}
-				return &Response{Text: text, Model: b.Model, Provider: b.Name}, nil
+				// Preferred provider failed — fall back to others with reason
+				prefErr := fmt.Sprintf("%s/%s failed: %v", b.Name, b.Model, err)
+				var errs []string
+				errs = append(errs, prefErr)
+				usedProviders := map[string]bool{prefProvider: true}
+				for _, fb := range c.backends {
+					if usedProviders[fb.Name] {
+						continue
+					}
+					usedProviders[fb.Name] = true
+					text, err := fb.Call(ctx, prompt, system, fb.Model)
+					if err != nil {
+						errs = append(errs, fmt.Sprintf("%s/%s: %v", fb.Name, fb.Model, err))
+						continue
+					}
+					return &Response{
+						Text:           text,
+						Model:          fb.Model,
+						Provider:       fb.Name,
+						Fallback:       true,
+						FallbackReason: fmt.Sprintf("Preferred provider %s/%s failed, fell back to %s/%s. Error: %v", prefProvider, prefModel, fb.Name, fb.Model, prefErr),
+					}, nil
+				}
+				return nil, fmt.Errorf("preferred provider failed and all fallbacks failed:\n%s", joinLines(errs))
 			}
 		}
-		// Preferred provider not found in backends, fall through to auto-select
+		// Preferred provider not found in backends (not configured), fall through to auto-select
 	}
 
 	// No preference set (or preferred not found): try all providers in order
