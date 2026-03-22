@@ -183,6 +183,8 @@ export default function DashboardPage() {
   const [bridgeConnecting, setBridgeConnecting] = useState(false);
   const [bridgeUrl, setBridgeUrl] = useState("http://localhost:9877");
   const [showBridgeModal, setShowBridgeModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   useEffect(() => {
     detectBridge().then((s) => {
@@ -483,50 +485,96 @@ export default function DashboardPage() {
           const activeKey = providersData.preferred && providersData.preferredModel
             ? `${providersData.preferred}|${providersData.preferredModel}`
             : (() => { const first = providersData.providers.find((p) => p.ready && p.default); return first ? `${first.name}|${first.model}` : ""; })();
-          const groups: { name: string; label: string; items: typeof providersData.providers }[] = [];
-          const provLabels: Record<string, string> = { "claude-local": "Claude Local (Your CLI)", "claude-cli": "Claude CLI (Max Plan)", "claude-api": "Claude API", "gemini": "Google Gemini", "openai": "OpenAI" };
+          const groups: { name: string; label: string; icon: string; items: typeof providersData.providers }[] = [];
+          const provMeta: Record<string, { label: string; icon: string }> = {
+            "claude-local": { label: "Claude Local (Your CLI)", icon: "CL" },
+            "claude-cli":   { label: "Claude CLI (Max Plan)", icon: "CC" },
+            "claude-api":   { label: "Claude API", icon: "CA" },
+            "gemini":       { label: "Google Gemini", icon: "G" },
+            "openai":       { label: "OpenAI", icon: "O" },
+          };
           let currentGroup = "";
           for (const p of providersData.providers) {
-            if (p.name !== currentGroup) { currentGroup = p.name; groups.push({ name: p.name, label: provLabels[p.name] || p.name, items: [] }); }
+            if (p.name !== currentGroup) {
+              currentGroup = p.name;
+              const meta = provMeta[p.name] || { label: p.name, icon: "?" };
+              groups.push({ name: p.name, label: meta.label, icon: meta.icon, items: [] });
+            }
             groups[groups.length - 1].items.push(p);
           }
+          const activeProvider = providersData.providers.find(p => `${p.name}|${p.model}` === activeKey);
+          const activeLabel = activeProvider ? `${(provMeta[activeProvider.name]?.label || activeProvider.name)} — ${activeProvider.model}` : "Select model";
+
           return (
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">AI Model</label>
-              <div className="relative">
-                <select value={activeKey} onChange={(e) => handleSelectProvider(e.target.value)} disabled={providerSwitching}
-                  className="appearance-none rounded-xl border border-slate-200/80 bg-white/80 backdrop-blur-xl pl-3 pr-8 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 cursor-pointer min-w-0 w-full sm:min-w-[300px]">
-                  {groups.map((g) => (
-                    <optgroup key={g.name} label={`${g.items[0].ready ? "\u2713" : "\u2717"} ${g.label}`}>
-                      {g.items.map((p) => (
-                        <option key={`${p.name}|${p.model}`} value={`${p.name}|${p.model}`} disabled={!p.ready}>
-                          {p.model}{!p.ready ? ` \u2014 ${p.reason || "not configured"}` : ""}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-800 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </div>
-              {providerSwitching && <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
-              <div className="sm:ml-auto flex items-center gap-2">
-                {bridgeStatus ? (
-                  <>
-                    <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1.5 rounded-lg">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      Local Claude Connected (v{bridgeStatus.version})
-                    </span>
-                    <button onClick={handleDisconnectBridge} className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1.5 rounded-lg hover:bg-red-50 transition">
-                      Disconnect
+            <div className="mb-6 bg-white/70 backdrop-blur-2xl rounded-2xl border border-slate-200/60 shadow-sm p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">AI Model</label>
+                  <div className="relative flex-1 sm:max-w-[400px]">
+                    <button onClick={() => setShowModelDropdown(!showModelDropdown)} disabled={providerSwitching}
+                      className="w-full flex items-center justify-between rounded-xl border border-slate-200/80 bg-white pl-3 pr-3 py-2.5 text-xs font-semibold text-slate-800 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 cursor-pointer transition">
+                      <span className="truncate">{activeLabel}</span>
+                      <div className="flex items-center gap-2 ml-2">
+                        {providerSwitching && <div className="w-3.5 h-3.5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />}
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform ${showModelDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
                     </button>
-                  </>
-                ) : (
-                  <button onClick={() => setShowBridgeModal(true)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                    Connect Local Claude
-                  </button>
-                )}
+
+                    {showModelDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowModelDropdown(false)} />
+                        <div className="absolute z-50 top-full left-0 mt-1 w-full sm:w-[420px] bg-white rounded-xl border border-slate-200 shadow-xl max-h-[320px] overflow-y-auto">
+                          {groups.map((g) => (
+                            <div key={g.name}>
+                              <div className="sticky top-0 bg-slate-50 px-3 py-2 border-b border-slate-100 flex items-center gap-2">
+                                <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold ${g.items[0].ready ? "bg-blue-500 text-white" : "bg-slate-200 text-slate-400"}`}>{g.icon}</span>
+                                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">{g.label}</span>
+                                <span className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full ${g.items[0].ready ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-400"}`}>
+                                  {g.items[0].ready ? "Available" : "Unavailable"}
+                                </span>
+                              </div>
+                              {g.items.map((p) => {
+                                const key = `${p.name}|${p.model}`;
+                                const isActive = key === activeKey;
+                                return (
+                                  <button key={key} disabled={!p.ready}
+                                    onClick={() => { handleSelectProvider(key); setShowModelDropdown(false); }}
+                                    className={`w-full text-left px-3 py-2.5 flex items-center gap-2 text-xs transition
+                                      ${isActive ? "bg-blue-50 border-l-2 border-blue-500" : "border-l-2 border-transparent hover:bg-slate-50"}
+                                      ${!p.ready ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}>
+                                    <span className={`font-semibold flex-1 ${isActive ? "text-blue-700" : "text-slate-700"}`}>{p.model}</span>
+                                    {!p.ready && <span className="text-[10px] text-slate-400 truncate max-w-[180px]">{p.reason || "not configured"}</span>}
+                                    {isActive && <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {bridgeStatus ? (
+                    <>
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-2 rounded-lg">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        Local Claude Connected
+                      </span>
+                      <button onClick={handleDisconnectBridge} className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-2 rounded-lg hover:bg-red-50 transition">
+                        Disconnect
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={() => setShowBridgeModal(true)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-100 transition">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                      Connect Local Claude
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -536,30 +584,39 @@ export default function DashboardPage() {
         {showBridgeModal && createPortal(
           <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowBridgeModal(false)}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-1">Connect Local Claude CLI</h3>
-                <p className="text-sm text-slate-500 mb-4">Use your own Claude Code installation for AI analysis. No API key needed.</p>
+              <div className="flex items-center justify-between p-5 pb-0">
+                <h3 className="text-lg font-bold text-slate-800">Connect Local Claude CLI</h3>
+                <button onClick={() => setShowBridgeModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="p-5 pt-2">
+                <p className="text-sm text-slate-500 mb-5">Use your own Claude Code installation for AI analysis. No API key needed.</p>
 
                 <div className="bg-slate-50 rounded-xl p-4 mb-4">
                   <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Step 1: Run in your terminal</p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-slate-900 text-green-400 px-3 py-2 rounded-lg text-sm font-mono">npx tessera-bridge</code>
-                    <button onClick={() => navigator.clipboard.writeText("npx tessera-bridge")}
-                      className="px-2 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-600 transition text-xs">
-                      Copy
+                    <code className="flex-1 bg-slate-900 text-green-400 px-3 py-2.5 rounded-lg text-sm font-mono select-all">npx tessera-bridge</code>
+                    <button onClick={() => {
+                      navigator.clipboard.writeText("npx tessera-bridge");
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                      className={`px-3 py-2.5 rounded-lg text-xs font-medium transition-all min-w-[70px] ${copied ? "bg-green-500 text-white" : "bg-slate-200 hover:bg-slate-300 text-slate-600"}`}>
+                      {copied ? "Copied!" : "Copy"}
                     </button>
                   </div>
                   <p className="text-xs text-slate-500 mt-2">Requires Claude Code installed: npm i -g @anthropic-ai/claude-code</p>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-5">
                   <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Step 2: Connect</p>
                   <div className="flex gap-2">
                     <input type="text" value={bridgeUrl} onChange={(e) => setBridgeUrl(e.target.value)}
-                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
                       placeholder="http://localhost:9877" />
                     <button onClick={handleConnectBridge} disabled={bridgeConnecting}
-                      className="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 transition">
+                      className="px-5 py-2.5 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 transition min-w-[110px]">
                       {bridgeConnecting ? "Connecting..." : "Connect"}
                     </button>
                   </div>
