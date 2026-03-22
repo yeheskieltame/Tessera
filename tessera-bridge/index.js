@@ -175,7 +175,7 @@ if (checkClaude()) {
 
 const server = http.createServer(handler);
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`  Listening:   http://localhost:${PORT}`);
   console.log("");
   console.log("  Endpoints:");

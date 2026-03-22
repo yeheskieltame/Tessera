@@ -46,8 +46,9 @@ var providerReasons = map[string]string{
 var globalBridgeURL string
 
 // SetBridgeURL sets the URL of a remote tessera-bridge instance.
+// Normalizes localhost to 127.0.0.1 to avoid IPv6 resolution issues on macOS.
 func SetBridgeURL(url string) {
-	globalBridgeURL = url
+	globalBridgeURL = strings.Replace(url, "://localhost:", "://127.0.0.1:", 1)
 }
 
 // GetBridgeURL returns the current bridge URL.
@@ -383,7 +384,7 @@ func claudeCLIAvailable() bool {
 	return err == nil
 }
 
-func callClaudeCLI(ctx context.Context, prompt, system, model string) (string, error) {
+func callClaudeCLI(_ context.Context, prompt, system, model string) (string, error) {
 	args := []string{
 		"--print",
 		"--model", model,
@@ -393,7 +394,10 @@ func callClaudeCLI(ctx context.Context, prompt, system, model string) (string, e
 		args = append(args, "--append-system-prompt", system)
 	}
 
-	cmd := exec.CommandContext(ctx, "claude", args...)
+	// Use exec.Command (NOT CommandContext) to avoid killing the process
+	// if the HTTP context is cancelled mid-response. Claude CLI can take
+	// 10-60+ seconds; we don't want SSE disconnects to kill it.
+	cmd := exec.Command("claude", args...)
 	cmd.Stdin = strings.NewReader(prompt)
 
 	var stdout, stderr bytes.Buffer
