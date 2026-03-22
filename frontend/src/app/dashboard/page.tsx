@@ -506,7 +506,7 @@ export default function DashboardPage() {
           const activeLabel = activeProvider ? `${(provMeta[activeProvider.name]?.label || activeProvider.name)} — ${activeProvider.model}` : "Select model";
 
           return (
-            <div className="mb-6 bg-white/70 backdrop-blur-2xl rounded-2xl border border-slate-200/60 shadow-sm p-3 sm:p-4">
+            <div className="mb-6 bg-white/70 backdrop-blur-2xl rounded-2xl border border-slate-200/60 shadow-sm p-3 sm:p-4 relative z-30">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">AI Model</label>
@@ -523,7 +523,7 @@ export default function DashboardPage() {
                     {showModelDropdown && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowModelDropdown(false)} />
-                        <div className="absolute z-50 top-full left-0 mt-1 w-full sm:w-[420px] bg-white rounded-xl border border-slate-200 shadow-xl max-h-[320px] overflow-y-auto">
+                        <div className="absolute z-[100] top-full left-0 mt-1 w-full sm:w-[420px] bg-white rounded-xl border border-slate-200 shadow-2xl max-h-[320px] overflow-y-auto">
                           {groups.map((g) => (
                             <div key={g.name}>
                               <div className="sticky top-0 bg-slate-50 px-3 py-2 border-b border-slate-100 flex items-center gap-2">
