@@ -214,9 +214,9 @@ func (c *Chain) AllProviders() []ProviderInfo {
 	return all
 }
 
-// Complete sends a prompt to AI providers with fallback.
-// If a preferred provider+model is set, tries that first.
-// Fallback uses the first (default) model per remaining provider.
+// Complete sends a prompt to AI providers.
+// If a preferred provider+model is set and available, ONLY uses that provider (no silent fallback).
+// If no preference is set, falls back through all available providers in order.
 func (c *Chain) Complete(ctx context.Context, prompt, system string) (*Response, error) {
 	if len(c.backends) == 0 {
 		return nil, fmt.Errorf("no AI providers configured — set at least one API key")
@@ -224,33 +224,28 @@ func (c *Chain) Complete(ctx context.Context, prompt, system string) (*Response,
 
 	prefProvider, prefModel := GetPreferred()
 
-	ordered := make([]backend, 0, len(c.backends))
-
-	// 1. Exact preferred match first
+	// If user explicitly selected a provider, use ONLY that provider (no fallback)
 	if prefProvider != "" && prefModel != "" {
 		for _, b := range c.backends {
 			if b.Name == prefProvider && b.Model == prefModel {
-				ordered = append(ordered, b)
-				break
+				text, err := b.Call(ctx, prompt, system, b.Model)
+				if err != nil {
+					return nil, fmt.Errorf("%s/%s failed: %v", b.Name, b.Model, err)
+				}
+				return &Response{Text: text, Model: b.Model, Provider: b.Name}, nil
 			}
 		}
+		// Preferred provider not found in backends, fall through to auto-select
 	}
 
-	// 2. Fallback: first (default) model per remaining provider
+	// No preference set (or preferred not found): try all providers in order
+	var errs []string
 	usedProviders := map[string]bool{}
-	if len(ordered) > 0 {
-		usedProviders[ordered[0].Name] = true
-	}
 	for _, b := range c.backends {
 		if usedProviders[b.Name] {
 			continue
 		}
 		usedProviders[b.Name] = true
-		ordered = append(ordered, b)
-	}
-
-	var errs []string
-	for _, b := range ordered {
 		text, err := b.Call(ctx, prompt, system, b.Model)
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("%s/%s: %v", b.Name, b.Model, err))
