@@ -18,6 +18,7 @@ short_description: AI-Powered Public Goods Evaluation for Ethereum
 AI-powered public goods project evaluation for the Ethereum ecosystem. A CLI tool (20 commands) and web dashboard that combines quantitative analysis, trust graph evaluation, mechanism simulation, multi-chain blockchain scanning, community discourse analysis, cross-ecosystem validation (RetroPGF), LLM-based qualitative assessment, adaptive signal collection, and signal reliability scoring into a single evidence pipeline. Tessera collects data from 9 independent sources, cross-verifies signals between them, and assesses how trustworthy each one is.
 
 Live Demo: https://yeheskieltame-tessera.hf.space
+Video Demo: https://youtu.be/fJvE_JUmfhY
 Repository: https://github.com/yeheskieltame/Tessera
 
 ## Table of Contents
